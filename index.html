@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0}[hidden]{display:none!important}</style></head><body><title>펀치 타워</title>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0}[hidden]{display:none!important}</style></head><body><title>PUNCH TOWER</title>
 <meta name="author" content="VENTO AI STUDIO">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,6 +37,16 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .eyebrow{font-family:var(--f-pixel);font-size:10px;letter-spacing:.12em;color:var(--lava-hi)}
 .big{font-family:var(--f-display);font-size:clamp(34px,12cqw,58px);line-height:1;margin:0;
   color:var(--gi);text-shadow:4px 4px 0 #c8341a,8px 8px 0 #4a1408;text-wrap:balance}
+.logo{position:relative;margin:2px 0 4px;display:grid;gap:.18em;font-family:var(--f-pixel);font-weight:400;
+  font-size:clamp(28px,11.5cqw,46px);line-height:1;letter-spacing:.02em;text-align:center}
+.logo span{display:block;color:transparent;-webkit-background-clip:text;background-clip:text;
+  background-image:linear-gradient(180deg,#fff6d0 0 28%,var(--lava-hi) 28% 52%,var(--lava) 52% 76%,#c8341a 76%);
+  filter:drop-shadow(3px 3px 0 #4a1408) drop-shadow(0 0 8px rgba(255,122,26,.35))}
+.logo span+span{font-size:1.18em}
+.logo::after{content:"";position:absolute;inset:-6px -4px;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(11,8,17,.6) 0 1px,transparent 1px 3px)}
+#stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
 .sub{font-family:var(--f-display);font-size:19px;color:var(--lava);margin:0}
 .ov[hidden]{display:none}
 .rules{display:grid;gap:5px;margin:0;padding:0;list-style:none;font-size:13px;line-height:1.45;color:var(--gi);max-width:31ch}
@@ -205,7 +215,8 @@ const sfx={
     tone(t+.005,.32,1760+p,1700+p,'square',.08); // metallic ring
     tone(t+.005,.36,2637+p,2600+p,'triangle',.09);
     tone(t+.03,.18,3520,3400,'square',.03);},
-  dash(){if(!AC)return;const t=AC.currentTime;noise(t,.13,900,.7,.5,'highpass',5000);tone(t,.08,280,720,'square',.04);},
+  // running wind: a quick airy 'shuk' (band-passed noise sweeping down) plus a thin high hiss
+  dash(){if(!AC)return;const t=AC.currentTime;noise(t,.16,3200,1.6,.55,'bandpass',700);noise(t+.015,.1,6000,.7,.18,'highpass',2500);},
   kimax(){if(!AC)return;const t=AC.currentTime;tone(t,.12,1568,1568,'triangle',.07);tone(t+.06,.22,2093,2093,'triangle',.06);},
   kipunch(c){if(!AC)return;const t=AC.currentTime;
     tone(t,.2,150,30,'sine',.8+.6*c);noise(t,.22,1200,.6,.4+.5*c,'lowpass',100);
@@ -318,8 +329,8 @@ function weakFX(x,y,dmg){
   for(let i=0;i<16;i++){const a=-Math.PI*Math.random();const sp=90+Math.random()*120;
     parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.35+Math.random()*.3,col:i%3?'#ffe27a':'#ffffff',s:i%4?1:2,g:300});}
   for(let i=0;i<8;i++)parts.push({x,y,vx:(Math.random()-.5)*60,vy:20+Math.random()*60,life:.6,col:'#ff3a5a',s:1,g:200});
-  pop(x,y+4,'WEAK!',weakStreak>=3?'#ffe27a':'#ff3a5a',2);
-  pop(x,y+16,String(dmg),'#ffffff',1);
+  pop(x,y-16,'WEAK!',weakStreak>=3?'#ffe27a':'#ff3a5a',2);
+  pop(x,y-5,String(dmg),'#ffffff',1);
   shake=Math.max(shake,5.5);hitstop=Math.max(hitstop,.12);pl.weakT=.14;
   vibe(45);
 }
@@ -360,11 +371,11 @@ function hit(side,power){
     rings.push({x:fx,y:fy,life:.22,max:.22,big:true,col:'#9ff4ff'});
     for(let i=0;i<6+power*10;i++){const a=-Math.PI*Math.random(),sp=60+Math.random()*90;
       parts.push({x:fx,y:fy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.3,max:.3,s:1,g:0,ki:true});}
-    pop(fx,fy+16,'KI '+dmg,'#7af0ff',power>.7?2:1);
+    pop(fx,fy-6,'KI '+dmg,'#7af0ff',power>.7?2:1);
     shake=Math.max(shake,2+4*power);hitstop=Math.max(hitstop,.04+.06*power);vibe(15+25*power|0);}
   else{weakStreak=0;
-    if(onWeak){pop(s.wx,fy+16,'L/R!','#ff3a5a',1);sfx.same();}
-    else if(crit)pop(fx,fy+16,'CRIT','#ffd04a',1);
+    if(onWeak){pop(s.wx,fy-6,'L/R!','#ff3a5a',1);sfx.same();}
+    else if(crit)pop(fx,fy-6,'CRIT','#ffd04a',1);
     shake=Math.max(shake,crit?3.2:1.6);hitstop=Math.max(hitstop,crit?.07:.028);vibe(crit?22:7);}
   if(combo%40===0){fever=5;sfx.fever();pop(W/2,fy+30,'FEVER!!','#ff7af0',2);}
   if(s.hp<=0)breakSlab(s);
@@ -711,11 +722,12 @@ function drawPlayer(){
 function drawComboFX(){
   if(mode!=='play'||combo<2)return;
   const t=now(),age=t-comboFX.at;if(age>D.win+.2)return;
-  const fresh=age<.07,sc=combo>=40?3:2;
+  // top-centre, clear of the boxer
+  const fresh=age<.07,sc=3;
   const col=fever>0?`hsl(${(gt*720)%360},95%,70%)`:combo>=24?'#ffd04a':'#f4efe8';
-  const x=clamp(pl.x+comboFX.dx,WALL+8,W-WALL-8),y=-(pl.level+1)*FH+13-camY-(fresh?2:0);
   ctx.globalAlpha=age>D.win?Math.max(0,1-(age-D.win)/.2):1;
-  text(String(combo),x,y,fresh?sc+1:sc,col,'c');
+  text(String(combo),W/2,fresh?32:34,fresh?sc+1:sc,col,'c');
+  text('HITS',W/2,fresh?54:52,1,'#a597b8','c',false);
   ctx.globalAlpha=1;
 }
 function drawLava(){
@@ -765,7 +777,7 @@ function drawHUD(){
   R(3,36,3,190,'rgba(10,6,16,.7)');const pr=pl.level/TOP;R(3,36+190*(1-pr),3,190*pr,'#5e94b8');
   R(1,36+190*(1-pr)-1,7,2,'#f4efe8');
   const lp=clamp(-lavaY/(TOP*FH),0,1);R(3,36+190*(1-lp),3,190*lp,'rgba(255,106,40,.9)');
-  if(fever>0){text('FEVER x2',W/2,44,1,`hsl(${(gt*720+120)%360},95%,70%)`,'c');
+  if(fever>0){text('FEVER x2',W/2,62,1,`hsl(${(gt*720+120)%360},95%,70%)`,'c');
     ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle=`hsl(${(gt*720)%360},95%,60%)`;ctx.lineWidth=2;ctx.strokeRect(1,30,W-2,H-31);ctx.globalAlpha=1;}
   const dist=lavaY-pl.feet;
   if(mode==='play'&&started){
@@ -939,7 +951,7 @@ function showSplash(){
   ov.addEventListener('pointerdown',go,{once:true});setTimeout(go,1700);}
 function showTitle(){showOverlay(`
   <div class="eyebrow">VENTO AI STUDIO PRESENTS</div>
-  <h1 class="big">펀치 타워</h1>
+  <h1 class="logo" aria-label="PUNCH TOWER"><span>PUNCH</span><span>TOWER</span></h1>
   <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 입력" value="${esc(playerName)}"></label>
   ${diffPicker()}
   <button class="btn" id="go" data-act="go">시작</button>
