@@ -344,21 +344,25 @@ function hit(side,power){
   const inWin=t-lastTap<=D.win;
   if(!inWin)combo=0;
   let alt=false;
-  if(!charged){alt=inWin&&lastSide!==-1&&side!==lastSide;altStreak=alt?altStreak+1:1;lastSide=side;}
+  if(!charged){alt=inWin&&lastSide!==-1&&side!==lastSide;lastSide=side;}
   combo++;maxCombo=Math.max(maxCombo,combo);lastTap=t;
   comboFX={dx:side?13:-13,at:t};
-  if(altStreak>=SUPER_NEED&&!superReady){superReady=true;sfx.ready();vibe([20,30,20]);
-    pop(W/2,pl.feet-46,'KING FIST!','#ff9a2a',1);fire(W/2,H+camY-20,14,50,-40);}
   const fx=fistX(side),fy=-(pl.level+1)*FH+10;
   // weak point = the boxer's body lined up under it, hit with alternating hands
   const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=s.ww/2+1;
   // weak bonus: alternating hands, or a ki punch with at least a little charge
   const weak=onWeak&&(alt||(charged&&power>=.3));
-  let dmg=1+Math.min(2,Math.floor(combo/20));
-  const crit=!weak&&!charged&&Math.random()<.05;
-  if(crit)dmg*=2;if(fever>0)dmg*=2;
-  if(charged)dmg=Math.ceil(dmg*(1+3*power));
-  if(weak)dmg=Math.ceil(dmg*D.weakMul*(charged?1:(1+Math.min(1,altStreak/10))));
+  // balance: off the weak point every punch does 1. On it (alternating hands) 3, then 4 from the
+  // 10th weak hit in a row and 5 from the 20th. Mashing elsewhere needs 3-5x the punches.
+  let dmg;
+  if(weak){const ws=weakStreak+1;dmg=3+(ws>=10?1:0)+(ws>=20?1:0);if(charged)dmg=Math.ceil(dmg*(1+2*power));}
+  else dmg=charged?Math.ceil(1+3*power):1;
+  const crit=false;
+  if(fever>0)dmg*=2;
+  // KING FIST gauge fills only from weak-point hits
+  if(weak){altStreak=Math.min(SUPER_NEED,altStreak+(charged?3:1));
+    if(altStreak>=SUPER_NEED&&!superReady){superReady=true;sfx.ready();vibe([20,30,20]);
+      pop(W/2,pl.feet-46,'KING FIST!','#ff9a2a',1);fire(W/2,H+camY-20,14,50,-40);}}
   s.hp-=dmg;s.flash=weak||charged?1:.6;s.bump=weak?4:charged?2+2*power:crit?3:1;
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;
   const c=SLABC[s.type];
@@ -377,7 +381,7 @@ function hit(side,power){
     if(onWeak){pop(s.wx,fy-6,'L/R!','#ff3a5a',1);sfx.same();}
     else if(crit)pop(fx,fy-6,'CRIT','#ffd04a',1);
     shake=Math.max(shake,crit?3.2:1.6);hitstop=Math.max(hitstop,crit?.07:.028);vibe(crit?22:7);}
-  if(combo%40===0){fever=5;sfx.fever();pop(W/2,fy+30,'FEVER!!','#ff7af0',2);}
+  if(weak&&weakCount%25===0){fever=5;sfx.fever();pop(W/2,fy+30,'FEVER!!','#ff7af0',2);}
   if(s.hp<=0)breakSlab(s);
   else if(weak&&s.weakHits>=D.relocate)relocateWeak(s);
 }
@@ -808,7 +812,7 @@ function drawStrip(){
   }else if(mode==='play'){
     R(x0,y0+1,w,h,'rgba(10,6,16,.6)');
     const n=Math.min(SUPER_NEED,altStreak);
-    text('L/R',x0+3,y0+5,1,'#a597b8',false);text(String(n).padStart(2,'0')+'/'+SUPER_NEED,x0+w-3,y0+5,1,n>=15?'#ffd04a':'#f4efe8','r',false);
+    text('WEAK',x0+3,y0+5,1,'#a597b8',false);text(String(n).padStart(2,'0')+'/'+SUPER_NEED,x0+w-3,y0+5,1,n>=15?'#ffd04a':'#f4efe8','r',false);
     for(let i=0;i<SUPER_NEED;i++){const sx=x0+3+i*((w-6)/SUPER_NEED);R(sx,y0+14,Math.max(1,(w-6)/SUPER_NEED-1),12,i<n?FIREPAL(.3+.6*i/SUPER_NEED):'#2a1d38');}
   }
 }
@@ -969,7 +973,8 @@ function showHowto(){showOverlay(`
     <li><b>꾹 누르면</b> 그쪽으로 걸어가며 기가 모이고, <b>떼면</b> 모인 만큼 센 펀치</li>
     <li>걷는 중에 <b>반대쪽을 탭</b>하면 가던 방향으로 휙 <b>대시</b></li>
     <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
-    <li>번갈아 <b>20연속</b>이면 <b>왕주먹</b> 충전. 양쪽을 같이 꾹 누르면 5층 관통!</li>
+    <li>약점을 <b>20번</b> 때리면 <b>왕주먹</b> 충전. 양쪽을 같이 꾹 누르면 5층 관통!</li>
+    <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
     <li>밑에서 <b>용암</b>이 올라와요. 50층 꼭대기까지 버티세요</li>
   </ul>
   <div class="hint">PC: ← → 펀치 · 꾹 = 이동 · ← + → 또는 ↑ 왕주먹</div>
