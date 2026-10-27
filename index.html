@@ -854,7 +854,7 @@ addEventListener('keydown',e=>{if(ov.hidden)return;if(e.key==='Enter'){const b=o
    Online board: Supabase (table punch_tower_scores, see supabase-setup.sql). Paste the project URL and anon key below.
    Without them (or offline) the board falls back to this device only. */
 const SUPA_URL='https://imqnhqsofpvssefcrbkq.supabase.co';   // 예: https://abcdefgh.supabase.co
-const SUPA_KEY='';   // Project Settings > API Keys 의 anon / publishable 키
+const SUPA_KEY='sb_publishable_YqVBeioSZphI-sKX4h1lEA_zk5SZm_H';   // Project Settings > API Keys 의 anon / publishable 키
 const NAME_MAX=8;
 let playerName='';try{playerName=localStorage.getItem('punchtower.name')||'';}catch(e){}
 const byRank=(a,b)=>b.floor-a.floor||a.time-b.time;
