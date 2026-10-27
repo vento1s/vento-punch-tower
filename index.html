@@ -72,10 +72,18 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .credit{font-family:var(--f-pixel);font-size:8px;letter-spacing:.18em;color:var(--muted);margin-top:4px}
 .boardwrap{width:100%;max-width:310px;display:grid;gap:6px}
 .board{list-style:none;margin:0;padding:0;display:grid;gap:2px}
-.board li{display:grid;grid-template-columns:3.4em minmax(0,1fr) 3.2em 4.6em;align-items:center;gap:6px;padding:5px 8px;
+.board li{display:grid;grid-template-columns:3.2em minmax(0,1fr) auto;grid-template-areas:"rk who sc" "rk rec sc";
+  align-items:center;column-gap:8px;row-gap:1px;padding:5px 8px;
   background:rgba(23,16,34,.85);font-family:var(--f-pixel);font-size:9px;color:var(--gi);text-align:left;font-variant-numeric:tabular-nums}
-.board .nm{font-family:var(--f-display);font-size:15px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.board .fl,.board .tm{text-align:right}
+.board .rk{grid-area:rk}
+.board .who{grid-area:who;display:flex;align-items:center;gap:6px;min-width:0}
+.board .nm{font-family:var(--f-display);font-size:15px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.board .rec{grid-area:rec;font-size:8px;color:var(--muted)}
+.board .sc{grid-area:sc;font-size:11px;text-align:right;color:var(--lava-hi)}
+.dchip{flex:none;font-family:var(--f-body);font-size:10px;font-weight:700;line-height:1;padding:3px 5px 2px;border:1px solid currentColor}
+.d-easy{color:#8fd18a}.d-normal{color:#c9c2d6}.d-hard{color:#ff9a2a}.d-master{color:var(--weak)}
+.board li.me .rec,.board li.me .sc,.board li.me .dchip{color:#1a0a04}
+.bnote.rule{font-size:10px;line-height:1.5}
 .board .r1 .rk{color:var(--lava-hi)}.board .r2 .rk{color:#d6d3e6}.board .r3 .rk{color:#e09a5a}
 .board .r1{box-shadow:inset 3px 0 0 var(--lava-hi)}
 .board li.me{background:var(--lava-hi);color:#1a0a04;box-shadow:none;animation:meblink 1s steps(2) infinite}
@@ -857,7 +865,13 @@ const SUPA_URL='https://imqnhqsofpvssefcrbkq.supabase.co';   // 예: https://abc
 const SUPA_KEY='sb_publishable_YqVBeioSZphI-sKX4h1lEA_zk5SZm_H';   // Project Settings > API Keys 의 anon / publishable 키
 const NAME_MAX=8;
 let playerName='';try{playerName=localStorage.getItem('punchtower.name')||'';}catch(e){}
-const byRank=(a,b)=>b.floor-a.floor||a.time-b.time;
+// one board for everyone: score = height + clear-time bonus, multiplied by difficulty
+const DIFF_MUL={easy:1,normal:2,hard:3,master:5};
+const DIFF_KO={easy:'초급',normal:'중급',hard:'고급',master:'초고수'};
+const scoreOf=x=>Math.round((x.floor*100+(x.floor>=TOP?1000+Math.max(0,600-x.time)*5:0))*(DIFF_MUL[x.diff]||1));
+const byRank=(a,b)=>scoreOf(b)-scoreOf(a)||a.time-b.time;
+const num=n=>n.toLocaleString('en-US');
+let netErr='';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function localBoard(){try{return JSON.parse(localStorage.getItem('punchtower.board')||'[]')||[];}catch(e){return [];}}
 function saveLocal(en){const a=localBoard();a.push(en);try{localStorage.setItem('punchtower.board',JSON.stringify(a.slice(-500)));}catch(e){}}
@@ -865,43 +879,46 @@ async function fetchT(url,opt){const ctl=new AbortController();const to=setTimeo
   try{const r=await fetch(url,Object.assign({signal:ctl.signal},opt||{}));if(!r.ok)throw new Error('http '+r.status);return r;}
   finally{clearTimeout(to);}}
 const ONLINE=!!(SUPA_URL&&SUPA_KEY);
-const supaH=extra=>Object.assign({apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY},extra||{});
-async function supaTop(diff){
-  const r=await fetchT(`${SUPA_URL}/rest/v1/punch_tower_scores?select=client_id,name,floor,secs&diff=eq.${diff}&order=floor.desc,secs.asc,created_at.asc&limit=50`,{headers:supaH()});
-  return (await r.json()).map(x=>({id:x.client_id,name:x.name,floor:+x.floor,time:+x.secs}));}
+// publishable keys go in the apikey header only (they are not JWTs)
+const supaH=extra=>Object.assign({apikey:SUPA_KEY},extra||{});
+async function supaAll(){
+  const r=await fetchT(`${SUPA_URL}/rest/v1/punch_tower_scores?select=client_id,name,diff,floor,secs&order=floor.desc,secs.asc&limit=1000`,{headers:supaH()});
+  return (await r.json()).map(x=>({id:x.client_id,name:x.name,diff:x.diff,floor:+x.floor,time:+x.secs})).sort(byRank);}
 async function supaInsert(en){
   await fetchT(`${SUPA_URL}/rest/v1/punch_tower_scores`,{method:'POST',headers:supaH({'Content-Type':'application/json',Prefer:'return=minimal'}),
     body:JSON.stringify({client_id:en.id,name:en.name,diff:en.diff,floor:en.floor,secs:en.time})});}
-async function supaRank(en){ // rank = how many runs beat this one + 1
-  const r=await fetchT(`${SUPA_URL}/rest/v1/punch_tower_scores?select=client_id&diff=eq.${en.diff}&or=(floor.gt.${en.floor},and(floor.eq.${en.floor},secs.lt.${en.time}))`,
-    {method:'HEAD',headers:supaH({Prefer:'count=exact'})});
-  const n=parseInt(((r.headers.get('content-range')||'').split('/')[1]),10);return isFinite(n)?n+1:0;}
-async function getTop(diff){
-  if(ONLINE){try{return {online:true,list:await supaTop(diff)};}catch(e){}}
-  return {online:false,list:localBoard().filter(x=>x.diff===diff).sort(byRank).slice(0,50)};
+const localAll=()=>localBoard().sort(byRank);
+async function getTop(){
+  if(ONLINE){try{const list=await supaAll();netErr='';return {online:true,list};}catch(e){netErr=String(e.message||e);}}
+  return {online:false,list:localAll()};
 }
 async function submitScore(en){
   saveLocal(en);
-  if(ONLINE){try{await supaInsert(en);const [list,rank]=await Promise.all([supaTop(en.diff),supaRank(en)]);
-    return {online:true,rank,list};}catch(e){}}
-  const list=localBoard().filter(x=>x.diff===en.diff).sort(byRank);
-  return {online:false,rank:list.findIndex(x=>x.id===en.id)+1,list:list.slice(0,50)};
+  if(ONLINE){try{await supaInsert(en);const list=await supaAll();netErr='';
+    return {online:true,rank:list.findIndex(x=>x.id===en.id)+1,list};}catch(e){netErr=String(e.message||e);}}
+  const list=localAll();
+  return {online:false,rank:list.findIndex(x=>x.id===en.id)+1,list};
 }
 const ord=n=>n+(n%100>=11&&n%100<=13?'TH':['TH','ST','ND','RD'][n%10]||'TH');
-function rowHTML(x,i,hiId){const me=hiId&&x.id===hiId;
-  return `<li class="${i<3?'r'+(i+1):''}${me?' me':''}"><span class="rk">${ord(i+1)}</span><span class="nm">${esc(x.name)}</span><span class="fl">${x.floor>=TOP?'TOP':x.floor+'F'}</span><span class="tm">${fmt(+x.time||0)}</span></li>`;}
+function rowHTML(x,i,hiId){const me=hiId&&x.id===hiId;const d=DIFF_KO[x.diff]?x.diff:'easy';
+  return `<li class="${i<3?'r'+(i+1):''}${me?' me':''}"><span class="rk">${ord(i+1)}</span>`+
+    `<span class="who"><span class="nm">${esc(x.name)}</span><span class="dchip d-${d}">${DIFF_KO[d]}</span></span>`+
+    `<span class="rec">${x.floor>=TOP?'CLEAR':x.floor+'F'} · ${fmt(+x.time||0)}</span><span class="sc">${num(scoreOf(x))}</span></li>`;}
+const LIMIT=20;
 function boardHTML(res,hiId){
   const list=res.list||[];
-  if(!list.length)return `<p class="bnote">아직 기록이 없어요. 첫 1위를 차지하세요!</p>`;
-  let h=list.slice(0,10).map((x,i)=>rowHTML(x,i,hiId)).join('');
+  const note=res.online?'전체 플레이어 랭킹':(ONLINE?`온라인 연결 실패${netErr?' ('+esc(netErr)+')':''} · 이 기기 기록만 보여요`:'이 기기에 저장된 랭킹');
+  if(!list.length)return `<p class="bnote">아직 기록이 없어요. 첫 1위를 차지하세요!</p><p class="bnote">${note}</p>`;
+  let h=list.slice(0,LIMIT).map((x,i)=>rowHTML(x,i,hiId)).join('');
   const mi=hiId?list.findIndex(x=>x.id===hiId):-1;
-  if(mi>=10)h+=`<li class="gap">· · ·</li>`+rowHTML(list[mi],mi,hiId);
-  return `<ol class="board">${h}</ol><p class="bnote">${res.online?'전체 플레이어 랭킹':'이 기기에 저장된 랭킹'}</p>`;
+  if(mi>=LIMIT)h+=`<li class="gap">· · ·</li>`+rowHTML(list[mi],mi,hiId);
+  return `<ol class="board">${h}</ol><p class="bnote">${note}</p>`;
 }
-async function fillBoard(sel,diffKey,hiId,preset){
+const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 + 정상 정복 시간 보너스 × 난이도 배율<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
+async function fillBoard(sel,_unused,hiId,preset){
   const gen=ovGen;const el=ov.querySelector(sel);if(!el)return;
   el.innerHTML='<p class="bnote blinky">LOADING…</p>';
-  const res=preset||await getTop(diffKey);
+  const res=preset||await getTop();
   if(gen!==ovGen)return;
   el.innerHTML=boardHTML(res,hiId);
 }
@@ -948,11 +965,11 @@ function showHowto(){showOverlay(`
 function showRanking(){showOverlay(`
   <div class="eyebrow">HIGH SCORES</div>
   <h2 class="big" style="font-size:36px">랭킹</h2>
-  ${diffPicker()}
   <div id="board" class="boardwrap"></div>
+  ${SCORE_RULE}
   <button class="btn" type="button" data-act="back">돌아가기</button>
   ${CREDIT}`,{back:showTitle});
-  onDiff=()=>fillBoard('#board',D.key);fillBoard('#board',D.key);}
+  fillBoard('#board');}
 function resultScreen(cleared){
   const floor=pl.level,time=Math.round((cleared?clearTime:tNow)*10)/10;
   const en={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),name:playerName||'???',diff:D.key,floor,time};
@@ -960,14 +977,14 @@ function resultScreen(cleared){
     ?`<div class="eyebrow">TOWER CLEAR · ${D.tag}</div><h2 class="big" style="font-size:40px">정상 정복!</h2>`
     :`<div class="eyebrow">GAME OVER · ${D.tag}</div><h2 class="big" style="font-size:36px">용암에 삼켜졌다</h2>`;
   showOverlay(`${head}
-  <div class="stat"><span>${esc(en.name)}</span> · ${floor>=TOP?'TOP':floor+'F'} · <span>${fmt(time)}</span><br>약점 <span>${weakCount}</span> · 왕주먹 <span>${superCount}</span></div>
+  <div class="stat"><span>${esc(en.name)}</span> · ${D.ko} · ${floor>=TOP?'CLEAR':floor+'F'} · <span>${fmt(time)}</span><br>SCORE <span>${num(scoreOf(en))}</span> · 약점 <span>${weakCount}</span> · 왕주먹 <span>${superCount}</span></div>
   <div class="rankbig" id="myrank">${floor>=1?'기록 등록 중…':'1층은 넘어야 랭킹에 올라가요'}</div>
   <div id="board" class="boardwrap"></div>
   <button class="btn" id="go" data-act="go">${cleared?'한 판 더':'다시 갈기기'}</button>
   <div class="row"><button class="ghost" type="button" data-act="title">처음으로</button></div>
   ${CREDIT}`,{go:startGame,title:showTitle});
   const gen=ovGen;
-  if(floor<1){fillBoard('#board',D.key);return;}
+  if(floor<1){fillBoard('#board');return;}
   submitScore(en).then(res=>{
     if(gen!==ovGen)return;
     const r=ov.querySelector('#myrank');
