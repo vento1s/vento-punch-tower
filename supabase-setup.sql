@@ -7,8 +7,8 @@ create table if not exists public.punch_tower_scores (
   client_id  text not null check (char_length(client_id) between 4 and 24),
   name       text not null check (char_length(btrim(name)) between 1 and 8),
   diff       text not null check (diff in ('easy', 'normal', 'hard', 'master')),
-  floor      int  not null check (floor between 1 and 50),
-  secs       numeric(6,1) not null check (secs >= 1 and secs < 3600),
+  floor      int  not null check (floor between 1 and 9999),
+  secs       numeric(6,1) not null check (secs >= 1 and secs < 86400),
   created_at timestamptz not null default now()
 );
 

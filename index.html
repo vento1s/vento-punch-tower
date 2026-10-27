@@ -133,7 +133,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 <script>
 (()=>{
 'use strict';
-const W=144,H=256,FH=36,TOP=50,WALL=14,IN=W-2*WALL,PUNCH=0.085;
+const W=144,H=256,FH=36,TOP=1e9 /* endless: no roof */,WALL=14,IN=W-2*WALL,PUNCH=0.085;
 const XMIN=WALL+6,XMAX=W-WALL-6;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const stage=document.getElementById('stage'),wrap=document.getElementById('wrap'),ov=document.getElementById('ov');
@@ -146,13 +146,13 @@ addEventListener('resize',fit);fit();
 /* ---------- difficulty ---------- */
 const DIFFS=[
  {key:'easy',  ko:'초급',  tag:'EASY',  desc:'용암이 느리고 약점이 넓어요. 처음이라면 여기서.',
-  lava:6, grow:.35,hp:.7, win:.6, weakW:16,weakMul:3,  relocate:8,gold:80},
- {key:'normal',ko:'중급',  tag:'NORMAL',desc:'기본 난이도. 25층부터는 약점 좌우 연타가 필요해요.',
-  lava:10,grow:.6, hp:1,  win:.45,weakW:11,weakMul:3,  relocate:5,gold:60},
+  lava:6, grow:.35,hp:.7, win:.6, weakW:16,weakMul:3,  relocate:8,gold:80,vib:.6},
+ {key:'normal',ko:'중급',  tag:'NORMAL',desc:'기본 난이도. 높이 갈수록 약점 공략이 필수예요.',
+  lava:10,grow:.6, hp:1,  win:.45,weakW:11,weakMul:3,  relocate:5,gold:60,vib:1},
  {key:'hard',  ko:'고급',  tag:'HARD',  desc:'블록이 단단하고 약점이 자주 움직여요.',
-  lava:12,grow:.8, hp:1.8,win:.38,weakW:8, weakMul:3.5,relocate:4,gold:50},
+  lava:12,grow:.8, hp:1.8,win:.38,weakW:8, weakMul:3.5,relocate:4,gold:50,vib:1.25},
  {key:'master',ko:'초고수',tag:'MASTER',desc:'약점을 못 맞추면 용암을 못 이겨요. 각오하세요.',
-  lava:16,grow:1.2,hp:2.6,win:.32,weakW:6, weakMul:4,  relocate:3,gold:40},
+  lava:16,grow:1.2,hp:2.6,win:.32,weakW:6, weakMul:4,  relocate:3,gold:40,vib:1.5},
 ];
 let diffIdx=1;
 try{const d=parseInt(localStorage.getItem('punchtower.diff'),10);if(d>=0&&d<4)diffIdx=d;}catch(e){}
@@ -216,6 +216,7 @@ const sfx={
     tone(t+.005,.36,2637+p,2600+p,'triangle',.09);
     tone(t+.03,.18,3520,3400,'square',.03);},
   // running wind: a quick airy 'shuk' (band-passed noise sweeping down) plus a thin high hiss
+  ting(){if(!AC)return;const t=AC.currentTime;tone(t,.12,2400,2300,'square',.05);tone(t,.18,3600,3500,'triangle',.05);noise(t,.03,8000,2,.25);},
   dash(){if(!AC)return;const t=AC.currentTime;noise(t,.16,3200,1.6,.55,'bandpass',700);noise(t+.015,.1,6000,.7,.18,'highpass',2500);},
   kimax(){if(!AC)return;const t=AC.currentTime;tone(t,.12,1568,1568,'triangle',.07);tone(t+.06,.22,2093,2093,'triangle',.06);},
   kipunch(c){if(!AC)return;const t=AC.currentTime;
@@ -263,6 +264,47 @@ function hum(c){
     chargeGain.gain.setTargetAtTime(.02+c*.03,AC.currentTime,.05);
   }catch(e){}
 }
+/* ---------- BGM: an original 8-bit loop (square lead, triangle bass, noise drums) ---------- */
+let bgmOn=true;try{bgmOn=localStorage.getItem('punchtower.bgm')!=='off';}catch(e){}
+let bgm=null;
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+// lead in 8th notes (0 = rest). 16 bars: A A B. Chords: C Am F G | C Am F G | F G Em Am F G C C
+const MEL_A=[76,79,84,79,76,79,81,79, 76,72,76,81,79,76,72,74, 77,81,84,81,77,81,79,77, 74,79,83,79,74,77,76,74];
+const MEL_B=[84,0,81,0,77,81,84,86, 83,0,79,0,74,79,83,86, 88,86,83,79,76,79,83,79, 81,0,76,0,81,84,83,81,
+             81,84,89,84,81,84,86,84, 83,86,91,86,83,86,88,86, 88,84,79,76,72,76,79,84, 84,0,0,0,79,0,72,0];
+const MEL=MEL_A.concat(MEL_A,MEL_B);
+const ROOTS=[48,45,41,43, 48,45,41,43, 41,43,40,45, 41,43,48,48];
+function bNote(t,len,f,type,vol){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);
+  g.gain.setValueAtTime(vol,t);g.gain.setValueAtTime(vol,t+len*.7);g.gain.linearRampToValueAtTime(0,t+len);o.connect(g);g.connect(bgm.g);o.start(t);o.stop(t+len+.02);}
+function bNoise(t,dur,freq,type,vol){const sr=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();sr.buffer=nbuf;f.type=type;f.frequency.value=freq;
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0008,t+dur);sr.connect(f);f.connect(g);g.connect(bgm.g);sr.start(t,Math.random()*.5);sr.stop(t+dur+.02);}
+function bKick(t){const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(45,t+.11);
+  g.gain.setValueAtTime(.55,t);g.gain.exponentialRampToValueAtTime(.001,t+.13);o.connect(g);g.connect(bgm.g);o.start(t);o.stop(t+.15);}
+function bgmStep(i,t,len){
+  const k=i%MEL.length,m=MEL[k],b8=k%8,root=ROOTS[(k/8)|0]-12;
+  if(m)bNote(t,len*.92,mtof(m),'square',.042);
+  bNote(t,len*.8,mtof(root+(b8%2?12:0)),'triangle',.12);
+  if(b8===0||b8===4)bKick(t);
+  if(b8===2||b8===6)bNoise(t,.09,1800,'bandpass',.22);
+  bNoise(t+len/2,.03,7000,'highpass',.05);
+}
+function bgmStart(){
+  if(!AC||!bgmOn||bgm)return;
+  const g=AC.createGain();g.gain.value=.5;g.connect(master);
+  bgm={g,step:0,next:AC.currentTime+.06};
+  bgm.timer=setInterval(()=>{if(!bgm)return;
+    const bpm=148+Math.min(40,(pl?pl.level:0)*.5),len=60/bpm/2; // speeds up as you climb
+    if(bgm.next<AC.currentTime-.05)bgm.next=AC.currentTime+.02;     // came back from a background tab
+    while(bgm.next<AC.currentTime+.15){bgmStep(bgm.step,bgm.next,len);bgm.next+=len;bgm.step++;}},30);
+}
+function bgmStop(){if(!bgm)return;clearInterval(bgm.timer);const g=bgm.g;bgm=null;
+  try{g.gain.setTargetAtTime(0,AC.currentTime,.04);}catch(e){}setTimeout(()=>{try{g.disconnect();}catch(e){}},500);}
+function bgmLabel(){return bgmOn?'음악 끄기':'음악 켜기';}
+function toggleBgm(){bgmOn=!bgmOn;try{localStorage.setItem('punchtower.bgm',bgmOn?'on':'off');}catch(e){}
+  if(!bgmOn)bgmStop();else if(mode==='play'||mode==='super')bgmStart();}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmStop();else if(bgmOn&&(mode==='play'||mode==='super'))bgmStart();});
+addEventListener('keydown',e=>{if(e.key==='m'||e.key==='M'){if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
+  toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
 function vibe(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
 
 
@@ -275,9 +317,9 @@ const ZONES=[
  {name:'CASTLE',bg:'#101218',back:'#262a34',backL:'#303542',wall:'#575d6e',wallL:'#7c8396',wallD:'#2d313b'},
 ];
 const SLABC={brick:['#b5523b','#6e2a20','#d97456'],stone:['#7d7f8c','#4b4d58','#a6a9b6'],gold:['#e0a82a','#8a5a0c','#ffe27a'],
- tnt:['#c42a2a','#6a1010','#ff6a50'],boss:['#5e6b78','#2c333c','#a4b5c6'],final:['#6a4a8a','#2c1c40','#e8c050']};
-const TNAME={brick:'BRICK',stone:'STONE',gold:'GOLD',tnt:'TNT',boss:'IRON GATE',final:'THE ROOF'};
-const zoneOfLevel=n=>ZONES[clamp(Math.floor((n-1)/10),0,4)];
+ tnt:['#c42a2a','#6a1010','#ff6a50'],vibranium:['#3a2f5c','#17122b','#b7a8ff'],boss:['#5e6b78','#2c333c','#a4b5c6'],final:['#6a4a8a','#2c1c40','#e8c050']};
+const TNAME={brick:'BRICK',stone:'STONE',gold:'GOLD',tnt:'TNT',vibranium:'VIBRANIUM',boss:'IRON GATE',final:'THE ROOF'};
+const zoneOfLevel=n=>ZONES[Math.max(0,Math.floor((n-1)/10))%ZONES.length];
 const zoneAtY=y=>zoneOfLevel(Math.floor(-y/FH)+1);
 const ROOF=-TOP*FH;
 
@@ -295,16 +337,24 @@ function genCracks(){const out=[];for(let k=0;k<4;k++){let x=10+Math.random()*(I
   for(let i=0;i<14;i++){p.push([x|0,y|0]);x+=(Math.random()*3-1.5);y-=Math.random()<.55?1:0;if(y<1)y=1;}out.push(p);}return out;}
 function newWeakX(prev){const lo=WALL+4+D.weakW/2,hi=W-WALL-4-D.weakW/2;let x;
   for(let i=0;i<20;i++){x=lo+Math.random()*(hi-lo);if(prev==null||Math.abs(x-prev)>22)break;}return Math.round(x);}
+// floors are generated on demand: the tower never ends, the lava just keeps getting faster
+function makeSlab(n){
+  let type='brick';const r=Math.random();
+  const vibP=n<4?0:Math.min(.4,.12+n*.004)*D.vib;
+  const prev=slabs[n-1],prev2=slabs[n-2];
+  const vibRun=prev&&prev.type==='vibranium'&&prev2&&prev2.type==='vibranium';
+  if(n%10===0)type='boss';
+  else if(!vibRun&&Math.random()<vibP)type='vibranium';
+  else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
+  const base=10+Math.floor(Math.min(n,70)*.8);
+  const raw=type==='stone'?base*1.6:type==='vibranium'?base*.9:type==='tnt'?6:type==='boss'?40+Math.min(n,70)*2:base;
+  const hp=Math.max(3,Math.round(raw*(type==='tnt'?1:D.hp)));
+  return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:newWeakX(null),ww:D.weakW,weakHits:0,wflash:0,wFrom:null,wT:1};
+}
+function ensureSlabs(upTo){while(slabs.length<=upTo)slabs.push(makeSlab(slabs.length));}
 function newGame(){
   D=DIFFS[diffIdx];
-  slabs=[null];
-  for(let n=1;n<=TOP;n++){let type='brick';const r=Math.random();
-    if(n===TOP)type='final';else if(n%10===0)type='boss';
-    else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
-    const base=10+Math.floor(n*.8);
-    const raw=type==='stone'?base*1.6:type==='tnt'?6:type==='boss'?40+n*2:type==='final'?200:base;
-    const hp=Math.max(3,Math.round(raw*(type==='tnt'?1:D.hp)));
-    slabs.push({n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:newWeakX(null),ww:D.weakW,weakHits:0,wflash:0,wFrom:null,wT:1});}
+  slabs=[null];ensureSlabs(40);
   pl={level:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;zoom=0;weakCount=0;weakStreak=0;
@@ -316,6 +366,8 @@ newGame();
 function now(){return performance.now()/1000;}
 function chip(x,y,col,n,spd){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*spd,vy:-Math.random()*spd*.5+spd*.3,life:.5+Math.random()*.5,col,s:Math.random()<.3?2:1,g:260});}
 function pop(x,y,t,col,sc){pops.push({x,y,t,col,sc:sc||1,life:.7});}
+// labels go beside the boxer (the side with more room) so they never cover him
+const popX=w=>{const half=(w||20)/2+10;return pl.x<W/2?Math.min(W-WALL-half,pl.x+12+half):Math.max(WALL+half,pl.x-12-half);};
 const fistX=side=>pl.x+(side?4:-4);
 
 function relocateWeak(s){s.wFrom=s.wx;s.wx=newWeakX(s.wx);s.wT=0;s.weakHits=0;sfx.shift();}
@@ -329,8 +381,8 @@ function weakFX(x,y,dmg){
   for(let i=0;i<16;i++){const a=-Math.PI*Math.random();const sp=90+Math.random()*120;
     parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.35+Math.random()*.3,col:i%3?'#ffe27a':'#ffffff',s:i%4?1:2,g:300});}
   for(let i=0;i<8;i++)parts.push({x,y,vx:(Math.random()-.5)*60,vy:20+Math.random()*60,life:.6,col:'#ff3a5a',s:1,g:200});
-  pop(x,y-16,'WEAK!',weakStreak>=3?'#ffe27a':'#ff3a5a',2);
-  pop(x,y-5,String(dmg),'#ffffff',1);
+  pop(popX(38),y-10,'WEAK!',weakStreak>=3?'#ffe27a':'#ff3a5a',2);
+  pop(popX(38),y+2,String(dmg),'#ffffff',1);
   shake=Math.max(shake,5.5);hitstop=Math.max(hitstop,.12);pl.weakT=.14;
   vibe(45);
 }
@@ -356,13 +408,13 @@ function hit(side,power){
   // 10th weak hit in a row and 5 from the 20th. Mashing elsewhere needs 3-5x the punches.
   let dmg;
   if(weak){const ws=weakStreak+1;dmg=3+(ws>=10?1:0)+(ws>=20?1:0);if(charged)dmg=Math.ceil(dmg*(1+2*power));}
-  else dmg=charged?Math.ceil(1+3*power):1;
+  else dmg=s.type==='vibranium'?0:charged?Math.ceil(1+3*power):1;
   const crit=false;
   if(fever>0)dmg*=2;
   // KING FIST gauge fills only from weak-point hits
   if(weak){altStreak=Math.min(SUPER_NEED,altStreak+(charged?3:1));
     if(altStreak>=SUPER_NEED&&!superReady){superReady=true;sfx.ready();vibe([20,30,20]);
-      pop(W/2,pl.feet-46,'KING FIST!','#ff9a2a',1);fire(W/2,H+camY-20,14,50,-40);}}
+      pop(popX(40),pl.feet-36,'KING FIST!','#ff9a2a',1);fire(W/2,H+camY-20,14,50,-40);}}
   s.hp-=dmg;s.flash=weak||charged?1:.6;s.bump=weak?4:charged?2+2*power:crit?3:1;
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;
   const c=SLABC[s.type];
@@ -375,13 +427,15 @@ function hit(side,power){
     rings.push({x:fx,y:fy,life:.22,max:.22,big:true,col:'#9ff4ff'});
     for(let i=0;i<6+power*10;i++){const a=-Math.PI*Math.random(),sp=60+Math.random()*90;
       parts.push({x:fx,y:fy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.3,max:.3,s:1,g:0,ki:true});}
-    pop(fx,fy-6,'KI '+dmg,'#7af0ff',power>.7?2:1);
+    pop(popX(power>.7?46:24),fy-2,dmg?'KI '+dmg:'WEAK ONLY',dmg?'#7af0ff':'#b7a8ff',dmg&&power>.7?2:1);
     shake=Math.max(shake,2+4*power);hitstop=Math.max(hitstop,.04+.06*power);vibe(15+25*power|0);}
   else{weakStreak=0;
-    if(onWeak){pop(s.wx,fy-6,'L/R!','#ff3a5a',1);sfx.same();}
-    else if(crit)pop(fx,fy-6,'CRIT','#ffd04a',1);
-    shake=Math.max(shake,crit?3.2:1.6);hitstop=Math.max(hitstop,crit?.07:.028);vibe(crit?22:7);}
-  if(weak&&weakCount%25===0){fever=5;sfx.fever();pop(W/2,fy+30,'FEVER!!','#ff7af0',2);}
+    if(onWeak){pop(popX(16),fy-2,'L/R!','#ff3a5a',1);sfx.same();}
+    else if(dmg===0){ // vibranium shrugs off anything but the weak point
+      sfx.ting();for(let i=0;i<4;i++)parts.push({x:fx,y:fy,vx:(Math.random()-.5)*120,vy:-20-Math.random()*60,life:.25,col:i%2?'#ffffff':'#b7a8ff',s:1,g:300});
+      if(Math.random()<.35)pop(popX(36),fy-2,'WEAK ONLY','#b7a8ff',1);}
+    shake=Math.max(shake,dmg===0?.8:1.6);hitstop=Math.max(hitstop,.028);vibe(7);}
+  if(weak&&weakCount%25===0){fever=5;sfx.fever();pop(popX(56),pl.feet-30,'FEVER!!','#ff7af0',2);}
   if(s.hp<=0)breakSlab(s);
   else if(weak&&s.weakHits>=D.relocate)relocateWeak(s);
 }
@@ -392,10 +446,10 @@ function breakSlab(s){
   s.broken=true;s.hp=0;debris(s);sfx.brk(s.type);vibe(30);
   shake=Math.max(shake,4.5);hitstop=Math.max(hitstop,.085);
   let dest=s.n;
-  if(s.type==='tnt'){sfx.boom();shake=8;pop(W/2,-s.n*FH-10,'BOOM!','#ff6a50',2);
-    for(let k=1;k<=2;k++){const n2=slabs[s.n+k];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='final'){n2.broken=true;debris(n2);dest=n2.n;}else break;}}
-  if(s.type==='gold'){lavaY+=D.gold;sfx.coin();pop(W/2,-s.n*FH-6,'LAVA DOWN','#ffe27a',1);}
-  if(s.type==='boss')pop(W/2,-s.n*FH-6,'GATE BROKEN','#a4b5c6',1);
+  if(s.type==='tnt'){sfx.boom();shake=8;pop(popX(38),pl.feet-30,'BOOM!','#ff6a50',2);
+    for(let k=1;k<=2;k++){const n2=slabs[s.n+k];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='vibranium'){n2.broken=true;debris(n2);dest=n2.n;}else break;}}
+  if(s.type==='gold'){lavaY+=D.gold;sfx.coin();pop(popX(36),pl.feet-30,'LAVA DOWN','#ffe27a',1);}
+  if(s.type==='boss'||s.type==='vibranium')pop(popX(44),pl.feet-30,s.type==='boss'?'GATE BROKEN':'SMASHED!',s.type==='boss'?'#a4b5c6':'#b7a8ff',1);
   pl.from=pl.feet;pl.to=-dest*FH;pl.jt=0;pl.jd=.13+.07*(dest-pl.level-1);pl.level=dest;sfx.jump();
   if(dest>=TOP)doClear();
 }
@@ -410,7 +464,7 @@ function showCutin(){cutin.hidden=false;band.style.animation='none';void band.of
 function doSuper(){
   if(mode!=='play'||!superReady)return;
   if(pl.jt>=0){pl.jt=-1;pl.feet=pl.to;}
-  const start=pl.level+1,dest=Math.min(TOP,pl.level+SUPER_FLOORS);
+  const start=pl.level+1,dest=pl.level+SUPER_FLOORS;ensureSlabs(dest+30);
   superReady=false;altStreak=0;superCount++;for(const h of holds.values())h.used=true;hum(-1);hitstop=0;impact=0;
   sup={t:0,start,dest,next:start,from:pl.feet,to:-dest*FH,launched:false,peak:false};
   mode='super';sfx.superCharge();vibe(40);showCutin();
@@ -422,7 +476,7 @@ function superBreak(s,k){
   const y=-s.n*FH+5;
   fire(pl.x,y,22,IN*.8,-40);
   rings.push({x:pl.x,y,life:.3,max:.3,big:true});
-  pop(pl.x,y-6,k+' HIT','#ffe27a',2);
+  pop(popX(38),y+4,k+' HIT','#ffe27a',2);
   sfx.superBreak(k);vibe(25);
   shake=Math.max(shake,7);hitstop=Math.max(hitstop,.045);flashO=.35;flashCol='#ffffff';
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();}
@@ -450,14 +504,14 @@ function updateSuper(dt){
     rings.push({x:pl.x,y:pl.feet-30,life:.45,max:.45,big:true});rings.push({x:pl.x,y:pl.feet-30,life:.3,max:.3,big:false});
     for(let i=0;i<40;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*140;
       const l=.4+Math.random()*.5;parts.push({x:pl.x,y:pl.feet-30,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:120,fire:true});}
-    pop(W/2,pl.feet-58,'x'+n+' BREAK!!','#ffd04a',2);
+    pop(W/2,pl.feet-72,'x'+n+' BREAK!!','#ffd04a',2);
     vibe([80,30,120]);}
   if(T>=CH+RISE+.4){
     pl.feet=sup.to;pl.level=sup.dest;mode='play';lastTap=now();lastSide=-1;
     if(sup.dest>=TOP)doClear();
     sup=null;}
 }
-function die(){mode='dead';endT=0;sfx.die();vibe([60,40,120]);shake=6;
+function die(){mode='dead';endT=0;bgmStop();sfx.die();vibe([60,40,120]);shake=6;
   const b=bestOf();if(pl.level>b.floor)saveBest({floor:pl.level,time:b.time});}
 
 /* ---------- input ---------- */
@@ -532,7 +586,8 @@ function update(dt){
   pl.tx=clamp(pl.tx,XMIN,XMAX);
   if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,dt*(dashT>0?36:16));
   if(hitstop>0){hitstop-=dt;return;}
-  for(let n=Math.max(1,pl.level-2);n<=Math.min(TOP,pl.level+6);n++){const s=slabs[n];
+  ensureSlabs(pl.level+30);
+  for(let n=Math.max(1,pl.level-2);n<=pl.level+6;n++){const s=slabs[n];
     s.flash=Math.max(0,s.flash-dt*9);s.bump=Math.max(0,s.bump-dt*30);s.wflash=Math.max(0,s.wflash-dt*5);
     if(s.wT<1)s.wT=Math.min(1,s.wT+dt*5);}
   pl.punchT=Math.max(0,pl.punchT-dt);
@@ -641,6 +696,12 @@ function drawSlab(s){
     const sp=((gt*40+s.n*13)%IN)|0;R(x0+sp,sy+4,1,1,'#fff');R(x0+sp-1,sy+5,3,1,'#fff');}
   else if(s.type==='tnt'){R(x0,sy,IN,1,c);R(x0,sy+9,IN,1,b);R(x0,sy+3,IN,4,'#efe6d6');
     for(let x=x0+4;x<W-WALL-10;x+=28)text('TNT',x,sy+3,1,'#1a0808',false);for(let x=x0+26;x<W-WALL;x+=28)R(x,sy,1,10,b);}
+  else if(s.type==='vibranium'){ // dark alloy plates with a travelling sheen
+    R(x0,sy,IN,1,c);R(x0,sy+9,IN,1,b);
+    for(let x=x0+((s.n*5)%18);x<W-WALL;x+=18){R(x,sy+1,1,8,b);R(x+2,sy+2,1,1,c);R(x+2,sy+7,1,1,c);}
+    const sh=((gt*50+s.n*31)%(IN+30))-15;
+    for(let i=0;i<6;i++){const xx=x0+sh+i-3*0;if(xx>=x0&&xx<W-WALL)R(xx,sy+1+((i+1)%8),1,8-((i+1)%8),'rgba(220,210,255,.35)');}
+    R(x0,sy+4,IN,1,'rgba(183,168,255,.25)');}
   else if(s.type==='boss'||s.type==='final'){
     for(let x=0;x<IN;x++){const on=((x+((gt*20)|0))%6)<3;const col=s.type==='boss'?(on?'#e8c020':'#1a1a1a'):(on?c:b);R(x0+x,sy,1,2,col);R(x0+x,sy+8,1,2,col);}
     for(let x=x0+5;x<W-WALL;x+=10){R(x,sy+4,2,2,b);R(x,sy+4,1,1,c);}}
@@ -767,20 +828,20 @@ function drawImpactFrame(){
 function drawHUD(){
   const t=now();
   R(0,0,W,28,'rgba(10,6,16,.78)');R(0,28,W,1,'#3b2a52');
-  text(String(Math.min(pl.level,TOP)).padStart(2,'0')+'F',4,4,2,'#f4efe8');
-  text('/'+TOP,36,4,1,'#a597b8',false);
-  text(D.tag,36,11,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
+  const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');const tagX=4+tw(fl,2)+5;
+  text('ENDLESS',tagX,4,1,'#a597b8',false);
+  text(D.tag,tagX,11,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
   const m=Math.floor(tNow/60),sec=tNow%60;
   text(String(m).padStart(2,'0')+':'+sec.toFixed(1).padStart(4,'0'),W-4,4,1,'#ffd04a','r');
-  text(zoneOfLevel(Math.min(TOP,pl.level+1)).name,W-4,11,1,'#a597b8','r',false);
+  text(zoneOfLevel(pl.level+1).name,W-4,11,1,'#a597b8','r',false);
   const s=slabs[pl.level+1];
   if(s&&!s.broken){const bw=W-8,ratio=Math.max(0,s.hp/s.max);
     R(4,18,bw,7,'#2a1d38');R(4,18,Math.ceil(bw*ratio),7,SLABC[s.type][0]);R(4,18,Math.ceil(bw*ratio),1,SLABC[s.type][2]);
     text(TNAME[s.type],6,19,1,'#ffffff');text(String(Math.max(0,s.hp)),W-6,19,1,'#ffffff','r');}
   // progress meter
-  R(3,36,3,190,'rgba(10,6,16,.7)');const pr=pl.level/TOP;R(3,36+190*(1-pr),3,190*pr,'#5e94b8');
-  R(1,36+190*(1-pr)-1,7,2,'#f4efe8');
-  const lp=clamp(-lavaY/(TOP*FH),0,1);R(3,36+190*(1-lp),3,190*lp,'rgba(255,106,40,.9)');
+  // lava gauge: how much room is left below you (full = safe, empty = lava at your feet)
+  {const room=clamp((lavaY-pl.feet)/(4*FH),0,1);R(3,36,3,150,'rgba(10,6,16,.7)');
+   R(3,36+150*(1-room),3,150*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,'#ff7a1a');}
   if(fever>0){text('FEVER x2',W/2,62,1,`hsl(${(gt*720+120)%360},95%,70%)`,'c');
     ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle=`hsl(${(gt*720)%360},95%,60%)`;ctx.lineWidth=2;ctx.strokeRect(1,30,W-2,H-31);ctx.globalAlpha=1;}
   const dist=lavaY-pl.feet;
@@ -823,11 +884,12 @@ function render(){
   R(0,0,W,H,z.bg);
   ctx.save();ctx.translate(ox,oy);
   drawSky();drawWalls();
-  for(let n=Math.max(1,Math.floor(-(camY+H)/FH));n<=Math.min(TOP,Math.ceil(-camY/FH)+1);n++){
+  const nLo=Math.max(1,Math.floor(-(camY+H)/FH)-1),nHi=Math.ceil(-camY/FH)+2;ensureSlabs(nHi+1);
+  for(let n=nLo;n<=nHi;n++){
     const y=-n*FH-camY;if(y>-10&&y<H)text(String(n),WALL-2,y-8,1,zoneOfLevel(n).wallL,'r',false);}
-  for(let n=1;n<=TOP;n++){const y=-(n-1)*FH-camY;if(y>-30&&y<H+40&&n%3===1)drawTorch(n);}
+  for(let n=nLo;n<=nHi+1;n++){const y=-(n-1)*FH-camY;if(y>-30&&y<H+40&&n%3===1)drawTorch(n);}
   const gy=-camY;if(gy<H){const z0=ZONES[0];R(WALL,gy,IN,H,z0.wallD);for(let x=0;x<IN;x+=6)R(WALL+x,gy,5,1,z0.wall);}
-  for(let n=1;n<=TOP;n++){const y=-n*FH-camY;if(y>-16&&y<H+2)drawSlab(slabs[n]);}
+  for(let n=nLo;n<=nHi;n++){const y=-n*FH-camY;if(y>-16&&y<H+2)drawSlab(slabs[n]);}
   drawImpactFrame();
   if(mode==='super'&&sup){
     if(sup.t<.45){R(-8,-8,W+16,H+16,'rgba(8,4,12,.6)');
@@ -861,7 +923,7 @@ requestAnimationFrame(loop);
 
 /* ---------- overlays ---------- */
 const fmt=s=>{const m=Math.floor(s/60);return m+':'+(s%60).toFixed(1).padStart(4,'0');};
-function bestLine(){const b=bestOf();return b.time?`${D.ko} 최고 <span>${fmt(b.time)}</span> 정상`:b.floor?`${D.ko} 최고 <span>${b.floor}F</span>`:`${D.ko} 기록 없음`;}
+function bestLine(){const b=bestOf();return b.floor?`${D.ko} 최고 <span>${b.floor}F</span>`:`${D.ko} 기록 없음`;}
 function diffPicker(){return `<div class="diff" role="group" aria-label="난이도">${DIFFS.map((d,i)=>`<button type="button" id="diff-${d.key}" data-d="${i+1}" data-i="${i}" aria-pressed="${i===diffIdx}">${d.ko}</button>`).join('')}</div>
   <p class="ddesc" id="ddesc">${D.desc}</p>`;}
 function wireDiff(){ov.querySelectorAll('.diff button').forEach(b=>b.addEventListener('click',()=>{
@@ -884,7 +946,7 @@ let playerName='';try{playerName=localStorage.getItem('punchtower.name')||'';}ca
 // one board for everyone: score = height + clear-time bonus, multiplied by difficulty
 const DIFF_MUL={easy:1,normal:2,hard:3,master:5};
 const DIFF_KO={easy:'초급',normal:'중급',hard:'고급',master:'초고수'};
-const scoreOf=x=>Math.round((x.floor*100+(x.floor>=TOP?1000+Math.max(0,600-x.time)*5:0))*(DIFF_MUL[x.diff]||1));
+const scoreOf=x=>Math.round(x.floor*100*(DIFF_MUL[x.diff]||1));
 const byRank=(a,b)=>scoreOf(b)-scoreOf(a)||a.time-b.time;
 const num=n=>n.toLocaleString('en-US');
 let netErr='';
@@ -931,7 +993,7 @@ function boardHTML(res,hiId){
   if(mi>=LIMIT)h+=`<li class="gap">· · ·</li>`+rowHTML(list[mi],mi,hiId);
   return `<ol class="board">${h}</ol><p class="bnote">${note}</p>`;
 }
-const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 + 정상 정복 시간 보너스 × 난이도 배율<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
+const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 × 100 × 난이도 배율 · 같은 점수면 더 빨리 오른 사람이 위<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
 async function fillBoard(sel,_unused,hiId,preset){
   const gen=ovGen;const el=ov.querySelector(sel);if(!el)return;
   el.innerHTML='<p class="bnote blinky">LOADING…</p>';
@@ -948,7 +1010,7 @@ function startGame(){
     if(!v){const box=inp.closest('.namebox');box.classList.remove('bad');void box.offsetWidth;box.classList.add('bad');inp.focus();sfx.same();return;}
     playerName=v;try{localStorage.setItem('punchtower.name',v);}catch(e){}}
   if(!playerName){showTitle();return;}
-  ov.hidden=true;newGame();mode='play';}
+  ov.hidden=true;newGame();mode='play';bgmStop();bgmStart();}
 function showSplash(){
   ov.innerHTML=`<div class="splash"><div class="studio">VENTO<br>AI STUDIO</div><div class="hint">PRESENTS</div></div>`;ov.hidden=false;
   let done=false;const go=()=>{if(done)return;done=true;showTitle();};
@@ -959,9 +1021,9 @@ function showTitle(){showOverlay(`
   <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 입력" value="${esc(playerName)}"></label>
   ${diffPicker()}
   <button class="btn" id="go" data-act="go">시작</button>
-  <div class="row"><button class="ghost" type="button" data-act="rank">랭킹 보기</button><button class="ghost" type="button" data-act="howto">조작법</button></div>
+  <div class="row"><button class="ghost" type="button" data-act="rank">랭킹 보기</button><button class="ghost" type="button" data-act="howto">조작법</button><button class="ghost" type="button" id="bgmbtn" data-act="music">${bgmLabel()}</button></div>
   <div class="stat" id="bestline">${bestLine()}</div>
-  ${CREDIT}`,{go:startGame,rank:()=>showRanking(),howto:showHowto});
+  ${CREDIT}`,{go:startGame,rank:()=>showRanking(),howto:showHowto,music:()=>{toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
   const inp=ov.querySelector('#pname');
   inp.addEventListener('input',()=>{playerName=inp.value.trim().slice(0,NAME_MAX);});
   if(!playerName)setTimeout(()=>{try{inp.focus({preventScroll:true});}catch(e){}},80);}
@@ -975,7 +1037,8 @@ function showHowto(){showOverlay(`
     <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
     <li>약점을 <b>20번</b> 때리면 <b>왕주먹</b> 충전. 양쪽을 같이 꾹 누르면 5층 관통!</li>
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
-    <li>밑에서 <b>용암</b>이 올라와요. 50층 꼭대기까지 버티세요</li>
+    <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
+    <li>탑은 끝이 없어요. 밑에서 <b>용암</b>이 점점 빨라지며 올라와요. 누가 더 높이 가나 대결!</li>
   </ul>
   <div class="hint">PC: ← → 펀치 · 꾹 = 이동 · ← + → 또는 ↑ 왕주먹</div>
   <button class="btn" type="button" data-act="back">돌아가기</button>
