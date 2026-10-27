@@ -872,6 +872,7 @@ const scoreOf=x=>Math.round((x.floor*100+(x.floor>=TOP?1000+Math.max(0,600-x.tim
 const byRank=(a,b)=>scoreOf(b)-scoreOf(a)||a.time-b.time;
 const num=n=>n.toLocaleString('en-US');
 let netErr='';
+const errCode=e=>{const m=String(e&&e.message||e);return /^http \d+/.test(m)?m.toUpperCase():'네트워크';};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function localBoard(){try{return JSON.parse(localStorage.getItem('punchtower.board')||'[]')||[];}catch(e){return [];}}
 function saveLocal(en){const a=localBoard();a.push(en);try{localStorage.setItem('punchtower.board',JSON.stringify(a.slice(-500)));}catch(e){}}
@@ -889,13 +890,13 @@ async function supaInsert(en){
     body:JSON.stringify({client_id:en.id,name:en.name,diff:en.diff,floor:en.floor,secs:en.time})});}
 const localAll=()=>localBoard().sort(byRank);
 async function getTop(){
-  if(ONLINE){try{const list=await supaAll();netErr='';return {online:true,list};}catch(e){netErr=String(e.message||e);}}
+  if(ONLINE){try{const list=await supaAll();netErr='';return {online:true,list};}catch(e){netErr=errCode(e);}}
   return {online:false,list:localAll()};
 }
 async function submitScore(en){
   saveLocal(en);
   if(ONLINE){try{await supaInsert(en);const list=await supaAll();netErr='';
-    return {online:true,rank:list.findIndex(x=>x.id===en.id)+1,list};}catch(e){netErr=String(e.message||e);}}
+    return {online:true,rank:list.findIndex(x=>x.id===en.id)+1,list};}catch(e){netErr=errCode(e);}}
   const list=localAll();
   return {online:false,rank:list.findIndex(x=>x.id===en.id)+1,list};
 }
