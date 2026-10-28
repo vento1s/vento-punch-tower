@@ -157,7 +157,15 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .splash{display:grid;gap:16px;place-items:center;margin:auto}
 .ov.black{background:#000}
 .press{font-family:var(--f-pixel);font-size:10px;letter-spacing:.14em;color:var(--gi)}
-.arcade{margin:auto;display:grid;justify-items:center;gap:44px}
+.arcade{margin:auto;display:grid;justify-items:center;gap:30px}
+.pushcue{display:grid;justify-items:center;gap:8px}
+.pushtxt{font-family:var(--f-pixel);font-size:13px;letter-spacing:.08em;color:var(--gold);text-shadow:2px 2px 0 #a33f00;animation:pushBlink .5s steps(2) infinite}
+@keyframes pushBlink{50%{color:var(--amber);text-shadow:2px 2px 0 #6e0a0a}}
+/* chunky pixel down-arrow that keeps jabbing at the button */
+.pusharrow{position:relative;width:35px;height:35px;margin:4px 0 2px;animation:pushJab .5s steps(2) infinite}
+/* pixel-art arrow drawn with one 5px block and its box-shadows */
+.pusharrow::before{content:"";position:absolute;left:0;top:0;width:5px;height:5px;box-shadow:10px 0px 0 0 var(--gold),15px 0px 0 0 var(--gold),20px 0px 0 0 var(--gold),10px 5px 0 0 var(--gold),15px 5px 0 0 var(--gold),20px 5px 0 0 var(--gold),10px 10px 0 0 var(--gold),15px 10px 0 0 var(--gold),20px 10px 0 0 var(--gold),0px 15px 0 0 var(--gold),5px 15px 0 0 var(--gold),10px 15px 0 0 var(--gold),15px 15px 0 0 var(--gold),20px 15px 0 0 var(--gold),25px 15px 0 0 var(--gold),30px 15px 0 0 var(--gold),5px 20px 0 0 var(--gold),10px 20px 0 0 var(--gold),15px 20px 0 0 var(--gold),20px 20px 0 0 var(--gold),25px 20px 0 0 var(--gold),10px 25px 0 0 var(--gold),15px 25px 0 0 var(--gold),20px 25px 0 0 var(--gold),15px 30px 0 0 var(--gold),12px 2px 0 0 #a33f00,17px 2px 0 0 #a33f00,22px 2px 0 0 #a33f00,12px 7px 0 0 #a33f00,17px 7px 0 0 #a33f00,22px 7px 0 0 #a33f00,12px 12px 0 0 #a33f00,17px 12px 0 0 #a33f00,22px 12px 0 0 #a33f00,2px 17px 0 0 #a33f00,7px 17px 0 0 #a33f00,12px 17px 0 0 #a33f00,17px 17px 0 0 #a33f00,22px 17px 0 0 #a33f00,27px 17px 0 0 #a33f00,32px 17px 0 0 #a33f00,7px 22px 0 0 #a33f00,12px 22px 0 0 #a33f00,17px 22px 0 0 #a33f00,22px 22px 0 0 #a33f00,27px 22px 0 0 #a33f00,12px 27px 0 0 #a33f00,17px 27px 0 0 #a33f00,22px 27px 0 0 #a33f00,17px 32px 0 0 #a33f00}
+@keyframes pushJab{50%{transform:translateY(8px)}}
 /* round arcade push button in a black bezel with a yellow ring */
 .abtn{width:108px;height:108px;border-radius:50%;border:0;padding:0;cursor:pointer;position:relative;
   background:radial-gradient(circle at 36% 30%,#ffb2a6 0 9%,#ff4a3a 10% 52%,#d81e1e 53% 78%,#a30f0f 79%);
@@ -178,7 +186,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .sndbtn.off{color:var(--muted);box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
 .sndbtn.off i::after{content:"x";border:0;right:-9px;top:-1px;width:auto;height:auto;font-size:9px;color:var(--weak)}
 .sndbtn:focus-visible{outline:3px dashed var(--gold);outline-offset:5px}
-@media (prefers-reduced-motion:reduce){.abtn{animation:none}}
+@media (prefers-reduced-motion:reduce){.abtn,.pushtxt,.pusharrow{animation:none}}
 .studio{font-family:var(--f-pixel);font-size:clamp(16px,6.5cqw,24px);line-height:1.6;letter-spacing:.08em;color:var(--gi);
   text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408;text-align:center;transition:color .05s,text-shadow .05s}
 .studio span,.splash .w3{display:inline-block;animation:popin .14s steps(3) both}
@@ -1177,8 +1185,8 @@ function startGuest(){isGuest=true;playerName='GUEST'+String(100+Math.floor(Math
 function showSplash(){
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
-      <button class="abtn" id="startbtn" type="button"><span>START</span></button>
-      <div class="press blinky">PUSH START</div>
+      <div class="pushcue" aria-hidden="true"><div class="pushtxt">PUSH! PUSH!</div><div class="pusharrow"></div></div>
+      <button class="abtn" id="startbtn" type="button" aria-label="START"></button>
     </div>
     <button class="sndbtn${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}"><i aria-hidden="true"></i><span>${soundLabel()}</span></button>`;
   let stage2=false,done=false;
