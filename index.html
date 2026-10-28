@@ -272,7 +272,7 @@ function text(s,x,y,sc,col,align,sh){
 let AC=null,master=null,nbuf=null;
 // all sound on/off (effects + music), remembered per device
 let soundOn=true;try{soundOn=localStorage.getItem('punchtower.sound')!=='off';}catch(e){}
-function setSound(on){soundOn=on;try{localStorage.setItem('punchtower.sound',on?'on':'off');}catch(e){}
+function setSound(on){soundOn=on;if(!on&&typeof bgmStop==='function')bgmStop();try{localStorage.setItem('punchtower.sound',on?'on':'off');}catch(e){}
   if(master&&AC)master.gain.setTargetAtTime(on?.7:0,AC.currentTime,.02);}
 const soundLabel=()=>soundOn?'SOUND ON':'SOUND OFF';
 function initAudio(){
@@ -390,21 +390,40 @@ function bgmStep(i,t,len){
   if(b8===2||b8===6)bNoise(t,.09,1800,'bandpass',.22);
   bNoise(t+len/2,.03,7000,'highpass',.05);
 }
-function bgmStart(){
-  if(!AC||!bgmOn||bgm)return;
-  const g=AC.createGain();g.gain.value=.5;g.connect(master);
-  bgm={g,step:0,next:AC.currentTime+.06};
-  bgm.timer=setInterval(()=>{if(!bgm)return;
-    const bpm=148+Math.min(40,(pl?pl.level:0)*.5),len=60/bpm/2; // speeds up as you climb
-    if(bgm.next<AC.currentTime-.05)bgm.next=AC.currentTime+.02;     // came back from a background tab
-    while(bgm.next<AC.currentTime+.15){bgmStep(bgm.step,bgm.next,len);bgm.next+=len;bgm.step++;}},30);
+/* menu loop: a calmer 'attract mode' tune for the title, how-to, ranking and result screens.
+   16th-note arpeggios on a thin square, a sparse lead, triangle bass on the beat. Am F C G | Am F Dm E */
+const MENU_CH=[[57,60,64],[53,57,60],[55,60,64],[55,59,62],[57,60,64],[53,57,60],[50,53,57],[52,56,59]];
+const MENU_MEL=[69,0,72,0,76,74,72,0, 69,0,72,0,77,76,72,0, 67,0,72,0,76,0,79,0, 74,0,71,0,67,0,0,0,
+                76,0,74,0,72,74,76,0, 77,0,76,0,74,72,69,0, 74,0,77,0,81,79,77,74, 76,0,0,0,71,0,68,0];
+function menuStep(i,t,len){
+  const k=i%128,bar=(k/16)|0,s16=k%16,ch=MENU_CH[bar];
+  bNote(t,len*.8,mtof(ch[s16%3]+12),'square',.016);
+  if(s16%2===0){const m=MENU_MEL[bar*8+s16/2];if(m)bNote(t,len*1.8,mtof(m),'square',.034);}
+  if(s16%4===0)bNote(t,len*3.4,mtof(ch[0]-12),'triangle',.11);
+  if(s16%4===2)bNoise(t,.025,7500,'highpass',.025);
+  if(s16===0&&bar%2===0)bKick(t);
 }
+// kind: 'game' (fast, climbs with height) or 'menu' (calm loop)
+function bgmStart(kind){
+  kind=kind||'game';
+  if(!AC||!bgmOn||!soundOn)return;
+  if(bgm){if(bgm.kind===kind)return;bgmStop();}
+  const g=AC.createGain();g.gain.value=.5;g.connect(master);
+  bgm={g,step:0,next:AC.currentTime+.06,kind};
+  bgm.timer=setInterval(()=>{if(!bgm)return;
+    const menu=bgm.kind==='menu';
+    const bpm=menu?112:148+Math.min(40,(pl?pl.level:0)*.5),len=menu?60/bpm/4:60/bpm/2; // game speeds up as you climb
+    if(bgm.next<AC.currentTime-.05)bgm.next=AC.currentTime+.02;     // came back from a background tab
+    while(bgm.next<AC.currentTime+.15){(menu?menuStep:bgmStep)(bgm.step,bgm.next,len);bgm.next+=len;bgm.step++;}},30);
+}
+const menuMusic=()=>bgmStart('menu');
+const wantedTrack=()=>(mode==='play'||mode==='super')&&ov.hidden?'game':(!ov.hidden&&!ov.classList.contains('black')?'menu':null);
 function bgmStop(){if(!bgm)return;clearInterval(bgm.timer);const g=bgm.g;bgm=null;
   try{g.gain.setTargetAtTime(0,AC.currentTime,.04);}catch(e){}setTimeout(()=>{try{g.disconnect();}catch(e){}},500);}
 function bgmLabel(){return bgmOn?'음악 끄기':'음악 켜기';}
 function toggleBgm(){bgmOn=!bgmOn;try{localStorage.setItem('punchtower.bgm',bgmOn?'on':'off');}catch(e){}
-  if(!bgmOn)bgmStop();else if(mode==='play'||mode==='super')bgmStart();}
-document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmStop();else if(bgmOn&&(mode==='play'||mode==='super'))bgmStart();});
+  if(!bgmOn)bgmStop();else{const w=wantedTrack();if(w)bgmStart(w);}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmStop();else{const w=wantedTrack();if(w)bgmStart(w);}});
 addEventListener('keydown',e=>{if(e.key==='m'||e.key==='M'){if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
   toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
 function vibe(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
@@ -1280,7 +1299,7 @@ function showSplash(){
   // once the logo is playing, a tap anywhere skips it
   ov.addEventListener('pointerdown',function h(){if(done){ov.removeEventListener('pointerdown',h);return;}if(stage2)finish();});
   addEventListener('keydown',onKey);}
-function showTitle(){showOverlay(`
+function showTitle(){menuMusic();showOverlay(`
   <h1 class="logo" aria-label="PUNCH TOWER"><span class="lw"><span class="lo" aria-hidden="true">PUNCH</span><span class="lf">PUNCH</span></span><span class="lw"><span class="lo" aria-hidden="true">TOWER</span><span class="lf">TOWER</span></span></h1>
   <div class="hazard" aria-hidden="true"></div>
   <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 (비우면 게스트)" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>
@@ -1292,7 +1311,7 @@ function showTitle(){showOverlay(`
   <button class="btn" id="go" data-act="go">시작</button>
   <div class="row"><button class="ghost" type="button" data-act="rank">랭킹 보기</button><button class="ghost" type="button" data-act="howto">조작법</button><button class="ghost" type="button" id="bgmbtn" data-act="music">${bgmLabel()}</button><button class="ghost" type="button" id="sndlink" data-act="sound">${soundOn?'소리 끄기':'소리 켜기'}</button></div>
   <div class="stat" id="bestline">${bestLine()}</div>
-  ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,sound:()=>{setSound(!soundOn);const b=ov.querySelector('#sndlink');if(b)b.textContent=soundOn?'소리 끄기':'소리 켜기';if(soundOn)sfx.select();},music:()=>{toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
+  ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,sound:()=>{setSound(!soundOn);const b=ov.querySelector('#sndlink');if(b)b.textContent=soundOn?'소리 끄기':'소리 켜기';if(soundOn){sfx.select();menuMusic();}},music:()=>{toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
   ov.querySelectorAll('.ctrl button').forEach(b=>b.addEventListener('click',()=>{initAudio();ctrlMode=b.dataset.c;
     try{localStorage.setItem('punchtower.ctrl',ctrlMode);}catch(e){}
     ov.querySelectorAll('.ctrl button').forEach(x=>x.setAttribute('aria-pressed',x===b));sfx.select();}));
@@ -1302,7 +1321,7 @@ function showTitle(){showOverlay(`
   clr.addEventListener('click',e=>{e.preventDefault();inp.value='';playerName='';clr.hidden=true;
     try{localStorage.removeItem('punchtower.name');}catch(_){}sfx.same();inp.focus();});
   if(!playerName)setTimeout(()=>{try{inp.focus({preventScroll:true});}catch(e){}},80);}
-function showHowto(){showOverlay(`
+function showHowto(){menuMusic();showOverlay(`
   <div class="eyebrow">HOW TO PLAY</div>
   <h2 class="big">조작법</h2>
   <ul class="rules win">
@@ -1319,7 +1338,7 @@ function showHowto(){showOverlay(`
   <div class="hint">PC: ← → 펀치 · 꾹 = 이동 · ← + → 또는 ↑ 왕주먹</div>
   <button class="btn" type="button" data-act="back">돌아가기</button>
   ${CREDIT}`,{back:showTitle});}
-function showRanking(){showOverlay(`
+function showRanking(){menuMusic();showOverlay(`
   <div class="eyebrow">HIGH SCORES</div>
   <h2 class="big">랭킹</h2>
   <div id="board" class="boardwrap"></div>
@@ -1328,6 +1347,7 @@ function showRanking(){showOverlay(`
   ${CREDIT}`,{back:showTitle});
   fillBoard('#board');}
 function resultScreen(cleared){
+  setTimeout(()=>{if(!ov.hidden&&mode!=='play')menuMusic();},900); // after the death sting
   const floor=pl.level,time=Math.round((cleared?clearTime:tNow)*10)/10;
   const en={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),name:playerName||'???',diff:D.key,floor,time};
   const head=cleared
