@@ -992,15 +992,20 @@ const BIG_FIST_PAL={k:'#2a120c',s:'#f4a48c',H:'#ffd0bd',S:'#c8735c'};
 const BIG_FIST_HOT={k:'#2a120c',s:'#ffbe9e',H:'#fff0e6',S:'#e08a6a'};
 function drawBigFist(cx,cy,sc,mirror,pal){const w=BIG_FIST[0].length,h=BIG_FIST.length,x0=Math.round(cx-w*sc/2),y0=Math.round(cy-h*sc/2);
   for(let r=0;r<h;r++){const row=BIG_FIST[r];for(let c=0;c<w;c++){const ch=row[mirror?w-1-c:c];if(ch!=='.')R(x0+c*sc,y0+r*sc,sc,sc,pal[ch]);}}}
+// raised arm: the big fist on top of a forearm that runs down into the hero's white gi sleeve
+const BIG_ARM=BIG_FIST.concat(["....kSsssssSk....","...kSssssssSSk...","...kssssssssSk...","...kHsssssssSk...","..kHssssssssSSk..","..ksssssssssSSk..",
+ "..kwwwwwwwwwwwk..","..kwwwwwwwwwGGk..",".kwwwwwwwwwwGGGk.",".kwwwwwwwwwwGGGk.",".kwwwwwwwwwwwGGk.","kwwwwwwwwwwwwGGGk","kwwwwwwwwwwwwGGGk"]);
 function drawClassicFists(){
+  const sc=2,w=BIG_ARM[0].length;
   for(const sd of [0,1]){
     let held=false,charge=0;for(const h of holds.values())if(h.side===sd&&!h.used){held=true;charge=Math.max(charge,h.c);}
-    const down=held||tapFX[sd]>.45,o=down?2:0,cx=sd?W-24:24,cy=H-21;
-    ctx.globalAlpha=down?1:.82;
-    pxDisc(cx,cy+3,18,'#0d0a08');
-    pxRing(cx,cy+o,17,down?'#ff8a00':'#5c4b73');
-    if(charge>0){ctx.globalAlpha=.25+.35*charge;pxDisc(cx,cy+o,16,'#7af0ff');ctx.globalAlpha=1;}
-    drawBigFist(cx,cy+o,2,sd===1,down?BIG_FIST_HOT:BIG_FIST_PAL);
+    const hit=tapFX[sd]>.45, up=hit?7:held?3:0;          // a punch jabs the arm upward
+    const x0=Math.round((sd?W-24:24)-w*sc/2), y0=H-50-up;   // sleeve runs off the bottom edge
+    const base=hit||held?BIG_FIST_HOT:BIG_FIST_PAL, pal=Object.assign({w:'#f4efe8',G:'#c4bccd'},base);
+    ctx.globalAlpha=hit||held?1:.88;
+    if(charge>0){ctx.globalAlpha=.2+.35*charge;pxDisc(x0+w*sc/2,y0+16,15+charge*3,'#7af0ff');ctx.globalAlpha=1;}
+    for(let r=0;r<BIG_ARM.length;r++){const row=BIG_ARM[r];for(let c=0;c<w;c++){const ch=row[sd===1?w-1-c:c];if(ch!=='.')R(x0+c*sc,y0+r*sc,sc,sc,pal[ch]);}}
+    if(hit){ctx.globalAlpha=.8;for(let k=0;k<3;k++)R(x0+6+k*10,y0-6-(k%2)*2,2,4,'#fff3a0');}  // little speed ticks above the fist
   }
   ctx.globalAlpha=1;
 }
