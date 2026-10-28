@@ -167,14 +167,10 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .pusharrow::before{content:"";position:absolute;left:0;top:0;width:5px;height:5px;box-shadow:10px 0px 0 0 var(--gold),15px 0px 0 0 var(--gold),20px 0px 0 0 var(--gold),10px 5px 0 0 var(--gold),15px 5px 0 0 var(--gold),20px 5px 0 0 var(--gold),10px 10px 0 0 var(--gold),15px 10px 0 0 var(--gold),20px 10px 0 0 var(--gold),0px 15px 0 0 var(--gold),5px 15px 0 0 var(--gold),10px 15px 0 0 var(--gold),15px 15px 0 0 var(--gold),20px 15px 0 0 var(--gold),25px 15px 0 0 var(--gold),30px 15px 0 0 var(--gold),5px 20px 0 0 var(--gold),10px 20px 0 0 var(--gold),15px 20px 0 0 var(--gold),20px 20px 0 0 var(--gold),25px 20px 0 0 var(--gold),10px 25px 0 0 var(--gold),15px 25px 0 0 var(--gold),20px 25px 0 0 var(--gold),15px 30px 0 0 var(--gold),12px 2px 0 0 #a33f00,17px 2px 0 0 #a33f00,22px 2px 0 0 #a33f00,12px 7px 0 0 #a33f00,17px 7px 0 0 #a33f00,22px 7px 0 0 #a33f00,12px 12px 0 0 #a33f00,17px 12px 0 0 #a33f00,22px 12px 0 0 #a33f00,2px 17px 0 0 #a33f00,7px 17px 0 0 #a33f00,12px 17px 0 0 #a33f00,17px 17px 0 0 #a33f00,22px 17px 0 0 #a33f00,27px 17px 0 0 #a33f00,32px 17px 0 0 #a33f00,7px 22px 0 0 #a33f00,12px 22px 0 0 #a33f00,17px 22px 0 0 #a33f00,22px 22px 0 0 #a33f00,27px 22px 0 0 #a33f00,12px 27px 0 0 #a33f00,17px 27px 0 0 #a33f00,22px 27px 0 0 #a33f00,17px 32px 0 0 #a33f00}
 @keyframes pushJab{50%{transform:translateY(8px)}}
 /* round arcade push button in a black bezel with a yellow ring */
-.abtn{width:108px;height:108px;border-radius:50%;border:0;padding:0;cursor:pointer;position:relative;
-  background:radial-gradient(circle at 36% 30%,#ffb2a6 0 9%,#ff4a3a 10% 52%,#d81e1e 53% 78%,#a30f0f 79%);
-  box-shadow:0 0 0 6px var(--ink),0 0 0 11px var(--gold),0 0 0 15px var(--ink),0 0 0 18px #3a2a1a,0 9px 0 4px #6e0a0a,0 18px 26px rgba(0,0,0,.6);
-  animation:abtnGlow 1.2s steps(2) infinite}
-.abtn span{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:#fff;text-shadow:2px 2px 0 #6e0a0a}
-.abtn:active{transform:translateY(6px);box-shadow:0 0 0 6px var(--ink),0 0 0 11px var(--gold),0 0 0 15px var(--ink),0 0 0 18px #3a2a1a,0 3px 0 4px #6e0a0a}
-.abtn:focus-visible{outline:3px dashed var(--gold);outline-offset:24px}
-@keyframes abtnGlow{50%{box-shadow:0 0 0 6px var(--ink),0 0 0 11px var(--amber),0 0 0 15px var(--ink),0 0 0 18px #3a2a1a,0 9px 0 4px #6e0a0a,0 18px 26px rgba(0,0,0,.6)}}
+.abtn{border:0;padding:0;margin:0;background:none;cursor:pointer;display:block;line-height:0}
+/* the button art is a tiny pixel canvas scaled 4x; it keeps pressing itself to invite a tap */
+.abtn canvas{width:208px;height:116px;image-rendering:pixelated;image-rendering:crisp-edges}
+.abtn:focus-visible{outline:3px dashed var(--gold);outline-offset:6px}
 /* sound toggle: pixel speaker + label, bottom of the boot screen */
 .sndbtn{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:8px;
   background:var(--ink);border:0;border-radius:0;cursor:pointer;padding:8px 12px 7px;color:var(--gi);font-family:var(--f-pixel);font-size:9px;letter-spacing:.1em;
@@ -186,7 +182,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .sndbtn.off{color:var(--muted);box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
 .sndbtn.off i::after{content:"x";border:0;right:-9px;top:-1px;width:auto;height:auto;font-size:9px;color:var(--weak)}
 .sndbtn:focus-visible{outline:3px dashed var(--gold);outline-offset:5px}
-@media (prefers-reduced-motion:reduce){.abtn,.pushtxt,.pusharrow{animation:none}}
+@media (prefers-reduced-motion:reduce){.pushtxt,.pusharrow{animation:none}}
 .studio{font-family:var(--f-pixel);font-size:clamp(16px,6.5cqw,24px);line-height:1.6;letter-spacing:.08em;color:var(--gi);
   text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408;text-align:center;transition:color .05s,text-shadow .05s}
 .studio span,.splash .w3{display:inline-block;animation:popin .14s steps(3) both}
@@ -1182,11 +1178,33 @@ let isGuest=false;
 function startGuest(){isGuest=true;playerName='GUEST'+String(100+Math.floor(Math.random()*900));
   ov.hidden=true;beginCountdown();}
 // arcade boot: browsers only allow sound after a touch, so the logo waits for one, then plays with its jingle
+// pixel-art arcade button (3/4 view): red cap on a dark bezel. h = how far the cap stands up (6 = up, 0 = pushed in)
+function drawStartButton(c,h){
+  const g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);
+  const ell=(cx,cy,rx,ry,col)=>{g.fillStyle=col;for(let y=-ry;y<=ry;y++){const w=Math.round(rx*Math.sqrt(1-(y*y)/(ry*ry)));if(w>0)g.fillRect(cx-w,cy+y,w*2+1,1);}};
+  const cx=26,by=16;
+  ell(cx,by+4,23,7,'#4a403a');          // floor shadow / outer bezel
+  ell(cx,by+2,20,6,'#2a2420');          // bezel ring
+  ell(cx,by+1,17,5,'#5c5450');          // bezel lip
+  ell(cx,by,16,5,'#1a1512');            // hole
+  // cap side (cylinder) from the hole up to the top face
+  for(let k=0;k<=h;k++){ell(cx,by-k,15,5,k<2?'#7a0a0a':'#b81010');}
+  for(let k=1;k<=h;k++){g.fillStyle='#d81e1e';const y=by-k+4;g.fillRect(cx+2,y,12,1);} // lit right side of the wall
+  ell(cx,by-h,15,5,'#ff2a2a');          // top face
+  ell(cx-3,by-h-1,9,3,'#ff4d40');
+  g.fillStyle='#ffb2a6';g.fillRect(cx-8,by-h-3,4,1);g.fillRect(cx-9,by-h-2,2,1); // glint
+}
+function animStartButton(c){
+  const seq=[6,6,5,4,2,1,1,2,4,5];let i=0,run=true,forced=null;
+  const tick=()=>{if(!run)return;drawStartButton(c,forced!==null?forced:seq[i++%seq.length]);setTimeout(tick,100);};
+  tick();
+  return pressNow=>{if(pressNow){forced=0;drawStartButton(c,0);}else run=false;};
+}
 function showSplash(){
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
       <div class="pushcue" aria-hidden="true"><div class="pushtxt">PUSH! PUSH!</div><div class="pusharrow"></div></div>
-      <button class="abtn" id="startbtn" type="button" aria-label="START"></button>
+      <button class="abtn" id="startbtn" type="button" aria-label="START"><canvas id="btncv" width="52" height="29"></canvas></button>
     </div>
     <button class="sndbtn${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}"><i aria-hidden="true"></i><span>${soundLabel()}</span></button>`;
   let stage2=false,done=false;
@@ -1199,7 +1217,10 @@ function showSplash(){
     setTimeout(()=>{const el=document.getElementById('studio');if(el&&!done)el.classList.remove('lit');},620);
     setTimeout(finish,2000);};
   const onKey=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();play();}};
-  document.getElementById('startbtn').addEventListener('click',e=>{e.stopPropagation();play();});
+  const stopBtn=animStartButton(document.getElementById('btncv'));
+  let pushed=false;
+  document.getElementById('startbtn').addEventListener('click',e=>{e.stopPropagation();if(pushed)return;pushed=true;
+    stopBtn(true);initAudio();sfx.select();setTimeout(play,170);});
   document.getElementById('sndbtn').addEventListener('click',e=>{e.stopPropagation();setSound(!soundOn);
     const b=e.currentTarget;b.classList.toggle('off',!soundOn);b.setAttribute('aria-pressed',soundOn);b.querySelector('span').textContent=soundLabel();
     if(soundOn){initAudio();sfx.select();}});
