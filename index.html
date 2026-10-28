@@ -91,6 +91,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .ghost{font-family:var(--f-display);font-size:12px;color:var(--gi);background:none;border:0;cursor:pointer;padding:6px 8px;border-radius:0}
 .ghost::before{content:"▸ ";color:var(--amber)}
 .ghost:hover,.ghost:focus-visible{color:var(--gold)}
+.ghost.guest{margin-top:-6px;font-size:11px;color:var(--muted)}
 .hint{font-family:var(--f-pixel);font-size:8px;color:var(--muted);line-height:1.9}
 .namebox{display:flex;align-items:center;gap:10px;width:calc(100% - 8px);max-width:296px;box-sizing:border-box;padding:6px 12px;
   background:var(--ink);cursor:text;
@@ -1045,8 +1046,12 @@ function startGame(){
   const inp=ov.querySelector('#pname');
   if(inp){const v=inp.value.trim().slice(0,NAME_MAX);
     if(!v){const box=inp.closest('.namebox');box.classList.remove('bad');void box.offsetWidth;box.classList.add('bad');inp.focus();sfx.same();return;}
-    playerName=v;try{localStorage.setItem('punchtower.name',v);}catch(e){}}
+    playerName=v;isGuest=false;try{localStorage.setItem('punchtower.name',v);}catch(e){}}
   if(!playerName){showTitle();return;}
+  ov.hidden=true;newGame();mode='play';bgmStop();bgmStart();}
+// guest: a throwaway name like GUEST417, never saved as this device's nickname
+let isGuest=false;
+function startGuest(){isGuest=true;playerName='GUEST'+String(100+Math.floor(Math.random()*900));
   ov.hidden=true;newGame();mode='play';bgmStop();bgmStart();}
 // arcade boot: browsers only allow sound after a touch, so the logo waits for one, then plays with its jingle
 function showSplash(){
@@ -1068,12 +1073,13 @@ function showTitle(){showOverlay(`
   <div class="eyebrow">VENTO AI STUDIO PRESENTS</div>
   <h1 class="logo" aria-label="PUNCH TOWER"><span class="lw"><span class="lo" aria-hidden="true">PUNCH</span><span class="lf">PUNCH</span></span><span class="lw"><span class="lo" aria-hidden="true">TOWER</span><span class="lf">TOWER</span></span></h1>
   <div class="hazard" aria-hidden="true"></div>
-  <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 입력" value="${esc(playerName)}"></label>
+  <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 입력" value="${isGuest?'':esc(playerName)}"></label>
+  <button class="ghost guest" type="button" data-act="guest">게스트로 플레이</button>
   ${diffPicker()}
   <button class="btn" id="go" data-act="go">시작</button>
   <div class="row"><button class="ghost" type="button" data-act="rank">랭킹 보기</button><button class="ghost" type="button" data-act="howto">조작법</button><button class="ghost" type="button" id="bgmbtn" data-act="music">${bgmLabel()}</button></div>
   <div class="stat" id="bestline">${bestLine()}</div>
-  ${CREDIT}`,{go:startGame,rank:()=>showRanking(),howto:showHowto,music:()=>{toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
+  ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,music:()=>{toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
   const inp=ov.querySelector('#pname');
   inp.addEventListener('input',()=>{playerName=inp.value.trim().slice(0,NAME_MAX);});
   if(!playerName)setTimeout(()=>{try{inp.focus({preventScroll:true});}catch(e){}},80);}
