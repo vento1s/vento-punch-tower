@@ -797,7 +797,7 @@ function press(id,side){if(holds.has(id))return;
   if(ctrlMode==='pad')hit(side); // pad buttons punch on press; classic waits to see tap vs hold
 }
 function release(id){const h=holds.get(id);holds.delete(id);
-  if(!h||h.used||mode!=='play')return;
+  if(!h||h.used||h.drag||mode!=='play')return;  // a drag was for positioning, so no punch on release
   if(h.t>=HOLD_T)hit(h.side,Math.max(.05,h.c)); // held: ki punch
   else if(ctrlMode==='classic')hit(h.side);      // classic quick tap: normal punch, on release
 }
@@ -807,8 +807,15 @@ stage.addEventListener('pointerdown',e=>{if(!ov.hidden)return;e.preventDefault()
   try{stage.setPointerCapture(e.pointerId);}catch(_){}
   if(ctrlMode==='pad'){
     if(x<W/2){if(stick.id===null)stick={id:e.pointerId,ox:x,oy:y,dx:0,t0:now(),dashed:false};return;} // left half: stick
-    press(e.pointerId,x<W*.75?0:1);return;}                                                            // right half: L / R fist
-  press(e.pointerId,x<W/2?0:1);});
+    press(e.pointerId,x<W*.75?0:1);markDrag(e.pointerId,x);return;}                                   // right half: L / R fist
+  press(e.pointerId,x<W/2?0:1);markDrag(e.pointerId,x);});
+// slide a punching thumb left/right = fine positioning (about 0.4 px of movement per px of drag)
+const FINE=.4,DRAG_START=5;
+function markDrag(id,x){const h=holds.get(id);if(h){h.x0=x;h.lx=x;h.drag=false;}}
+stage.addEventListener('pointermove',e=>{const h=holds.get(e.pointerId);if(!h||h.x0===undefined||mode!=='play')return;
+  const [x]=toCanvas(e);
+  if(!h.drag&&Math.abs(x-h.x0)>=DRAG_START){h.drag=true;h.lx=h.x0;}   // past a small threshold it's a drag, not a tap
+  if(h.drag){pl.tx=clamp(pl.tx+(x-h.lx)*FINE,XMIN,XMAX);h.lx=x;}});
 stage.addEventListener('pointermove',e=>{if(stick.id!==e.pointerId)return;
   const [x]=toCanvas(e);const raw=x-stick.ox;stick.dx=clamp(raw,-STICK_MAX,STICK_MAX);
   // a quick flick to the edge right after touching = dash
@@ -853,7 +860,7 @@ function update(dt){
   let dir=0,maxC=-1,hasL=false,hasR=false;
   if(mode==='play'){
     for(const h of holds.values()){if(h.used)continue;h.t+=real;if(h.side)hasR=true;else hasL=true;
-      if(h.t<HOLD_T)continue;
+      if(h.t<HOLD_T||h.drag)continue; // dragging thumbs don't walk or charge
       if(ctrlMode==='classic')dir+=h.side?1:-1;const pc=h.c;h.c=Math.min(1,(h.t-HOLD_T)/CHARGE_T);maxC=Math.max(maxC,h.c);
       const g=guardPos(h.side);
       if(h.c>=1&&pc<1){sfx.kimax();
