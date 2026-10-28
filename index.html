@@ -435,7 +435,7 @@ addEventListener('keydown',e=>{if(e.key==='m'||e.key==='M'){if(document.activeEl
   toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
 let growl=null;
 // the dramatic beat between a full charge and the launch
-const KING_SLOW=.85;let kingSlowT=0,timeScale=1;
+const KING_SLOW=.5; // matches the 왕펀치!! banner, so the launch follows it immediatelylet kingSlowT=0,timeScale=1;
 function startKingSlow(){
   kingSlowT=KING_SLOW;for(const h of holds.values())h.used=true;hum(-1);
   sfx.slowmo();showCutin();vibe([30,40,90]);flashO=.5;flashCol='#ffffff';
@@ -626,7 +626,7 @@ function doSuper(pre,cutinShown){
   const start=pl.level+1,dest=pl.level+SUPER_FLOORS;ensureSlabs(dest+30);
   superReady=false;altStreak=0;superCount++;for(const h of holds.values())h.used=true;hum(-1);hitstop=0;impact=0;
   sup={t:0,start,dest,next:start,from:pl.feet,to:-dest*FH,launched:false,peak:false};
-  mode='super';if(pre)sup.t=.3;else sfx.superCharge();vibe(40);if(!cutinShown)showCutin();
+  mode='super';if(cutinShown)sup.t=.45;else if(pre)sup.t=.3;else sfx.superCharge(); // after the slow beat: launch at oncevibe(40);if(!cutinShown)showCutin();
   lavaY=Math.max(lavaY,pl.feet+40);lavaY+=30;
 }
 function superBreak(s,k){
@@ -733,7 +733,7 @@ function update(dt){
   // charge: world barely slows; once it's full, time slams to a crawl for the 'kingSlow' beat, then the punch fires
   const tsTarget=kingSlowT>0?.07:(bothT>0&&mode==='play')?.85:1;
   timeScale+=(tsTarget-timeScale)*Math.min(1,real*(kingSlowT>0?18:10));
-  if(kingSlowT>0){kingSlowT-=real;if(kingSlowT<=0){kingSlowT=0;doSuper(true,true);}}
+  if(kingSlowT>0){kingSlowT-=real;if(kingSlowT<=0){kingSlowT=0;timeScale=1;doSuper(true,true);}}
   dt*=timeScale;
   gt+=dt;
   for(const p of parts){p.vy+=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;}
