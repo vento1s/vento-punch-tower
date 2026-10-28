@@ -39,6 +39,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   gap:12px;padding:18px 16px;box-sizing:border-box;text-align:center;overflow-y:auto;
   background:linear-gradient(180deg,rgba(11,8,17,.86),rgba(11,8,17,.95) 40%)}
 .eyebrow{font-family:var(--f-pixel);font-size:10px;letter-spacing:.12em;color:var(--lava-hi)}
+.big.over{font-family:var(--f-pixel);font-size:30px;letter-spacing:.04em;line-height:1.15;margin:4px 0 2px}
 .big{font-family:var(--f-display);font-weight:400;font-size:33px;line-height:1.1;margin:0;
   color:var(--gold);text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),
   3px 3px 0 var(--ink),-3px 3px 0 var(--ink),3px -3px 0 var(--ink),-3px -3px 0 var(--ink),6px 6px 0 var(--amber);text-wrap:balance}
@@ -1207,7 +1208,7 @@ function rowHTML(x,i,hiId){const me=hiId&&x.id===hiId;const d=DIFF_KO[x.diff]?x.
   const cls=(i<3?'r'+(i+1):(i%2?'alt':''))+(me?' me':'');
   return `<li class="${cls}"><span class="rk">${ord(i+1)}</span><span class="nm">${esc(x.name)}</span>`+
     `<span class="dchip d-${d}">${DIFF_KO[d]}</span><span class="fl">${x.floor}F</span><span class="sc">${num(scoreOf(x))}</span></li>`;}
-const BOARD_HEAD=`<li class="hd" aria-hidden="true"><span>RANK</span><span>NAME</span><span></span><span>FLOOR</span><span>SCORE</span></li>`;
+const BOARD_HEAD=`<li class="hd" aria-hidden="true"><span>NO.</span><span>NAME</span><span></span><span>FLR</span><span>SCORE</span></li>`;
 const LIMIT=20;
 function boardHTML(res,hiId){
   const list=res.list||[];
@@ -1301,7 +1302,6 @@ function showSplash(){
   addEventListener('keydown',onKey);}
 function showTitle(){menuMusic();showOverlay(`
   <h1 class="logo" aria-label="PUNCH TOWER"><span class="lw"><span class="lo" aria-hidden="true">PUNCH</span><span class="lf">PUNCH</span></span><span class="lw"><span class="lo" aria-hidden="true">TOWER</span><span class="lf">TOWER</span></span></h1>
-  <div class="hazard" aria-hidden="true"></div>
   <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 (비우면 게스트)" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>
   <button class="ghost guest" type="button" data-act="guest">게스트로 플레이</button>
   ${diffPicker()}
@@ -1352,7 +1352,7 @@ function resultScreen(cleared){
   const en={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),name:playerName||'???',diff:D.key,floor,time};
   const head=cleared
     ?`<div class="eyebrow">TOWER CLEAR · ${D.tag}</div><h2 class="big">정상 정복!</h2>`
-    :`<div class="eyebrow">GAME OVER · ${D.tag}</div><h2 class="big">용암에 삼켜졌다</h2>`;
+    :`<h2 class="big over">GAME OVER</h2>`;
   showOverlay(`${head}
   <div class="win result">
     <div class="who"><b>${esc(en.name)}</b><span class="dchip d-${D.key}">${D.ko}</span></div>
