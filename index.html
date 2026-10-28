@@ -397,18 +397,30 @@ function bgmStep(i,t,len){
   if(b8===2||b8===6)bNoise(t,.09,1800,'bandpass',.22);
   bNoise(t+len/2,.03,7000,'highpass',.05);
 }
-/* menu loop: a calmer 'attract mode' tune for the title, how-to, ranking and result screens.
-   16th-note arpeggios on a thin square, a sparse lead, triangle bass on the beat. Am F C G | Am F Dm E */
-const MENU_CH=[[57,60,64],[53,57,60],[55,60,64],[55,59,62],[57,60,64],[53,57,60],[50,53,57],[52,56,59]];
-const MENU_MEL=[69,0,72,0,76,74,72,0, 69,0,72,0,77,76,72,0, 67,0,72,0,76,0,79,0, 74,0,71,0,67,0,0,0,
-                76,0,74,0,72,74,76,0, 77,0,76,0,74,72,69,0, 74,0,77,0,81,79,77,74, 76,0,0,0,71,0,68,0];
+/* menu loop: an upbeat 'get ready to fight' tune for the title, how-to, ranking and result screens.
+   Major key, four-on-the-floor kick, backbeat snare, bouncing octave bass, off-beat chord stabs and a punchy hook.
+   C G Am F | C G Am F | F G Em Am | F G C C   (each bar = 16 sixteenths) */
+const MENU_ROOT=[36,43,45,41, 36,43,45,41, 41,43,40,45, 41,43,36,36];
+const MENU_STAB=[[60,64,67],[59,62,67],[57,60,64],[57,60,65],[60,64,67],[59,62,67],[57,60,64],[57,60,65],
+                 [57,60,65],[59,62,67],[59,64,67],[57,60,64],[57,60,65],[59,62,67],[60,64,67],[60,64,67]];
+const MENU_HOOK=[72,76,79,76,84,0,79,76, 74,79,83,79,86,0,83,79, 76,72,76,81,79,76,72,74, 77,76,74,72,74,76,77,79,
+                 72,76,79,76,84,0,79,84, 86,0,83,86,91,0,86,83, 84,81,76,81,84,88,86,84, 81,79,77,76,74,76,77,79,
+                 81,0,81,79,77,79,81,84, 83,0,83,81,79,81,83,86, 84,83,79,76,79,83,84,88, 88,0,86,84,83,0,81,83,
+                 81,0,81,84,86,0,84,81, 83,0,83,86,88,0,86,83, 84,88,91,88,84,79,76,79, 84,0,0,0,79,0,84,0];
 function menuStep(i,t,len){
-  const k=i%128,bar=(k/16)|0,s16=k%16,ch=MENU_CH[bar];
-  bNote(t,len*.8,mtof(ch[s16%3]+12),'square',.016);
-  if(s16%2===0){const m=MENU_MEL[bar*8+s16/2];if(m)bNote(t,len*1.8,mtof(m),'square',.034);}
-  if(s16%4===0)bNote(t,len*3.4,mtof(ch[0]-12),'triangle',.11);
-  if(s16%4===2)bNoise(t,.025,7500,'highpass',.025);
-  if(s16===0&&bar%2===0)bKick(t);
+  const k=i%256,bar=(k/16)|0,s16=k%16,root=MENU_ROOT[bar];
+  // drums
+  if(s16%4===0)bKick(t);
+  if(s16===4||s16===12){bNoise(t,.11,1900,'bandpass',.24);bNote(t,len*.9,180,'triangle',.08);}
+  if(s16%4===2)bNoise(t,.03,8000,'highpass',.05);
+  if(s16===14)bNoise(t,.09,6500,'highpass',.04);
+  // bass: octave bounce on 8ths, a 16th pickup into the next beat
+  if(s16%2===0){const n=root+(s16%4===2?12:0);bNote(t,len*1.6,mtof(n),'triangle',.13);bNote(t,len*.9,mtof(n),'square',.018);}
+  if(s16===7||s16===15)bNote(t,len*.8,mtof(root+12),'triangle',.08);
+  // off-beat chord stabs
+  if(s16===2||s16===6||s16===10)MENU_STAB[bar].forEach(n=>bNote(t,len*.55,mtof(n),'square',.014));
+  // hook on 8ths
+  if(s16%2===0){const m=MENU_HOOK[bar*8+s16/2];if(m)bNote(t,len*1.7,mtof(m),'square',.04);}
 }
 // kind: 'game' (fast, climbs with height) or 'menu' (calm loop)
 function bgmStart(kind){
@@ -419,7 +431,7 @@ function bgmStart(kind){
   bgm={g,step:0,next:AC.currentTime+.06,kind};
   bgm.timer=setInterval(()=>{if(!bgm)return;
     const menu=bgm.kind==='menu';
-    const bpm=menu?112:148+Math.min(40,(pl?pl.level:0)*.5),len=menu?60/bpm/4:60/bpm/2; // game speeds up as you climb
+    const bpm=menu?136:148+Math.min(40,(pl?pl.level:0)*.5),len=menu?60/bpm/4:60/bpm/2; // game speeds up as you climb
     if(bgm.next<AC.currentTime-.05)bgm.next=AC.currentTime+.02;     // came back from a background tab
     while(bgm.next<AC.currentTime+.15){(menu?menuStep:bgmStep)(bgm.step,bgm.next,len);bgm.next+=len;bgm.step++;}},30);
 }
