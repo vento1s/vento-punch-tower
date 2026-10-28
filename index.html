@@ -156,7 +156,29 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 @keyframes blinky{50%{opacity:.25}}
 .splash{display:grid;gap:16px;place-items:center;margin:auto}
 .ov.black{background:#000}
-.press{font-family:var(--f-pixel);font-size:11px;letter-spacing:.12em;color:var(--gi);margin:auto}
+.press{font-family:var(--f-pixel);font-size:10px;letter-spacing:.14em;color:var(--gi)}
+.arcade{margin:auto;display:grid;justify-items:center;gap:44px}
+/* round arcade push button in a black bezel with a yellow ring */
+.abtn{width:108px;height:108px;border-radius:50%;border:0;padding:0;cursor:pointer;position:relative;
+  background:radial-gradient(circle at 36% 30%,#ffb2a6 0 9%,#ff4a3a 10% 52%,#d81e1e 53% 78%,#a30f0f 79%);
+  box-shadow:0 0 0 6px var(--ink),0 0 0 11px var(--gold),0 0 0 15px var(--ink),0 0 0 18px #3a2a1a,0 9px 0 4px #6e0a0a,0 18px 26px rgba(0,0,0,.6);
+  animation:abtnGlow 1.2s steps(2) infinite}
+.abtn span{font-family:var(--f-pixel);font-size:12px;letter-spacing:.06em;color:#fff;text-shadow:2px 2px 0 #6e0a0a}
+.abtn:active{transform:translateY(6px);box-shadow:0 0 0 6px var(--ink),0 0 0 11px var(--gold),0 0 0 15px var(--ink),0 0 0 18px #3a2a1a,0 3px 0 4px #6e0a0a}
+.abtn:focus-visible{outline:3px dashed var(--gold);outline-offset:24px}
+@keyframes abtnGlow{50%{box-shadow:0 0 0 6px var(--ink),0 0 0 11px var(--amber),0 0 0 15px var(--ink),0 0 0 18px #3a2a1a,0 9px 0 4px #6e0a0a,0 18px 26px rgba(0,0,0,.6)}}
+/* sound toggle: pixel speaker + label, bottom of the boot screen */
+.sndbtn{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:8px;
+  background:var(--ink);border:0;border-radius:0;cursor:pointer;padding:8px 12px 7px;color:var(--gi);font-family:var(--f-pixel);font-size:9px;letter-spacing:.1em;
+  box-shadow:0 -3px 0 0 var(--gi),0 3px 0 0 var(--gi),-3px 0 0 0 var(--gi),3px 0 0 0 var(--gi)}
+.sndbtn i{width:12px;height:10px;position:relative;
+  background:linear-gradient(var(--gold),var(--gold)) 0 3px/4px 4px no-repeat,
+             conic-gradient(from 225deg at 100% 50%,var(--gold) 0 90deg,transparent 0) 4px 0/6px 10px no-repeat}
+.sndbtn i::after{content:"";position:absolute;right:-5px;top:2px;width:3px;height:6px;border-right:2px solid var(--gold)}
+.sndbtn.off{color:var(--muted);box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
+.sndbtn.off i::after{content:"x";border:0;right:-9px;top:-1px;width:auto;height:auto;font-size:9px;color:var(--weak)}
+.sndbtn:focus-visible{outline:3px dashed var(--gold);outline-offset:5px}
+@media (prefers-reduced-motion:reduce){.abtn{animation:none}}
 .studio{font-family:var(--f-pixel);font-size:clamp(16px,6.5cqw,24px);line-height:1.6;letter-spacing:.08em;color:var(--gi);
   text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408;text-align:center;transition:color .05s,text-shadow .05s}
 .studio span,.splash .w3{display:inline-block;animation:popin .14s steps(3) both}
@@ -239,11 +261,16 @@ function text(s,x,y,sc,col,align,sh){
 
 /* ---------- audio ---------- */
 let AC=null,master=null,nbuf=null;
+// all sound on/off (effects + music), remembered per device
+let soundOn=true;try{soundOn=localStorage.getItem('punchtower.sound')!=='off';}catch(e){}
+function setSound(on){soundOn=on;try{localStorage.setItem('punchtower.sound',on?'on':'off');}catch(e){}
+  if(master&&AC)master.gain.setTargetAtTime(on?.7:0,AC.currentTime,.02);}
+const soundLabel=()=>soundOn?'SOUND ON':'SOUND OFF';
 function initAudio(){
   try{
     if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();
       const comp=AC.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=6;
-      master=AC.createGain();master.gain.value=.7;master.connect(comp);comp.connect(AC.destination);
+      master=AC.createGain();master.gain.value=soundOn?.7:0;master.connect(comp);comp.connect(AC.destination);
       nbuf=AC.createBuffer(1,AC.sampleRate*1,AC.sampleRate);const d=nbuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
     if(AC.state!=='running')AC.resume();
   }catch(e){AC=null;}
@@ -1149,7 +1176,11 @@ function startGuest(){isGuest=true;playerName='GUEST'+String(100+Math.floor(Math
 // arcade boot: browsers only allow sound after a touch, so the logo waits for one, then plays with its jingle
 function showSplash(){
   ov.classList.add('black');ov.hidden=false;
-  ov.innerHTML=`<div class="press blinky">TOUCH TO START</div>`;
+  ov.innerHTML=`<div class="arcade">
+      <button class="abtn" id="startbtn" type="button"><span>START</span></button>
+      <div class="press blinky">PUSH START</div>
+    </div>
+    <button class="sndbtn${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}"><i aria-hidden="true"></i><span>${soundLabel()}</span></button>`;
   let stage2=false,done=false;
   const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);ov.classList.remove('black');showTitle();};
   const play=()=>{
@@ -1160,7 +1191,12 @@ function showSplash(){
     setTimeout(()=>{const el=document.getElementById('studio');if(el&&!done)el.classList.remove('lit');},620);
     setTimeout(finish,2000);};
   const onKey=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();play();}};
-  ov.addEventListener('pointerdown',function h(){if(done){ov.removeEventListener('pointerdown',h);return;}play();if(done)ov.removeEventListener('pointerdown',h);});
+  document.getElementById('startbtn').addEventListener('click',e=>{e.stopPropagation();play();});
+  document.getElementById('sndbtn').addEventListener('click',e=>{e.stopPropagation();setSound(!soundOn);
+    const b=e.currentTarget;b.classList.toggle('off',!soundOn);b.setAttribute('aria-pressed',soundOn);b.querySelector('span').textContent=soundLabel();
+    if(soundOn){initAudio();sfx.select();}});
+  // once the logo is playing, a tap anywhere skips it
+  ov.addEventListener('pointerdown',function h(){if(done){ov.removeEventListener('pointerdown',h);return;}if(stage2)finish();});
   addEventListener('keydown',onKey);}
 function showTitle(){showOverlay(`
   <div class="eyebrow">VENTO AI STUDIO PRESENTS</div>
@@ -1173,9 +1209,9 @@ function showTitle(){showOverlay(`
     <button type="button" id="ctrl-classic" data-c="classic" aria-pressed="${ctrlMode==='classic'}">클래식</button>
     <button type="button" id="ctrl-pad" data-c="pad" aria-pressed="${ctrlMode==='pad'}">스틱+버튼</button></div></div>
   <button class="btn" id="go" data-act="go">시작</button>
-  <div class="row"><button class="ghost" type="button" data-act="rank">랭킹 보기</button><button class="ghost" type="button" data-act="howto">조작법</button><button class="ghost" type="button" id="bgmbtn" data-act="music">${bgmLabel()}</button></div>
+  <div class="row"><button class="ghost" type="button" data-act="rank">랭킹 보기</button><button class="ghost" type="button" data-act="howto">조작법</button><button class="ghost" type="button" id="bgmbtn" data-act="music">${bgmLabel()}</button><button class="ghost" type="button" id="sndlink" data-act="sound">${soundOn?'소리 끄기':'소리 켜기'}</button></div>
   <div class="stat" id="bestline">${bestLine()}</div>
-  ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,music:()=>{toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
+  ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,sound:()=>{setSound(!soundOn);const b=ov.querySelector('#sndlink');if(b)b.textContent=soundOn?'소리 끄기':'소리 켜기';if(soundOn)sfx.select();},music:()=>{toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
   ov.querySelectorAll('.ctrl button').forEach(b=>b.addEventListener('click',()=>{initAudio();ctrlMode=b.dataset.c;
     try{localStorage.setItem('punchtower.ctrl',ctrlMode);}catch(e){}
     ov.querySelectorAll('.ctrl button').forEach(x=>x.setAttribute('aria-pressed',x===b));sfx.select();}));
