@@ -665,7 +665,7 @@ function die(){mode='dead';endT=0;bgmStop();sfx.die();vibe([60,40,120]);shake=6;
 // two thumbs only: left half of the screen = left hand, right half = right hand.
 // tap = punch · hold = walk that way + charge ki · release = ki punch
 // KING FIST: when charged, hold both sides together for a moment.
-const STRIP=H-34,BTN_L=44,BTN_R=W-44,BOTH_HOLD=.5; // hold both sides this long to fire the KING PUNCH
+const STRIP=H-34,BTN_L=44,BTN_R=W-44,BOTH_HOLD=1.2; // hold both sides this long to fire the KING PUNCH (long enough to feel the build-up)
 // dash: while walking (holding one side), tap the other side to burst forward in the walking direction
 const NUDGE=2.5; // px per punch toward the punching hand (alternate to stay put)
 const DASH=16,DASH_CD=.22,DASH_T=.12;
