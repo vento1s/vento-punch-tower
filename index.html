@@ -95,6 +95,30 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .ctrlrow{display:flex;align-items:center;gap:12px;width:calc(100% - 8px);max-width:296px}
 .ctrlrow>span{font-family:var(--f-pixel);font-size:9px;color:var(--gold);letter-spacing:.1em;flex:none}
 .diff.ctrl{grid-template-columns:1fr 1fr;flex:1;width:auto}
+/* ---- title menu column ---- */
+.menu{width:calc(100% - 16px);max-width:296px;display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-top:2px}
+.sect{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;justify-items:stretch;min-width:0}
+.menu .namebox,.menu .diff{width:100%;max-width:none}
+.menu .diff{width:100%}
+.lbl{font-size:11px;color:var(--gold);text-align:left;letter-spacing:.04em;padding-left:2px}
+.menu .ddesc{text-align:left;margin:0;padding-left:2px}
+.menu .ghost.guest{justify-self:end;margin:0;padding:2px 0 0;font-size:11px}
+.btn.primary{width:100%;margin:6px 0 4px;padding:15px 0 13px;font-size:24px;display:flex;align-items:center;justify-content:center;gap:12px}
+.btn.primary::before{content:none}
+.btn.primary i{font-style:normal;font-size:14px;color:var(--ink);animation:blinky .8s steps(2) infinite}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn2{font-family:var(--f-display);font-size:14px;color:var(--gi);background:var(--ink);border:0;border-radius:0;cursor:pointer;padding:10px 0 9px;
+  box-shadow:0 -3px 0 0 var(--gi),0 3px 0 0 var(--gi),-3px 0 0 0 var(--gi),3px 0 0 0 var(--gi),inset 0 -3px 0 0 #2a2034}
+.btn2:hover,.btn2:focus-visible{color:var(--gold);outline:none;box-shadow:0 -3px 0 0 var(--gold),0 3px 0 0 var(--gold),-3px 0 0 0 var(--gold),3px 0 0 0 var(--gold),inset 0 -3px 0 0 #2a2034}
+.btn2:active{transform:translateY(2px)}
+.tail{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tail .stat{font-size:11px;text-align:left}
+.togs{display:flex;gap:8px}
+.tog{display:flex;align-items:center;gap:5px;background:none;border:0;cursor:pointer;padding:4px 6px;font-family:var(--f-display);font-size:11px;color:var(--muted);
+  box-shadow:inset 0 0 0 2px var(--edge)}
+.tog b{font-weight:400;font-family:var(--f-pixel);font-size:8px;color:var(--ink);background:#9aff7a;padding:2px 3px 1px}
+.tog.off b{background:var(--edge);color:var(--muted)}
+.tog:focus-visible{outline:2px dashed var(--gold);outline-offset:2px}
 .ghost.guest{margin-top:-6px;font-size:11px;color:var(--muted)}
 .hint{font-family:var(--f-pixel);font-size:8px;color:var(--muted);line-height:1.9}
 .namebox{display:flex;align-items:center;gap:10px;width:calc(100% - 8px);max-width:296px;box-sizing:border-box;padding:6px 12px;
@@ -444,7 +468,7 @@ function toggleBgm(){bgmOn=!bgmOn;try{localStorage.setItem('punchtower.bgm',bgmO
   if(!bgmOn)bgmStop();else{const w=wantedTrack();if(w)bgmStart(w);}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmStop();else{const w=wantedTrack();if(w)bgmStart(w);}});
 addEventListener('keydown',e=>{if(e.key==='m'||e.key==='M'){if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
-  toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
+  toggleBgm();setTog('bgmbtn',bgmOn);}});
 let growl=null;
 // the dramatic beat between a full charge and the launch
 // KING_SLOW matches the 왕펀치!! banner, so the launch follows it immediately
@@ -1386,18 +1410,31 @@ function showSplash(){
   // once the logo is playing, a tap anywhere skips it
   ov.addEventListener('pointerdown',function h(){if(done){ov.removeEventListener('pointerdown',h);return;}if(stage2)finish();});
   addEventListener('keydown',onKey);}
+const togHTML=(id,act,label,on)=>`<button class="tog${on?'':' off'}" type="button" id="${id}" data-act="${act}" aria-pressed="${on}"><span>${label}</span><b>${on?'ON':'OFF'}</b></button>`;
+function setTog(id,on){const b=ov.querySelector('#'+id);if(!b)return;b.classList.toggle('off',!on);b.setAttribute('aria-pressed',on);b.querySelector('b').textContent=on?'ON':'OFF';}
+// title layout: one 296px column, everything on the same left/right edges.
+// importance: START (big, full width) > ranking / how-to (medium pair) > guest, music, sound (small)
 function showTitle(){menuMusic();showOverlay(`
   <h1 class="logo" aria-label="PUNCH TOWER"><span class="lw"><span class="lo" aria-hidden="true">PUNCH</span><span class="lf">PUNCH</span></span><span class="lw"><span class="lo" aria-hidden="true">TOWER</span><span class="lf">TOWER</span></span></h1>
-  <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 (비우면 게스트)" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>
-  <button class="ghost guest" type="button" data-act="guest">게스트로 플레이</button>
-  ${diffPicker()}
-  <div class="ctrlrow"><span>조작</span><div class="diff ctrl" role="group" aria-label="조작 방식">
-    <button type="button" id="ctrl-classic" data-c="classic" aria-pressed="${ctrlMode==='classic'}">클래식</button>
-    <button type="button" id="ctrl-pad" data-c="pad" aria-pressed="${ctrlMode==='pad'}">스틱+버튼</button></div></div>
-  <button class="btn" id="go" data-act="go">시작</button>
-  <div class="row"><button class="ghost" type="button" data-act="rank">랭킹 보기</button><button class="ghost" type="button" data-act="howto">조작법</button><button class="ghost" type="button" id="bgmbtn" data-act="music">${bgmLabel()}</button><button class="ghost" type="button" id="sndlink" data-act="sound">${soundOn?'소리 끄기':'소리 켜기'}</button></div>
-  <div class="stat" id="bestline">${bestLine()}</div>
-  ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,sound:()=>{setSound(!soundOn);const b=ov.querySelector('#sndlink');if(b)b.textContent=soundOn?'소리 끄기':'소리 켜기';if(soundOn){sfx.select();menuMusic();}},music:()=>{toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
+  <div class="menu">
+    <div class="sect">
+      <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 (비우면 게스트)" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>
+      <button class="ghost guest" type="button" data-act="guest">게스트로 플레이</button>
+    </div>
+    <div class="sect"><span class="lbl">난이도</span>${diffPicker()}</div>
+    <div class="sect"><span class="lbl">조작 방식</span><div class="diff ctrl" role="group" aria-label="조작 방식">
+      <button type="button" id="ctrl-classic" data-c="classic" aria-pressed="${ctrlMode==='classic'}">클래식</button>
+      <button type="button" id="ctrl-pad" data-c="pad" aria-pressed="${ctrlMode==='pad'}">스틱+버튼</button></div></div>
+    <button class="btn primary" id="go" data-act="go"><i aria-hidden="true">▶</i>시작</button>
+    <div class="pair"><button class="btn2" type="button" data-act="rank">랭킹</button><button class="btn2" type="button" data-act="howto">조작법</button></div>
+    <div class="tail">
+      <div class="stat" id="bestline">${bestLine()}</div>
+      <div class="togs">${togHTML('bgmbtn','music','음악',bgmOn)}${togHTML('sndlink','sound','소리',soundOn)}</div>
+    </div>
+  </div>
+  ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,
+    sound:()=>{setSound(!soundOn);setTog('sndlink',soundOn);if(soundOn){sfx.select();menuMusic();}},
+    music:()=>{toggleBgm();setTog('bgmbtn',bgmOn);}});
   ov.querySelectorAll('.ctrl button').forEach(b=>b.addEventListener('click',()=>{initAudio();ctrlMode=b.dataset.c;
     try{localStorage.setItem('punchtower.ctrl',ctrlMode);}catch(e){}
     ov.querySelectorAll('.ctrl button').forEach(x=>x.setAttribute('aria-pressed',x===b));sfx.select();}));
