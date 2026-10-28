@@ -809,13 +809,15 @@ stage.addEventListener('pointerdown',e=>{if(!ov.hidden)return;e.preventDefault()
     if(x<W/2){if(stick.id===null)stick={id:e.pointerId,ox:x,oy:y,dx:0,t0:now(),dashed:false};return;} // left half: stick
     press(e.pointerId,x<W*.75?0:1);markDrag(e.pointerId,x);return;}                                   // right half: L / R fist
   press(e.pointerId,x<W/2?0:1);markDrag(e.pointerId,x);});
-// slide a punching thumb left/right = fine positioning (about 0.4 px of movement per px of drag)
-const FINE=.4,DRAG_START=5;
+// slide a punching thumb left/right = positioning in steps: each swipe step moves 3x a punch nudge
+const DRAG_START=5,DRAG_STEP=8,DRAG_MOVE=NUDGE*3;
 function markDrag(id,x){const h=holds.get(id);if(h){h.x0=x;h.lx=x;h.drag=false;}}
 stage.addEventListener('pointermove',e=>{const h=holds.get(e.pointerId);if(!h||h.x0===undefined||mode!=='play')return;
   const [x]=toCanvas(e);
   if(!h.drag&&Math.abs(x-h.x0)>=DRAG_START){h.drag=true;h.lx=h.x0;}   // past a small threshold it's a drag, not a tap
-  if(h.drag){pl.tx=clamp(pl.tx+(x-h.lx)*FINE,XMIN,XMAX);h.lx=x;}});
+  if(h.drag){let d=x-h.lx;
+    if(!h.stepped){pl.tx=clamp(pl.tx+Math.sign(d||x-h.x0)*DRAG_MOVE,XMIN,XMAX);h.stepped=true;h.lx=x;}  // first step right away
+    else while(Math.abs(d)>=DRAG_STEP){const sg=Math.sign(d);pl.tx=clamp(pl.tx+sg*DRAG_MOVE,XMIN,XMAX);h.lx+=sg*DRAG_STEP;d=x-h.lx;}}});
 stage.addEventListener('pointermove',e=>{if(stick.id!==e.pointerId)return;
   const [x]=toCanvas(e);const raw=x-stick.ox;stick.dx=clamp(raw,-STICK_MAX,STICK_MAX);
   // a quick flick to the edge right after touching = dash
