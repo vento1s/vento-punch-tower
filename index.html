@@ -106,10 +106,15 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .blinky{animation:blinky 1s steps(2) infinite;color:var(--lava-hi)}
 @keyframes blinky{50%{opacity:.25}}
 .splash{display:grid;gap:16px;place-items:center;margin:auto}
+.ov.black{background:#000}
+.press{font-family:var(--f-pixel);font-size:11px;letter-spacing:.12em;color:var(--gi);margin:auto}
 .studio{font-family:var(--f-pixel);font-size:clamp(16px,6.5cqw,24px);line-height:1.6;letter-spacing:.08em;color:var(--gi);
-  text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408;animation:rise .5s steps(5) both}
-@keyframes rise{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
-@media (prefers-reduced-motion:reduce){.board li.me,.blinky,.studio,.namebox.bad{animation:none}}
+  text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408;text-align:center;transition:color .05s,text-shadow .05s}
+.studio span,.splash .w3{display:inline-block;animation:popin .14s steps(3) both}
+.studio .w2{animation-delay:.16s}.splash .w3{animation-delay:.5s}
+.studio.lit{color:#fff;text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408,0 0 14px rgba(255,208,74,.9)}
+@keyframes popin{from{opacity:0;transform:scale(1.7)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.board li.me,.blinky,.studio span,.splash .w3,.namebox.bad{animation:none}}
 .cutin{position:absolute;inset:0;display:flex;align-items:center;pointer-events:none;z-index:2;overflow:hidden}
 .cutin[hidden]{display:none}
 .cutin .band{width:100%;padding:12px 0 8px;text-align:center;
@@ -149,7 +154,7 @@ const DIFFS=[
   lava:6, grow:.35,hp:.7, win:.6, weakW:16,weakMul:3,  relocate:8,gold:80,vib:.6},
  {key:'normal',ko:'중급',  tag:'NORMAL',desc:'기본 난이도. 높이 갈수록 약점 공략이 필수예요.',
   lava:10,grow:.6, hp:1,  win:.45,weakW:11,weakMul:3,  relocate:5,gold:60,vib:1},
- {key:'hard',  ko:'고급',  tag:'HARD',  desc:'블록이 단단하고 약점이 자주 움직여요.',
+ {key:'hard',  ko:'고급',  tag:'HARD',  desc:'블록이 단단하고 약점이 좁아요.',
   lava:12,grow:.8, hp:1.8,win:.38,weakW:8, weakMul:3.5,relocate:4,gold:50,vib:1.25},
  {key:'master',ko:'초고수',tag:'MASTER',desc:'약점을 못 맞추면 용암을 못 이겨요. 각오하세요.',
   lava:16,grow:1.2,hp:2.6,win:.32,weakW:6, weakMul:4,  relocate:3,gold:40,vib:1.5},
@@ -217,6 +222,14 @@ const sfx={
     tone(t+.03,.18,3520,3400,'square',.03);},
   // running wind: a quick airy 'shuk' (band-passed noise sweeping down) plus a thin high hiss
   ting(){if(!AC)return;const t=AC.currentTime;tone(t,.12,2400,2300,'square',.05);tone(t,.18,3600,3500,'triangle',.05);noise(t,.03,8000,2,.25);},
+  // studio logo jingle: ding · ding · di-DING with a shimmering chord and a soft echo
+  logo(){if(!AC)return;const t=AC.currentTime+.03;
+    const ding=(at,f,len,v)=>{tone(at,len,f,f*.998,'square',v);tone(at,len*1.4,f*2,f*2,'triangle',v*.45);};
+    ding(t,1046.5,.15,.09);ding(t+.16,1046.5,.15,.09);
+    ding(t+.36,1568,.07,.08);ding(t+.44,2093,.75,.09);
+    [523.3,659.3,784,1046.5].forEach(f=>tone(t+.44,.9,f,f,'triangle',.045));
+    ding(t+.66,2093,.45,.025);ding(t+.88,2093,.35,.012);
+    noise(t+.44,.6,9000,.8,.12,'highpass');},
   dash(){if(!AC)return;const t=AC.currentTime;noise(t,.16,3200,1.6,.55,'bandpass',700);noise(t+.015,.1,6000,.7,.18,'highpass',2500);},
   kimax(){if(!AC)return;const t=AC.currentTime;tone(t,.12,1568,1568,'triangle',.07);tone(t+.06,.22,2093,2093,'triangle',.06);},
   kipunch(c){if(!AC)return;const t=AC.currentTime;
@@ -437,7 +450,6 @@ function hit(side,power){
     shake=Math.max(shake,dmg===0?.8:1.6);hitstop=Math.max(hitstop,.028);vibe(7);}
   if(weak&&weakCount%25===0){fever=5;sfx.fever();pop(popX(56),pl.feet-30,'FEVER!!','#ff7af0',2);}
   if(s.hp<=0)breakSlab(s);
-  else if(weak&&s.weakHits>=D.relocate)relocateWeak(s);
 }
 function debris(s){const y=-s.n*FH;const c=SLABC[s.type];
   for(let i=0;i<34;i++)parts.push({x:WALL+Math.random()*IN,y:y+Math.random()*10,vx:(Math.random()-.5)*160,vy:-60-Math.random()*120,life:.7+Math.random()*.6,col:[c[0],c[1],c[2]][i%3],s:Math.random()<.4?2:1,g:420});
@@ -931,7 +943,7 @@ function wireDiff(){ov.querySelectorAll('.diff button').forEach(b=>b.addEventLis
   ov.querySelectorAll('.diff button').forEach(x=>x.setAttribute('aria-pressed',x===b));
   ov.querySelector('#ddesc').textContent=D.desc;const bl=ov.querySelector('#bestline');if(bl)bl.innerHTML=bestLine();sfx.select();if(onDiff)onDiff();}));}
 let ovGen=0,onDiff=null;
-function showOverlay(html,acts){ov.innerHTML=html;ov.hidden=false;ov.scrollTop=0;ovGen++;onDiff=null;wireDiff();
+function showOverlay(html,acts){ov.classList.remove('black');ov.innerHTML=html;ov.hidden=false;ov.scrollTop=0;ovGen++;onDiff=null;wireDiff();
   ov.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>{initAudio();acts[b.dataset.act]();}));
   const main=ov.querySelector('.btn');setTimeout(()=>{try{main&&main.focus({preventScroll:true});}catch(e){}},50);}
 addEventListener('keydown',e=>{if(ov.hidden)return;if(e.key==='Enter'){const b=ov.querySelector('.btn');if(b){e.preventDefault();b.click();}}});
@@ -1011,10 +1023,22 @@ function startGame(){
     playerName=v;try{localStorage.setItem('punchtower.name',v);}catch(e){}}
   if(!playerName){showTitle();return;}
   ov.hidden=true;newGame();mode='play';bgmStop();bgmStart();}
+// arcade boot: browsers only allow sound after a touch, so the logo waits for one, then plays with its jingle
 function showSplash(){
-  ov.innerHTML=`<div class="splash"><div class="studio">VENTO<br>AI STUDIO</div><div class="hint">PRESENTS</div></div>`;ov.hidden=false;
-  let done=false;const go=()=>{if(done)return;done=true;showTitle();};
-  ov.addEventListener('pointerdown',go,{once:true});setTimeout(go,1700);}
+  ov.classList.add('black');ov.hidden=false;
+  ov.innerHTML=`<div class="press blinky">TOUCH TO START</div>`;
+  let stage2=false,done=false;
+  const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);ov.classList.remove('black');showTitle();};
+  const play=()=>{
+    if(stage2){finish();return;} // a second touch skips the logo
+    stage2=true;initAudio();sfx.logo();
+    ov.innerHTML=`<div class="splash"><div class="studio" id="studio"><span class="w1">VENTO</span><br><span class="w2">AI STUDIO</span></div><div class="hint w3">PRESENTS</div></div>`;
+    setTimeout(()=>{const el=document.getElementById('studio');if(el&&!done)el.classList.add('lit');},440);
+    setTimeout(()=>{const el=document.getElementById('studio');if(el&&!done)el.classList.remove('lit');},620);
+    setTimeout(finish,2000);};
+  const onKey=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();play();}};
+  ov.addEventListener('pointerdown',function h(){if(done){ov.removeEventListener('pointerdown',h);return;}play();if(done)ov.removeEventListener('pointerdown',h);});
+  addEventListener('keydown',onKey);}
 function showTitle(){showOverlay(`
   <div class="eyebrow">VENTO AI STUDIO PRESENTS</div>
   <h1 class="logo" aria-label="PUNCH TOWER"><span>PUNCH</span><span>TOWER</span></h1>
