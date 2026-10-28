@@ -1081,7 +1081,7 @@ const CREDIT=`<footer class="credit">© 2026 VENTO AI STUDIO</footer>`;
 function startGame(){
   const inp=ov.querySelector('#pname');
   if(inp){const v=inp.value.trim().slice(0,NAME_MAX);
-    if(!v){const box=inp.closest('.namebox');box.classList.remove('bad');void box.offsetWidth;box.classList.add('bad');inp.focus();sfx.same();return;}
+    if(!v){startGuest();return;} // no name typed: just play as a guest instead of blocking the start
     playerName=v;isGuest=false;try{localStorage.setItem('punchtower.name',v);}catch(e){}}
   if(!playerName){showTitle();return;}
   ov.hidden=true;newGame();mode='play';bgmStop();bgmStart();}
@@ -1109,7 +1109,7 @@ function showTitle(){showOverlay(`
   <div class="eyebrow">VENTO AI STUDIO PRESENTS</div>
   <h1 class="logo" aria-label="PUNCH TOWER"><span class="lw"><span class="lo" aria-hidden="true">PUNCH</span><span class="lf">PUNCH</span></span><span class="lw"><span class="lo" aria-hidden="true">TOWER</span><span class="lf">TOWER</span></span></h1>
   <div class="hazard" aria-hidden="true"></div>
-  <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 입력" value="${isGuest?'':esc(playerName)}"></label>
+  <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 (비우면 게스트)" value="${isGuest?'':esc(playerName)}"></label>
   <button class="ghost guest" type="button" data-act="guest">게스트로 플레이</button>
   ${diffPicker()}
   <div class="ctrlrow"><span>조작</span><div class="diff ctrl" role="group" aria-label="조작 방식">
