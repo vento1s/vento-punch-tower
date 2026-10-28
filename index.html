@@ -104,6 +104,11 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .namebox input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--gi);caret-color:var(--lava-hi);
   font-family:var(--f-display);font-size:16px;padding:4px 0 2px}
 .namebox input::placeholder{color:var(--muted);opacity:.7}
+/* one-tap clear: pixel X in a small dark box at the right end of the name field */
+.nameclear{flex:none;width:26px;height:26px;margin-right:-4px;border:0;border-radius:0;padding:0;cursor:pointer;position:relative;
+  background:#2a2034;box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge)}
+.nameclear::before{content:"";position:absolute;left:5px;top:5px;width:3px;height:3px;box-shadow:0px 0px var(--gi),3px 3px var(--gi),6px 6px var(--gi),9px 9px var(--gi),12px 12px var(--gi),12px 0px var(--gi),9px 3px var(--gi),3px 9px var(--gi),0px 12px var(--gi)}
+.nameclear:hover,.nameclear:focus-visible{background:var(--weak);outline:none}
 .namebox.bad{animation:nope .32s steps(4);box-shadow:0 -3px 0 0 var(--weak),0 3px 0 0 var(--weak),-3px 0 0 0 var(--weak),3px 0 0 0 var(--weak)}
 @keyframes nope{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .row{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
@@ -1261,10 +1266,9 @@ function showSplash(){
   ov.addEventListener('pointerdown',function h(){if(done){ov.removeEventListener('pointerdown',h);return;}if(stage2)finish();});
   addEventListener('keydown',onKey);}
 function showTitle(){showOverlay(`
-  <div class="eyebrow">VENTO AI STUDIO PRESENTS</div>
   <h1 class="logo" aria-label="PUNCH TOWER"><span class="lw"><span class="lo" aria-hidden="true">PUNCH</span><span class="lf">PUNCH</span></span><span class="lw"><span class="lo" aria-hidden="true">TOWER</span><span class="lf">TOWER</span></span></h1>
   <div class="hazard" aria-hidden="true"></div>
-  <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 (비우면 게스트)" value="${isGuest?'':esc(playerName)}"></label>
+  <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 (비우면 게스트)" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>
   <button class="ghost guest" type="button" data-act="guest">게스트로 플레이</button>
   ${diffPicker()}
   <div class="ctrlrow"><span>조작</span><div class="diff ctrl" role="group" aria-label="조작 방식">
@@ -1278,7 +1282,10 @@ function showTitle(){showOverlay(`
     try{localStorage.setItem('punchtower.ctrl',ctrlMode);}catch(e){}
     ov.querySelectorAll('.ctrl button').forEach(x=>x.setAttribute('aria-pressed',x===b));sfx.select();}));
   const inp=ov.querySelector('#pname');
-  inp.addEventListener('input',()=>{playerName=inp.value.trim().slice(0,NAME_MAX);});
+  const clr=ov.querySelector('#nameclear');
+  inp.addEventListener('input',()=>{playerName=inp.value.trim().slice(0,NAME_MAX);clr.hidden=!inp.value;});
+  clr.addEventListener('click',e=>{e.preventDefault();inp.value='';playerName='';clr.hidden=true;
+    try{localStorage.removeItem('punchtower.name');}catch(_){}sfx.same();inp.focus();});
   if(!playerName)setTimeout(()=>{try{inp.focus({preventScroll:true});}catch(e){}},80);}
 function showHowto(){showOverlay(`
   <div class="eyebrow">HOW TO PLAY</div>
