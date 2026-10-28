@@ -984,6 +984,26 @@ function pxRing(cx,cy,r,col){for(let i=0;i<r*7;i++){const a=i/(r*7)*Math.PI*2;R(
 // pixel fist (knuckles up, thumb across) for the L / R punch buttons; R is mirrored
 const FIST_ICON=["..kkkkkk..",".kssssssk.","ksSsSsSssk","kssssssssk","kkkkkssssk","kssssksssk",".kssssssk.","..kwwwwk..","..kwwwwk.."];
 const FIST_PAL={k:'#0d0a08',s:'#f2b68a',S:'#c88a60',w:'#f4efe8'};
+// big chunky brawler fist (front view: four knuckles, thumb across, wrist) for the classic touch zones
+const BIG_FIST=[".kkk.kkk.kkk.kkk.","kHHskHHskHHskHHsk","kHssksssksssksssk","ksssksssksssksssk","kSssSsssSsssSsssk",
+ "ksssssssssssssssk","kkkkkkkksssssssSk","kHHHHHHHksssssSSk","ksssssssksssssSSk","kSSSSSSSkssssSSSk",".kkkkkkkssssSSSk.",
+ ".kssssssssssSSSk.","..kSSSSSSSSSSSk..","...kkkkkkkkkkk...","....ksssssssk....","....kSsssssSk...."];
+const BIG_FIST_PAL={k:'#2a120c',s:'#f4a48c',H:'#ffd0bd',S:'#c8735c'};
+const BIG_FIST_HOT={k:'#2a120c',s:'#ffbe9e',H:'#fff0e6',S:'#e08a6a'};
+function drawBigFist(cx,cy,sc,mirror,pal){const w=BIG_FIST[0].length,h=BIG_FIST.length,x0=Math.round(cx-w*sc/2),y0=Math.round(cy-h*sc/2);
+  for(let r=0;r<h;r++){const row=BIG_FIST[r];for(let c=0;c<w;c++){const ch=row[mirror?w-1-c:c];if(ch!=='.')R(x0+c*sc,y0+r*sc,sc,sc,pal[ch]);}}}
+function drawClassicFists(){
+  for(const sd of [0,1]){
+    let held=false,charge=0;for(const h of holds.values())if(h.side===sd&&!h.used){held=true;charge=Math.max(charge,h.c);}
+    const down=held||tapFX[sd]>.45,o=down?2:0,cx=sd?W-24:24,cy=H-21;
+    ctx.globalAlpha=down?1:.82;
+    pxDisc(cx,cy+3,18,'#0d0a08');
+    pxRing(cx,cy+o,17,down?'#ff8a00':'#5c4b73');
+    if(charge>0){ctx.globalAlpha=.25+.35*charge;pxDisc(cx,cy+o,16,'#7af0ff');ctx.globalAlpha=1;}
+    drawBigFist(cx,cy+o,2,sd===1,down?BIG_FIST_HOT:BIG_FIST_PAL);
+  }
+  ctx.globalAlpha=1;
+}
 function drawPad(){
   // stick: appears where the left thumb lands; idles bottom-left
   const on=stick.id!==null,bx=on?stick.ox:22,by=on?stick.oy:H-20;
@@ -1012,7 +1032,7 @@ function drawCountdown(){
 function drawStrip(){
   drawCountdown();
   if(mode!=='play'&&mode!=='super'&&mode!=='count')return;
-  if(ctrlMode==='pad')drawPad();
+  if(ctrlMode==='pad')drawPad();else drawClassicFists();
   const y0=STRIP,h=H-y0-3;
   // KING FIST slot: gauge until 20 alternating hits, then a burning button
   const x0=BTN_L+1,w=ctrlMode==='pad'?44:BTN_R-BTN_L-2; // pad mode leaves room for the fist buttons
