@@ -1,8 +1,8 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0}[hidden]{display:none!important}</style></head><body><title>PUNCH TOWER</title>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0}[hidden]{display:none!important}</style></head><body><title>PUNCH TOWER</title>
 <meta name="author" content="VENTO AI STUDIO">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
 <style>
 /* Layout: one full-height arcade cabinet; pixel canvas scaled to fit, HTML panels float over it. Single dark look by choice. */
 :root{
@@ -14,9 +14,13 @@
   --weak:#ff3a5a;
   --gi:#f4efe8;
   --muted:#a597b8;
-  --f-display:"Black Han Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  /* Galmuri11 = Korean bitmap font (loaded on the hosted site); falls back to the system font elsewhere */
+  --f-display:"Galmuri11","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-pixel:"Press Start 2P",ui-monospace,monospace;
-  --f-body:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+  --f-body:"Galmuri11","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+  --ink:#0d0a08;      /* logo + frame black */
+  --gold:#ffd400;     /* logo yellow */
+  --amber:#ff8a00;    /* logo orange */
   color-scheme:dark;
 }
 html,body{height:100%}
@@ -26,7 +30,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   padding-right:max(16px,env(safe-area-inset-right,0px));
   padding-block:8px;box-sizing:border-box;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
-  touch-action:manipulation}
+  touch-action:manipulation;-webkit-font-smoothing:none;font-smooth:never}
 #wrap{height:100%;display:flex;align-items:center;justify-content:center}
 #stage{position:relative;touch-action:none;overflow:hidden;container-type:size;
   box-shadow:0 0 0 2px var(--edge),0 0 40px rgba(255,122,26,.12)}
@@ -35,62 +39,83 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   gap:12px;padding:18px 16px;box-sizing:border-box;text-align:center;overflow-y:auto;
   background:linear-gradient(180deg,rgba(11,8,17,.6),rgba(11,8,17,.92) 55%)}
 .eyebrow{font-family:var(--f-pixel);font-size:10px;letter-spacing:.12em;color:var(--lava-hi)}
-.big{font-family:var(--f-display);font-size:clamp(34px,12cqw,58px);line-height:1;margin:0;
-  color:var(--gi);text-shadow:4px 4px 0 #c8341a,8px 8px 0 #4a1408;text-wrap:balance}
+.big{font-family:var(--f-display);font-weight:700;font-size:33px;line-height:1.1;margin:0;
+  color:var(--gold);text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),
+  3px 3px 0 var(--ink),-3px 3px 0 var(--ink),3px -3px 0 var(--ink),-3px -3px 0 var(--ink),6px 6px 0 var(--amber);text-wrap:balance}
 .logo{position:relative;margin:2px 0 4px;display:grid;gap:.18em;font-family:var(--f-pixel);font-weight:400;
   font-size:clamp(28px,11.5cqw,46px);line-height:1;letter-spacing:.02em;text-align:center}
-.logo span{display:block;color:transparent;-webkit-background-clip:text;background-clip:text;
-  background-image:linear-gradient(180deg,#fff6d0 0 28%,var(--lava-hi) 28% 52%,var(--lava) 52% 76%,#c8341a 76%);
-  filter:drop-shadow(3px 3px 0 #4a1408) drop-shadow(0 0 8px rgba(255,122,26,.35))}
-.logo span+span{font-size:1.18em}
+.logo .lw{position:relative;display:block}
+.logo .lf{position:relative;display:block;color:transparent;-webkit-background-clip:text;background-clip:text;
+  background-image:linear-gradient(180deg,#fff3a0 0 14%,var(--gold) 14% 50%,var(--amber) 50% 86%,#e05a00 86%)}
+.logo .lo{position:absolute;left:0;right:0;top:0;color:var(--ink);
+  /* black outline, then an orange 3D extrusion, then a black base shadow */
+  text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),
+    3px 3px 0 var(--ink),-3px 3px 0 var(--ink),3px -3px 0 var(--ink),-3px -3px 0 var(--ink),
+    4px 4px 0 #c24e00,5px 5px 0 #c24e00,6px 6px 0 #a33f00,7px 7px 0 var(--ink),8px 8px 0 var(--ink),9px 9px 0 var(--ink)}
+.logo .lw+.lw{font-size:1.18em}
+.hazard{width:min(100%,250px);height:8px;margin:2px auto 0;box-shadow:0 0 0 3px var(--ink);
+  background:repeating-linear-gradient(-45deg,var(--gold) 0 6px,var(--ink) 6px 12px)}
 .logo::after{content:"";position:absolute;inset:-6px -4px;pointer-events:none;
   background:repeating-linear-gradient(0deg,rgba(11,8,17,.6) 0 1px,transparent 1px 3px)}
 #stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
 .sub{font-family:var(--f-display);font-size:19px;color:var(--lava);margin:0}
 .ov[hidden]{display:none}
-.rules{display:grid;gap:5px;margin:0;padding:0;list-style:none;font-size:13px;line-height:1.45;color:var(--gi);max-width:31ch}
+.win{background:var(--ink);padding:12px 14px;margin:4px;box-shadow:0 0 0 2px var(--ink),0 0 0 4px var(--gi),0 0 0 6px var(--ink)}
+.rules{display:grid;gap:7px;margin:0;padding:0;list-style:none;font-size:12px;line-height:1.55;color:var(--gi);max-width:31ch;text-align:left}
+.rules li{padding-left:14px;position:relative}
+.rules li::before{content:"";position:absolute;left:2px;top:.5em;width:5px;height:5px;background:var(--gold)}
 .rules b{color:var(--lava-hi);font-weight:700}
 .rules .w{color:var(--weak)}
 .stat{font-family:var(--f-pixel);font-size:11px;line-height:1.9;color:var(--gi)}
 .stat span{color:var(--lava-hi)}
-.diff{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;max-width:300px}
-.diff button{font-family:var(--f-display);font-size:16px;padding:9px 0 7px;border:0;cursor:pointer;
-  background:var(--panel);color:var(--muted);box-shadow:inset 0 0 0 2px var(--edge)}
-.diff button[aria-pressed="true"]{background:var(--gi);color:#1a0a04;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
-.diff button[data-d="4"][aria-pressed="true"]{background:var(--weak);color:#fff}
-.diff button:focus-visible,.btn:focus-visible,.ghost:focus-visible{outline:3px solid var(--lava-hi);outline-offset:3px}
-.ddesc{font-size:12px;color:var(--muted);margin:-4px 0 0;min-height:1.4em}
-.btn{font-family:var(--f-display);font-size:24px;color:#1a0a04;background:var(--lava-hi);border:0;
-  padding:12px 30px 10px;cursor:pointer;
-  box-shadow:0 4px 0 #c8341a,0 8px 0 #4a1408,inset -4px -4px 0 rgba(0,0,0,.15);
-  transition:transform .06s}
-.btn:active{transform:translateY(4px);box-shadow:0 0 0 #c8341a,0 4px 0 #4a1408}
-.ghost{font-family:var(--f-display);font-size:15px;color:var(--muted);background:none;border:0;cursor:pointer;padding:6px 10px}
+/* 8-bit controls: square pixels, notched corners (4 offset shadows), no rounding */
+.diff{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:calc(100% - 8px);max-width:296px}
+.diff button{font-family:var(--f-display);font-size:12px;padding:8px 0 6px;border:0;cursor:pointer;border-radius:0;
+  background:var(--ink);color:var(--muted);
+  box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
+.diff button[aria-pressed="true"]{background:var(--gold);color:var(--ink);
+  box-shadow:0 -3px 0 0 var(--ink),0 3px 0 0 var(--ink),-3px 0 0 0 var(--ink),3px 0 0 0 var(--ink),inset -3px -3px 0 0 var(--amber)}
+.diff button[data-d="4"][aria-pressed="true"]{background:var(--weak);color:#fff;
+  box-shadow:0 -3px 0 0 var(--ink),0 3px 0 0 var(--ink),-3px 0 0 0 var(--ink),3px 0 0 0 var(--ink),inset -3px -3px 0 0 #a01030}
+.diff button:focus-visible,.btn:focus-visible,.ghost:focus-visible{outline:3px dashed var(--gold);outline-offset:5px}
+.ddesc{font-size:11px;color:var(--muted);margin:-2px 0 0;min-height:1.4em}
+.btn{position:relative;font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.04em;color:var(--ink);
+  background:var(--gold);border:0;border-radius:0;padding:12px 30px 10px;margin:6px;cursor:pointer;
+  box-shadow:0 -4px 0 0 var(--ink),0 4px 0 0 var(--ink),-4px 0 0 0 var(--ink),4px 0 0 0 var(--ink),
+    inset -4px -4px 0 0 var(--amber),inset 4px 4px 0 0 #fff3a0,0 10px 0 0 rgba(0,0,0,.45)}
+.btn::before{content:"";position:absolute;left:-26px;top:50%;margin-top:-7px;border:7px solid transparent;border-left:10px solid var(--gold);
+  border-right:0;animation:blinky .8s steps(2) infinite}
+.btn:active{transform:translateY(4px);box-shadow:0 -4px 0 0 var(--ink),0 4px 0 0 var(--ink),-4px 0 0 0 var(--ink),4px 0 0 0 var(--ink),
+    inset 4px 4px 0 0 var(--amber),0 6px 0 0 rgba(0,0,0,.45)}
+.ghost{font-family:var(--f-display);font-size:12px;color:var(--gi);background:none;border:0;cursor:pointer;padding:6px 8px;border-radius:0}
+.ghost::before{content:"▸ ";color:var(--amber)}
+.ghost:hover,.ghost:focus-visible{color:var(--gold)}
 .hint{font-family:var(--f-pixel);font-size:8px;color:var(--muted);line-height:1.9}
-.namebox{display:flex;align-items:center;gap:10px;width:100%;max-width:300px;box-sizing:border-box;padding:6px 12px;
-  background:var(--panel);box-shadow:inset 0 0 0 2px var(--edge);cursor:text}
-.namebox:focus-within{box-shadow:inset 0 0 0 2px var(--lava-hi)}
+.namebox{display:flex;align-items:center;gap:10px;width:calc(100% - 8px);max-width:296px;box-sizing:border-box;padding:6px 12px;
+  background:var(--ink);cursor:text;
+  box-shadow:0 -3px 0 0 var(--gi),0 3px 0 0 var(--gi),-3px 0 0 0 var(--gi),3px 0 0 0 var(--gi)}
+.namebox:focus-within{box-shadow:0 -3px 0 0 var(--gold),0 3px 0 0 var(--gold),-3px 0 0 0 var(--gold),3px 0 0 0 var(--gold)}
 .namebox span{font-family:var(--f-pixel);font-size:9px;color:var(--lava-hi);letter-spacing:.1em}
 .namebox input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--gi);caret-color:var(--lava-hi);
-  font-family:var(--f-display);font-size:20px;padding:4px 0 2px}
+  font-family:var(--f-display);font-size:16px;padding:4px 0 2px}
 .namebox input::placeholder{color:var(--muted);opacity:.7}
-.namebox.bad{animation:nope .32s steps(4);box-shadow:inset 0 0 0 2px var(--weak)}
+.namebox.bad{animation:nope .32s steps(4);box-shadow:0 -3px 0 0 var(--weak),0 3px 0 0 var(--weak),-3px 0 0 0 var(--weak),3px 0 0 0 var(--weak)}
 @keyframes nope{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .row{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
 .ghost{text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--edge)}
 .credit{font-family:var(--f-pixel);font-size:8px;letter-spacing:.18em;color:var(--muted);margin-top:4px}
-.boardwrap{width:100%;max-width:310px;display:grid;gap:6px}
+.boardwrap{width:calc(100% - 12px);max-width:304px;display:grid;gap:6px}
 .board{list-style:none;margin:0;padding:0;display:grid;gap:2px}
 .board li{display:grid;grid-template-columns:3.2em minmax(0,1fr) auto;grid-template-areas:"rk who sc" "rk rec sc";
   align-items:center;column-gap:8px;row-gap:1px;padding:5px 8px;
   background:rgba(23,16,34,.85);font-family:var(--f-pixel);font-size:9px;color:var(--gi);text-align:left;font-variant-numeric:tabular-nums}
 .board .rk{grid-area:rk}
 .board .who{grid-area:who;display:flex;align-items:center;gap:6px;min-width:0}
-.board .nm{font-family:var(--f-display);font-size:15px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.board .nm{font-family:var(--f-display);font-size:12px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .board .rec{grid-area:rec;font-size:8px;color:var(--muted)}
 .board .sc{grid-area:sc;font-size:11px;text-align:right;color:var(--lava-hi)}
-.dchip{flex:none;font-family:var(--f-body);font-size:10px;font-weight:700;line-height:1;padding:3px 5px 2px;border:1px solid currentColor}
+.dchip{flex:none;font-family:var(--f-body);font-size:10px;line-height:1;padding:3px 5px 2px;border:1px solid currentColor}
 .d-easy{color:#8fd18a}.d-normal{color:#c9c2d6}.d-hard{color:#ff9a2a}.d-master{color:var(--weak)}
 .board li.me .rec,.board li.me .sc,.board li.me .dchip{color:#1a0a04}
 .bnote.rule{font-size:10px;line-height:1.5}
@@ -1003,7 +1028,7 @@ function boardHTML(res,hiId){
   let h=list.slice(0,LIMIT).map((x,i)=>rowHTML(x,i,hiId)).join('');
   const mi=hiId?list.findIndex(x=>x.id===hiId):-1;
   if(mi>=LIMIT)h+=`<li class="gap">· · ·</li>`+rowHTML(list[mi],mi,hiId);
-  return `<ol class="board">${h}</ol><p class="bnote">${note}</p>`;
+  return `<ol class="board win">${h}</ol><p class="bnote">${note}</p>`;
 }
 const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 × 100 × 난이도 배율 · 같은 점수면 더 빨리 오른 사람이 위<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
 async function fillBoard(sel,_unused,hiId,preset){
@@ -1041,7 +1066,8 @@ function showSplash(){
   addEventListener('keydown',onKey);}
 function showTitle(){showOverlay(`
   <div class="eyebrow">VENTO AI STUDIO PRESENTS</div>
-  <h1 class="logo" aria-label="PUNCH TOWER"><span>PUNCH</span><span>TOWER</span></h1>
+  <h1 class="logo" aria-label="PUNCH TOWER"><span class="lw"><span class="lo" aria-hidden="true">PUNCH</span><span class="lf">PUNCH</span></span><span class="lw"><span class="lo" aria-hidden="true">TOWER</span><span class="lf">TOWER</span></span></h1>
+  <div class="hazard" aria-hidden="true"></div>
   <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 입력" value="${esc(playerName)}"></label>
   ${diffPicker()}
   <button class="btn" id="go" data-act="go">시작</button>
@@ -1053,8 +1079,8 @@ function showTitle(){showOverlay(`
   if(!playerName)setTimeout(()=>{try{inp.focus({preventScroll:true});}catch(e){}},80);}
 function showHowto(){showOverlay(`
   <div class="eyebrow">HOW TO PLAY</div>
-  <h2 class="big" style="font-size:36px">조작법</h2>
-  <ul class="rules">
+  <h2 class="big">조작법</h2>
+  <ul class="rules win">
     <li>엄지 두 개면 끝. 화면 <b>왼쪽 탭은 왼펀치</b>, <b>오른쪽 탭은 오른펀치</b></li>
     <li><b>꾹 누르면</b> 그쪽으로 걸어가며 기가 모이고, <b>떼면</b> 모인 만큼 센 펀치</li>
     <li>걷는 중에 <b>반대쪽을 탭</b>하면 가던 방향으로 휙 <b>대시</b></li>
@@ -1069,7 +1095,7 @@ function showHowto(){showOverlay(`
   ${CREDIT}`,{back:showTitle});}
 function showRanking(){showOverlay(`
   <div class="eyebrow">HIGH SCORES</div>
-  <h2 class="big" style="font-size:36px">랭킹</h2>
+  <h2 class="big">랭킹</h2>
   <div id="board" class="boardwrap"></div>
   ${SCORE_RULE}
   <button class="btn" type="button" data-act="back">돌아가기</button>
@@ -1079,8 +1105,8 @@ function resultScreen(cleared){
   const floor=pl.level,time=Math.round((cleared?clearTime:tNow)*10)/10;
   const en={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),name:playerName||'???',diff:D.key,floor,time};
   const head=cleared
-    ?`<div class="eyebrow">TOWER CLEAR · ${D.tag}</div><h2 class="big" style="font-size:40px">정상 정복!</h2>`
-    :`<div class="eyebrow">GAME OVER · ${D.tag}</div><h2 class="big" style="font-size:36px">용암에 삼켜졌다</h2>`;
+    ?`<div class="eyebrow">TOWER CLEAR · ${D.tag}</div><h2 class="big">정상 정복!</h2>`
+    :`<div class="eyebrow">GAME OVER · ${D.tag}</div><h2 class="big">용암에 삼켜졌다</h2>`;
   showOverlay(`${head}
   <div class="stat"><span>${esc(en.name)}</span> · ${D.ko} · ${floor>=TOP?'CLEAR':floor+'F'} · <span>${fmt(time)}</span><br>SCORE <span>${num(scoreOf(en))}</span> · 약점 <span>${weakCount}</span> · 왕주먹 <span>${superCount}</span></div>
   <div class="rankbig" id="myrank">${floor>=1?'기록 등록 중…':'1층은 넘어야 랭킹에 올라가요'}</div>
