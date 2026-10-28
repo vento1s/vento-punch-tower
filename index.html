@@ -91,6 +91,9 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .ghost{font-family:var(--f-display);font-size:12px;color:var(--gi);background:none;border:0;cursor:pointer;padding:6px 8px;border-radius:0}
 .ghost::before{content:"▸ ";color:var(--amber)}
 .ghost:hover,.ghost:focus-visible{color:var(--gold)}
+.ctrlrow{display:flex;align-items:center;gap:12px;width:calc(100% - 8px);max-width:296px}
+.ctrlrow>span{font-family:var(--f-pixel);font-size:9px;color:var(--gold);letter-spacing:.1em;flex:none}
+.diff.ctrl{grid-template-columns:1fr 1fr;flex:1;width:auto}
 .ghost.guest{margin-top:-6px;font-size:11px;color:var(--muted)}
 .hint{font-family:var(--f-pixel);font-size:8px;color:var(--muted);line-height:1.9}
 .namebox{display:flex;align-items:center;gap:10px;width:calc(100% - 8px);max-width:296px;box-sizing:border-box;padding:6px 12px;
@@ -368,6 +371,9 @@ let altStreak=0,superReady=false,sup=null,superCount=0,flashO=0,flashCol='#fff3c
 const holds=new Map();let bothT=0,chargeOsc=null,chargeGain=null;
 const HOLD_T=.16,CHARGE_T=.9,MOVE_SPD=42;
 let ghosts=[],dashCD=0,dashT=0;
+// control schemes: 'classic' = tap halves (hold to walk), 'pad' = left-side drag stick + right-side L/R fist buttons
+let ctrlMode='classic';try{if(localStorage.getItem('punchtower.ctrl')==='pad')ctrlMode='pad';}catch(e){}
+const STICK_MAX=14;let stick={id:null,ox:0,oy:0,dx:0,t0:0,dashed:false};
 let comboFX={dx:12,at:-9};
 const guardPos=sd=>({x:pl.x+(sd?4:-4),y:pl.feet-3});
 const SUPER_NEED=20,SUPER_FLOORS=5;
@@ -567,17 +573,26 @@ function dash(dirSide){
   sfx.dash();vibe(8);
 }
 function press(id,side){if(holds.has(id))return;
-  if(mode==='play')for(const h of holds.values()){if(!h.used&&h.side!==side&&h.t>=HOLD_T){
+  if(mode==='play'&&ctrlMode==='classic')for(const h of holds.values()){if(!h.used&&h.side!==side&&h.t>=HOLD_T){
     holds.set(id,{side,t:0,c:0,used:true});dash(h.side);return;}}
   holds.set(id,{side,t:0,c:0,used:false});hit(side);}
 function release(id){const h=holds.get(id);holds.delete(id);
   if(h&&!h.used&&h.t>=HOLD_T&&mode==='play')hit(h.side,Math.max(.05,h.c));}
+const toCanvas=e=>{const r=stage.getBoundingClientRect();return [(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H];};
 stage.addEventListener('pointerdown',e=>{if(!ov.hidden)return;e.preventDefault();
-  const r=stage.getBoundingClientRect();
+  const [x,y]=toCanvas(e);
   try{stage.setPointerCapture(e.pointerId);}catch(_){}
-  press(e.pointerId,(e.clientX-r.left)<r.width/2?0:1);});
-stage.addEventListener('pointerup',e=>release(e.pointerId));
-stage.addEventListener('pointercancel',e=>{holds.delete(e.pointerId);});
+  if(ctrlMode==='pad'){
+    if(x<W/2){if(stick.id===null)stick={id:e.pointerId,ox:x,oy:y,dx:0,t0:now(),dashed:false};return;} // left half: stick
+    press(e.pointerId,x<W*.75?0:1);return;}                                                            // right half: L / R fist
+  press(e.pointerId,x<W/2?0:1);});
+stage.addEventListener('pointermove',e=>{if(stick.id!==e.pointerId)return;
+  const [x]=toCanvas(e);const raw=x-stick.ox;stick.dx=clamp(raw,-STICK_MAX,STICK_MAX);
+  // a quick flick to the edge right after touching = dash
+  if(!stick.dashed&&now()-stick.t0<.2&&Math.abs(raw)>=STICK_MAX&&mode==='play'){stick.dashed=true;dash(raw>0?1:0);}});
+const endStick=id=>{if(stick.id===id){stick.id=null;stick.dx=0;return true;}return false;};
+stage.addEventListener('pointerup',e=>{if(!endStick(e.pointerId))release(e.pointerId);});
+stage.addEventListener('pointercancel',e=>{if(!endStick(e.pointerId))holds.delete(e.pointerId);});
 stage.addEventListener('contextmenu',e=>e.preventDefault());
 const LKEYS=['arrowleft','f','a'],RKEYS=['arrowright','j','d'];
 addEventListener('keydown',e=>{
@@ -608,13 +623,14 @@ function update(dt){
   if(mode==='play'){
     for(const h of holds.values()){if(h.used)continue;h.t+=dt;if(h.side)hasR=true;else hasL=true;
       if(h.t<HOLD_T)continue;
-      dir+=h.side?1:-1;const pc=h.c;h.c=Math.min(1,(h.t-HOLD_T)/CHARGE_T);maxC=Math.max(maxC,h.c);
+      if(ctrlMode==='classic')dir+=h.side?1:-1;const pc=h.c;h.c=Math.min(1,(h.t-HOLD_T)/CHARGE_T);maxC=Math.max(maxC,h.c);
       const g=guardPos(h.side);
       if(h.c>=1&&pc<1){sfx.kimax();
         for(let i=0;i<10;i++){const a=i/10*Math.PI*2;parts.push({x:g.x,y:g.y,vx:Math.cos(a)*45,vy:Math.sin(a)*45,life:.25,max:.25,s:1,g:0,ki:true});}}
       if(Math.random()<.25+.45*h.c){const a=Math.random()*Math.PI*2,r=9+Math.random()*5,l=.22;
         parts.push({x:g.x+Math.cos(a)*r,y:g.y+Math.sin(a)*r,vx:-Math.cos(a)*r/l,vy:-Math.sin(a)*r/l,life:l,max:l,s:1,g:0,ki:true});}}
-    if(holds.size){lastTap=now();comboFX.at=lastTap;}
+    if(holds.size||stick.id!==null){lastTap=now();comboFX.at=lastTap;}
+    if(ctrlMode==='pad'&&stick.id!==null&&Math.abs(stick.dx)>=2)pl.tx+=stick.dx/STICK_MAX*MOVE_SPD*1.2*dt;
   }
   hum(maxC);
   // both thumbs held -> KING FIST
@@ -889,14 +905,34 @@ function drawHUD(){
     if(dist<60){const a=(1-dist/60)*.5*(.7+.3*Math.sin(gt*16));const g=ctx.createLinearGradient(0,H-90,0,H);g.addColorStop(0,'rgba(255,30,10,0)');g.addColorStop(1,`rgba(255,30,10,${a})`);ctx.fillStyle=g;ctx.fillRect(0,H-90,W,90);}
   }
   if(mode==='play'&&!started&&ov.hidden){const b=((gt*3)|0)%2;
-    text('TAP = PUNCH',W/2,128,2,b?'#ffd04a':'#f4efe8','c');
-    text('HOLD = MOVE + CHARGE',W/2,146,1,'#7af0ff','c',false);
-    text('RELEASE = KI PUNCH',W/2,156,1,'#7af0ff','c',false);
-    text('HOLD + TAP OTHER = DASH',W/2,166,1,'#7af0ff','c',false);
-    text('L R L R UNDER THE',W/2,172,1,'#a597b8','c',false);text('RED WEAK POINT',W/2,180,1,'#ff3a5a','c',false);}
+    const lines=ctrlMode==='pad'
+      ?['LEFT: DRAG = MOVE','FLICK = DASH','RIGHT: L R = PUNCH','HOLD BUTTON = KI']
+      :['HOLD = MOVE + CHARGE','RELEASE = KI PUNCH','HOLD + TAP OTHER = DASH'];
+    text('TAP = PUNCH',W/2,120,2,b?'#ffd04a':'#f4efe8','c');
+    lines.forEach((l,i)=>text(l,W/2,138+i*9,1,'#7af0ff','c',false));
+    const y2=142+lines.length*9;
+    text('L R L R UNDER THE',W/2,y2,1,'#a597b8','c',false);text('RED WEAK POINT',W/2,y2+8,1,'#ff3a5a','c',false);}
+}
+function pxDisc(cx,cy,r,col){for(let dy=-r;dy<=r;dy++){const w=Math.round(Math.sqrt(r*r-dy*dy));R(Math.round(cx)-w,Math.round(cy)+dy,w*2+1,1,col);}}
+function pxRing(cx,cy,r,col){for(let i=0;i<r*7;i++){const a=i/(r*7)*Math.PI*2;R(Math.round(cx+Math.cos(a)*r),Math.round(cy+Math.sin(a)*r),1,1,col);}}
+function drawPad(){
+  // stick: appears where the left thumb lands; idles bottom-left
+  const on=stick.id!==null,bx=on?stick.ox:22,by=on?stick.oy:H-20;
+  ctx.globalAlpha=on?.9:.45;
+  pxDisc(bx,by,13,'rgba(10,6,16,.6)');pxRing(bx,by,13,'#f4efe8');
+  R(bx-17,by,3,1,'#a597b8');R(bx+15,by,3,1,'#a597b8');
+  pxDisc(bx+stick.dx,by,6,on?'#ffd400':'#c4bccd');pxDisc(bx+stick.dx-1,by-1,2,'#fff6d0');
+  // fist buttons
+  const btn=(cx,cy,sd,lab)=>{let down=false;for(const h of holds.values())if(h.side===sd&&!h.used)down=true;
+    ctx.globalAlpha=down?.95:.6;const o=down?1:0;
+    pxDisc(cx,cy+2,10,'#0d0a08');pxDisc(cx,cy+o,10,down?'#ff8a00':'#ffd400');pxDisc(cx-2,cy-2+o,4,down?'#ffb24a':'#fff3a0');
+    text(lab,cx+1,cy-3+o,2,'#0d0a08','c',false);};
+  btn(110,H-16,0,'L');btn(132,H-30,1,'R');
+  ctx.globalAlpha=1;
 }
 function drawStrip(){
   if(mode!=='play'&&mode!=='super')return;
+  if(ctrlMode==='pad')drawPad();
   const y0=STRIP,h=H-y0-3;
   // KING FIST slot: gauge until 20 alternating hits, then a burning button
   const x0=BTN_L+1,w=BTN_R-BTN_L-2;
@@ -964,9 +1000,9 @@ const fmt=s=>{const m=Math.floor(s/60);return m+':'+(s%60).toFixed(1).padStart(4
 function bestLine(){const b=bestOf();return b.floor?`${D.ko} 최고 <span>${b.floor}F</span>`:`${D.ko} 기록 없음`;}
 function diffPicker(){return `<div class="diff" role="group" aria-label="난이도">${DIFFS.map((d,i)=>`<button type="button" id="diff-${d.key}" data-d="${i+1}" data-i="${i}" aria-pressed="${i===diffIdx}">${d.ko}</button>`).join('')}</div>
   <p class="ddesc" id="ddesc">${D.desc}</p>`;}
-function wireDiff(){ov.querySelectorAll('.diff button').forEach(b=>b.addEventListener('click',()=>{
+function wireDiff(){ov.querySelectorAll('.diff button[data-i]').forEach(b=>b.addEventListener('click',()=>{
   initAudio();diffIdx=+b.dataset.i;D=DIFFS[diffIdx];try{localStorage.setItem('punchtower.diff',diffIdx);}catch(e){}
-  ov.querySelectorAll('.diff button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  ov.querySelectorAll('.diff button[data-i]').forEach(x=>x.setAttribute('aria-pressed',x===b));
   ov.querySelector('#ddesc').textContent=D.desc;const bl=ov.querySelector('#bestline');if(bl)bl.innerHTML=bestLine();sfx.select();if(onDiff)onDiff();}));}
 let ovGen=0,onDiff=null;
 function showOverlay(html,acts){ov.classList.remove('black');ov.innerHTML=html;ov.hidden=false;ov.scrollTop=0;ovGen++;onDiff=null;wireDiff();
@@ -1076,10 +1112,16 @@ function showTitle(){showOverlay(`
   <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 입력" value="${isGuest?'':esc(playerName)}"></label>
   <button class="ghost guest" type="button" data-act="guest">게스트로 플레이</button>
   ${diffPicker()}
+  <div class="ctrlrow"><span>조작</span><div class="diff ctrl" role="group" aria-label="조작 방식">
+    <button type="button" id="ctrl-classic" data-c="classic" aria-pressed="${ctrlMode==='classic'}">클래식</button>
+    <button type="button" id="ctrl-pad" data-c="pad" aria-pressed="${ctrlMode==='pad'}">스틱+버튼</button></div></div>
   <button class="btn" id="go" data-act="go">시작</button>
   <div class="row"><button class="ghost" type="button" data-act="rank">랭킹 보기</button><button class="ghost" type="button" data-act="howto">조작법</button><button class="ghost" type="button" id="bgmbtn" data-act="music">${bgmLabel()}</button></div>
   <div class="stat" id="bestline">${bestLine()}</div>
   ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,music:()=>{toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
+  ov.querySelectorAll('.ctrl button').forEach(b=>b.addEventListener('click',()=>{initAudio();ctrlMode=b.dataset.c;
+    try{localStorage.setItem('punchtower.ctrl',ctrlMode);}catch(e){}
+    ov.querySelectorAll('.ctrl button').forEach(x=>x.setAttribute('aria-pressed',x===b));sfx.select();}));
   const inp=ov.querySelector('#pname');
   inp.addEventListener('input',()=>{playerName=inp.value.trim().slice(0,NAME_MAX);});
   if(!playerName)setTimeout(()=>{try{inp.focus({preventScroll:true});}catch(e){}},80);}
@@ -1087,8 +1129,9 @@ function showHowto(){showOverlay(`
   <div class="eyebrow">HOW TO PLAY</div>
   <h2 class="big">조작법</h2>
   <ul class="rules win">
-    <li>엄지 두 개면 끝. 화면 <b>왼쪽 탭은 왼펀치</b>, <b>오른쪽 탭은 오른펀치</b></li>
-    <li><b>꾹 누르면</b> 그쪽으로 걸어가며 기가 모이고, <b>떼면</b> 모인 만큼 센 펀치</li>
+    <li><b>클래식</b>: 화면 <b>왼쪽 탭은 왼펀치</b>, <b>오른쪽 탭은 오른펀치</b></li>
+    <li><b>스틱+버튼</b>: 왼쪽은 <b>드래그 스틱</b>으로 이동(툭 튕기면 대시), 오른쪽은 <b>L·R 주먹 버튼</b>. 버튼을 꾹 눌렀다 떼면 기 펀치, 둘 다 꾹 = 왕주먹</li>
+    <li>클래식에서 <b>꾹 누르면</b> 그쪽으로 걸어가며 기가 모이고, <b>떼면</b> 모인 만큼 센 펀치</li>
     <li>걷는 중에 <b>반대쪽을 탭</b>하면 가던 방향으로 휙 <b>대시</b></li>
     <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
     <li>약점을 <b>20번</b> 때리면 <b>왕주먹</b> 충전. 양쪽을 같이 꾹 누르면 5층 관통!</li>
