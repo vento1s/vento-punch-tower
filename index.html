@@ -711,6 +711,7 @@ function update(dt){
   if(hitstop>0){hitstop-=dt;return;}
   ensureSlabs(pl.level+30);
   for(let n=Math.max(1,pl.level-2);n<=pl.level+6;n++){const s=slabs[n];
+    if(s.trail===undefined)s.trail=s.hp;s.trail+=(Math.max(0,s.hp)-s.trail)*Math.min(1,dt*5); // lagging damage layer
     s.flash=Math.max(0,s.flash-dt*9);s.bump=Math.max(0,s.bump-dt*30);s.wflash=Math.max(0,s.wflash-dt*5);
     if(s.wT<1)s.wT=Math.min(1,s.wT+dt*5);}
   pl.punchT=Math.max(0,pl.punchT-dt);
@@ -832,6 +833,16 @@ function drawSlab(s){
     for(let x=x0+5;x<W-WALL;x+=10){R(x,sy+4,2,2,b);R(x,sy+4,1,1,c);}}
   const ratio=1-s.hp/s.max;
   if(ratio>0){ctx.fillStyle='rgba(10,4,8,.6)';for(const p of s.cracks){const k=Math.floor(p.length*Math.min(1,ratio*1.3));for(let i=0;i<k;i++)ctx.fillRect(x0+p[i][0],sy+p[i][1],1,1);}}
+  // HP right on the block you're punching: the lost part goes dark, a pale layer shows the chunk you just knocked off
+  if(s.n===pl.level+1&&(mode==='play'||mode==='count')){
+    const r=clamp(s.hp/s.max,0,1),tr=clamp((s.trail===undefined?s.hp:s.trail)/s.max,0,1);
+    const cut=Math.round(IN*r),tcut=Math.max(cut,Math.round(IN*tr));
+    ctx.globalAlpha=.55;R(x0+tcut,sy,IN-tcut,10,'#0d0a08');
+    if(tcut>cut){ctx.globalAlpha=.45;R(x0+cut,sy,tcut-cut,10,'#fff3c0');}
+    ctx.globalAlpha=.9;R(x0,sy+8,IN,2,'#0d0a08');
+    R(x0,sy+8,cut,2,r>.5?'#9aff7a':r>.25?'#ffd400':'#ff3a5a');
+    if(cut>0&&cut<IN){ctx.globalAlpha=.7;R(x0+cut-1,sy,1,8,'#ffffff');}
+    ctx.globalAlpha=1;}
   if(s.flash>0){ctx.globalAlpha=s.flash*.85;R(x0,sy,IN,10,'#fff');ctx.globalAlpha=1;}
   if(s.n<=pl.level+3)drawWeak(s,sy);
 }
