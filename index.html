@@ -435,7 +435,8 @@ addEventListener('keydown',e=>{if(e.key==='m'||e.key==='M'){if(document.activeEl
   toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
 let growl=null;
 // the dramatic beat between a full charge and the launch
-const KING_SLOW=.5; // matches the 왕펀치!! banner, so the launch follows it immediatelylet kingSlowT=0,timeScale=1;
+// KING_SLOW matches the 왕펀치!! banner, so the launch follows it immediately
+const KING_SLOW=.5;let kingSlowT=0,timeScale=1;
 function startKingSlow(){
   kingSlowT=KING_SLOW;for(const h of holds.values())h.used=true;hum(-1);
   sfx.slowmo();showCutin();vibe([30,40,90]);flashO=.5;flashCol='#ffffff';
