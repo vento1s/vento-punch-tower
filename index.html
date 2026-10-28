@@ -37,7 +37,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 #c{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;will-change:transform}
 .ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;
   gap:12px;padding:18px 16px;box-sizing:border-box;text-align:center;overflow-y:auto;
-  background:linear-gradient(180deg,rgba(11,8,17,.6),rgba(11,8,17,.92) 55%)}
+  background:linear-gradient(180deg,rgba(11,8,17,.86),rgba(11,8,17,.95) 40%)}
 .eyebrow{font-family:var(--f-pixel);font-size:10px;letter-spacing:.12em;color:var(--lava-hi)}
 .big{font-family:var(--f-display);font-weight:400;font-size:33px;line-height:1.1;margin:0;
   color:var(--gold);text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),
@@ -109,29 +109,49 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .row{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
 .ghost{text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--edge)}
 .credit{font-family:var(--f-pixel);font-size:8px;letter-spacing:.18em;color:var(--muted);margin-top:4px}
-.boardwrap{width:calc(100% - 12px);max-width:304px;display:grid;gap:6px}
-.board{list-style:none;margin:0;padding:0;display:grid;gap:2px}
-.board li{display:grid;grid-template-columns:3.2em minmax(0,1fr) auto;grid-template-areas:"rk who sc" "rk rec sc";
-  align-items:center;column-gap:8px;row-gap:1px;padding:5px 8px;
-  background:rgba(23,16,34,.85);font-family:var(--f-pixel);font-size:9px;color:var(--gi);text-align:left;font-variant-numeric:tabular-nums}
-.board .rk{grid-area:rk}
-.board .who{grid-area:who;display:flex;align-items:center;gap:6px;min-width:0}
-.board .nm{font-family:var(--f-display);font-size:12px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.board .rec{grid-area:rec;font-size:8px;color:var(--muted)}
-.board .sc{grid-area:sc;font-size:11px;text-align:right;color:var(--lava-hi)}
-.dchip{flex:none;font-family:var(--f-body);font-size:10px;line-height:1;padding:3px 5px 2px;border:1px solid currentColor}
-.d-easy{color:#8fd18a}.d-normal{color:#c9c2d6}.d-hard{color:#ff9a2a}.d-master{color:var(--weak)}
-.board li.me .rec,.board li.me .sc,.board li.me .dchip{color:#1a0a04}
-.bnote.rule{font-size:10px;line-height:1.5}
-.board .r1 .rk{color:var(--lava-hi)}.board .r2 .rk{color:#d6d3e6}.board .r3 .rk{color:#e09a5a}
-.board .r1{box-shadow:inset 3px 0 0 var(--lava-hi)}
-.board li.me{background:var(--lava-hi);color:#1a0a04;box-shadow:none;animation:meblink 1s steps(2) infinite}
-.board li.me .rk{color:#1a0a04}
-.board li.gap{display:block;text-align:center;background:none;color:var(--muted);padding:0}
-@keyframes meblink{50%{background:#ffe9a8}}
+/* ---- arcade high-score table ---- */
+.boardwrap{width:calc(100% - 14px);max-width:304px;display:grid;gap:8px}
+.hs{position:relative;padding:18px 10px 8px}
+.hs .wtitle{position:absolute;top:-9px;left:50%;transform:translateX(-50%);padding:3px 8px 2px;background:var(--ink);
+  font-family:var(--f-pixel);font-size:9px;letter-spacing:.14em;color:var(--gold);white-space:nowrap;box-shadow:0 0 0 2px var(--ink)}
+.board{list-style:none;margin:0;padding:0;display:grid}
+.board li{position:relative;display:grid;grid-template-columns:3.3em minmax(0,1fr) auto 3.4em 4.6em;align-items:center;column-gap:6px;
+  padding:6px 2px 5px;font-family:var(--f-pixel);font-size:9px;line-height:1.2;color:var(--gi);text-align:left;font-variant-numeric:tabular-nums;
+  background:linear-gradient(90deg,#3b2a52 50%,transparent 0) left bottom/6px 1px repeat-x}
+.board li:last-child{background:none}
+.board li.hd{font-size:7px;letter-spacing:.08em;color:var(--muted);padding:0 2px 6px;background:linear-gradient(90deg,var(--gold) 50%,transparent 0) left bottom/4px 2px repeat-x;margin-bottom:2px}
+.board .fl,.board .sc,.board li.hd span:nth-child(4),.board li.hd span:nth-child(5){text-align:right}
+.board .nm{font-family:var(--f-display);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.board .sc{color:var(--gold)}
+/* classic per-row colours */
+.board li.r1{color:var(--gold)}.board li.r2{color:#d6d3e6}.board li.r3{color:#ff9a4a}
+.board li.alt{color:#9fe7ff}
+.board li.r1 .sc,.board li.r2 .sc,.board li.r3 .sc{color:inherit}
+.board li.r1 .rk::after{content:"";position:absolute;left:-4px;top:7px;width:2px;height:8px;background:var(--gold)}
+/* your run: blinking cursor + soft band */
+.board li.me{background:rgba(255,212,0,.14);color:#fff;animation:meblink .9s steps(2) infinite}
+.board li.me::before{content:"";position:absolute;left:-11px;top:50%;margin-top:-5px;border:5px solid transparent;border-left:7px solid var(--gold);border-right:0}
+.board li.gap{display:block;text-align:center;color:var(--muted);padding:2px 0;background:none;letter-spacing:.3em}
+@keyframes meblink{50%{color:var(--gold)}}
+/* difficulty tag: solid pixel block */
+.dchip{display:inline-block;font-family:var(--f-body);font-size:10px;line-height:1;padding:3px 3px 2px;color:var(--ink)}
+.d-easy{background:#8fd18a}.d-normal{background:#c9c2d6}.d-hard{background:#ff9a2a}.d-master{background:var(--weak);color:#fff}
 .bnote{font-size:11px;color:var(--muted);margin:0}
-.rankbig{font-family:var(--f-pixel);font-size:12px;line-height:1.6;color:var(--gi);min-height:1.6em}
-.rankbig b{color:var(--lava-hi);font-weight:400;font-size:18px}
+.bnote.rule{font-size:10px;line-height:1.6}
+/* result summary panel */
+.result{width:calc(100% - 14px);max-width:304px;padding:10px 12px;display:grid;gap:8px;text-align:left;box-sizing:border-box}
+.result .who{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gi)}
+.result .who b{font-weight:400;color:var(--gold);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result .cells{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.result .cell{display:grid;gap:5px;padding:6px 4px 5px;background:#1b1426;text-align:center}
+.result .cell i{font-style:normal;font-family:var(--f-pixel);font-size:7px;letter-spacing:.06em;color:var(--muted)}
+.result .cell span{font-family:var(--f-pixel);font-size:10px;color:var(--gi)}
+.result .total{display:flex;justify-content:space-between;align-items:baseline;padding-top:6px;
+  background:linear-gradient(90deg,var(--gold) 50%,transparent 0) left top/4px 2px repeat-x}
+.result .total i{font-style:normal;font-family:var(--f-pixel);font-size:9px;color:var(--muted);letter-spacing:.1em}
+.result .total span{font-family:var(--f-pixel);font-size:18px;color:var(--gold);text-shadow:2px 2px 0 #a33f00}
+.rankbig{font-family:var(--f-pixel);font-size:11px;line-height:1.6;color:var(--gi);min-height:1.6em}
+.rankbig b{color:var(--gold);font-weight:400;font-size:16px}
 .blinky{animation:blinky 1s steps(2) infinite;color:var(--lava-hi)}
 @keyframes blinky{50%{opacity:.25}}
 .splash{display:grid;gap:16px;place-items:center;margin:auto}
@@ -1056,9 +1076,10 @@ async function submitScore(en){
 }
 const ord=n=>n+(n%100>=11&&n%100<=13?'TH':['TH','ST','ND','RD'][n%10]||'TH');
 function rowHTML(x,i,hiId){const me=hiId&&x.id===hiId;const d=DIFF_KO[x.diff]?x.diff:'easy';
-  return `<li class="${i<3?'r'+(i+1):''}${me?' me':''}"><span class="rk">${ord(i+1)}</span>`+
-    `<span class="who"><span class="nm">${esc(x.name)}</span><span class="dchip d-${d}">${DIFF_KO[d]}</span></span>`+
-    `<span class="rec">${x.floor>=TOP?'CLEAR':x.floor+'F'} · ${fmt(+x.time||0)}</span><span class="sc">${num(scoreOf(x))}</span></li>`;}
+  const cls=(i<3?'r'+(i+1):(i%2?'alt':''))+(me?' me':'');
+  return `<li class="${cls}"><span class="rk">${ord(i+1)}</span><span class="nm">${esc(x.name)}</span>`+
+    `<span class="dchip d-${d}">${DIFF_KO[d]}</span><span class="fl">${x.floor}F</span><span class="sc">${num(scoreOf(x))}</span></li>`;}
+const BOARD_HEAD=`<li class="hd" aria-hidden="true"><span>RANK</span><span>NAME</span><span></span><span>FLOOR</span><span>SCORE</span></li>`;
 const LIMIT=20;
 function boardHTML(res,hiId){
   const list=res.list||[];
@@ -1067,7 +1088,7 @@ function boardHTML(res,hiId){
   let h=list.slice(0,LIMIT).map((x,i)=>rowHTML(x,i,hiId)).join('');
   const mi=hiId?list.findIndex(x=>x.id===hiId):-1;
   if(mi>=LIMIT)h+=`<li class="gap">· · ·</li>`+rowHTML(list[mi],mi,hiId);
-  return `<ol class="board win">${h}</ol><p class="bnote">${note}</p>`;
+  return `<div class="win hs"><div class="wtitle">BEST ${LIMIT}</div><ol class="board">${BOARD_HEAD}${h}</ol></div><p class="bnote">${note}</p>`;
 }
 const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 × 100 × 난이도 배율 · 같은 점수면 더 빨리 오른 사람이 위<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
 async function fillBoard(sel,_unused,hiId,preset){
@@ -1159,7 +1180,16 @@ function resultScreen(cleared){
     ?`<div class="eyebrow">TOWER CLEAR · ${D.tag}</div><h2 class="big">정상 정복!</h2>`
     :`<div class="eyebrow">GAME OVER · ${D.tag}</div><h2 class="big">용암에 삼켜졌다</h2>`;
   showOverlay(`${head}
-  <div class="stat"><span>${esc(en.name)}</span> · ${D.ko} · ${floor>=TOP?'CLEAR':floor+'F'} · <span>${fmt(time)}</span><br>SCORE <span>${num(scoreOf(en))}</span> · 약점 <span>${weakCount}</span> · 왕주먹 <span>${superCount}</span></div>
+  <div class="win result">
+    <div class="who"><b>${esc(en.name)}</b><span class="dchip d-${D.key}">${D.ko}</span></div>
+    <div class="cells">
+      <div class="cell"><i>FLOOR</i><span>${floor}F</span></div>
+      <div class="cell"><i>TIME</i><span>${fmt(time)}</span></div>
+      <div class="cell"><i>WEAK</i><span>${weakCount}</span></div>
+      <div class="cell"><i>KING</i><span>${superCount}</span></div>
+    </div>
+    <div class="total"><i>SCORE</i><span>${num(scoreOf(en))}</span></div>
+  </div>
   <div class="rankbig" id="myrank">${floor>=1?'기록 등록 중…':'1층은 넘어야 랭킹에 올라가요'}</div>
   <div id="board" class="boardwrap"></div>
   <button class="btn" id="go" data-act="go">${cleared?'한 판 더':'다시 갈기기'}</button>
