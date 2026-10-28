@@ -220,6 +220,13 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .studio.lit{color:#fff;text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408,0 0 14px rgba(255,208,74,.9)}
 @keyframes popin{from{opacity:0;transform:scale(1.7)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.board li.me,.blinky,.studio span,.splash .w3,.namebox.bad{animation:none}}
+.mash{position:absolute;left:0;right:0;bottom:31%;text-align:center;pointer-events:none;z-index:2;
+  font-family:var(--f-display);font-size:clamp(34px,13cqw,52px);color:var(--gold);
+  text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px -3px 0 var(--ink),6px 6px 0 #c24e00;
+  animation:mashShake .16s steps(2) infinite}
+.mash[hidden]{display:none}
+@keyframes mashShake{50%{transform:translate(3px,-2px) scale(1.06);color:#fff}}
+@media (prefers-reduced-motion:reduce){.mash{animation:none}}
 .cutin{position:absolute;inset:0;display:flex;align-items:center;pointer-events:none;z-index:2;overflow:hidden}
 .cutin[hidden]{display:none}
 .cutin .band{width:100%;padding:12px 0 8px;text-align:center;
@@ -237,6 +244,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 <div id="wrap">
   <div id="stage">
     <canvas id="c" width="144" height="256" aria-label="펀치 타워 게임 화면"></canvas>
+    <div id="mash" class="mash" hidden>갈겨!!</div>
     <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>KING PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
   </div>
@@ -678,6 +686,16 @@ function superBreak(s,k){
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();}
   if(s.type==='tnt')sfx.boom();
 }
+// KING PUNCH mash: while rising, every 2 taps (either hand) breaks one more floor, up to +10
+const MASH_T=1.8,MASH_MAX=10,RISE_FLOORS_PER_S=11;
+function superMash(side){
+  if(!sup||!sup.launched||!(sup.mashT>0))return;
+  sup.taps++;tapFX[side]=1;
+  if(AC){const t=AC.currentTime;tone(t,.05,300+sup.taps*12,120,'square',.08);noise(t,.04,2400,1,.3);}
+  if(sup.taps%2===0&&sup.dest-sup.base<MASH_MAX){sup.dest++;ensureSlabs(sup.dest+30);
+    sup.mashT=Math.max(sup.mashT,.35); // keep the window open while you're still going
+    pop(popX(20),pl.feet-20,'+'+(sup.dest-sup.base),'#ffd400',2);vibe(12);shake=Math.max(shake,3);}
+}
 function updateSuper(dt){
   sup.t+=dt;const T=sup.t,CH=.45,RISE=.55;
   if(T<CH){ // crouch + charge: flames gather around the boxer
@@ -688,8 +706,12 @@ function updateSuper(dt){
   if(!sup.launched){sup.launched=true;sfx.superLaunch();shake=8;flashO=.7;flashCol='#ffd04a';zoom=RM?0:.08;
     impactX=pl.x;impactY=pl.feet-20;vibe([60,20,60]);
     for(let i=0;i<30;i++){const a=Math.PI+Math.random()*Math.PI;parts.push({x:pl.x,y:pl.feet,vx:Math.cos(a)*120,vy:Math.sin(a)*30,life:.5,col:'rgba(230,220,240,.7)',s:2,g:0});}}
-  const k=clamp((T-CH)/RISE,0,1),e=1-Math.pow(1-k,2.4);
-  pl.feet=sup.from+(sup.to-sup.from)*e;
+  // rise at a steady blazing speed toward the current target floor; mashing during MASH_T raises the target
+  if(sup.mashT===undefined){sup.mashT=MASH_T;sup.base=sup.dest;sup.taps=0;}
+  sup.mashT=Math.max(0,sup.mashT-dt);
+  sup.to=-sup.dest*FH;
+  if(pl.feet>sup.to)pl.feet=Math.max(sup.to,pl.feet-RISE_FLOORS_PER_S*FH*dt);
+  const k=(pl.feet<=sup.to&&sup.mashT<=0)?1:0;
   // flaming corkscrew trail + blazing fist
   fire(pl.x,pl.feet-6,6,10,70);
   fire(pl.x+(((T*14)|0)%2?3:-3),pl.feet-30,4,7,-30);
@@ -702,7 +724,8 @@ function updateSuper(dt){
       const l=.4+Math.random()*.5;parts.push({x:pl.x,y:pl.feet-30,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:120,fire:true});}
     pop(W/2,pl.feet-72,'x'+n+' BREAK!!','#ffd04a',2);
     vibe([80,30,120]);}
-  if(T>=CH+RISE+.4){
+  if(sup.peak){sup.endT=(sup.endT||0)+dt;}
+  if(sup.peak&&sup.endT>=.4){
     pl.feet=sup.to;pl.level=sup.dest;mode='play';lastTap=now();lastSide=-1;
     if(sup.dest>=TOP)doClear();
     sup=null;}
@@ -728,6 +751,7 @@ function dash(dirSide){
 function press(id,side){if(holds.has(id))return;
   if(mode==='play'&&ctrlMode==='classic')for(const h of holds.values()){if(!h.used&&h.side!==side&&h.t>=HOLD_T){
     holds.set(id,{side,t:0,c:0,used:true});dash(h.side);return;}}
+  if(mode==='super'){holds.set(id,{side,t:0,c:0,used:true});superMash(side);return;}
   holds.set(id,{side,t:0,c:0,used:false});
   if(ctrlMode==='pad')hit(side); // pad buttons punch on press; classic waits to see tap vs hold
 }
@@ -1121,6 +1145,9 @@ function drawBigFist(cx,cy,sc,mirror,pal){const w=BIG_FIST[0].length,h=BIG_FIST.
 const BIG_ARM=["......ssssssss........", "....ssssssssssss......", "...sHHssssssssssss....", "..sHsssLssssLsssssss..", "..sHssLLsssLLssssLsss.", ".sHsssLssssLsssssLssss", ".sHsssLsssLssssssLssss", ".sssssLLLLLLLLLLLLssss", "sHssssssssssssssLssss.", "sHssssssssssssssLsssD.", "sssssssssssssssLsssDD.", "sssssLLLLLLLLLLsssDDD.", "ssssssssssssssssssDD..", "sssssssssssssssssDD...", ".ssssssssssssssDDD....", ".sssssssssssDDD.......", "..sssssssssDD.........", "..sssssssssD..........", "..ssssssssDD..........", "..HsssssssDD..........", "..wwwwwwwwwwG.........", ".wwwwwwwwwwwGG........", ".wwwwwwwwwwwGG........", "wwwwwwwwwwwwGGG.......", "wwwwwwwwwwwwGGG......."];
 const ARM_PAL={s:'#f2a08c',L:'#9e4a3a',H:'#ffc4b2',D:'#c87864',w:'#f4efe8',G:'#c4bccd'};
 const ARM_HOT={s:'#ffb8a2',L:'#b4584a',H:'#ffe2d8',D:'#dc8c76',w:'#ffffff',G:'#d6cfe0'};
+const mashOpen=()=>mode==='super'&&sup&&sup.launched&&sup.mashT>0;
+function hudFlames(cx,topY,w,n){for(let i=0;i<n;i++){const x=cx+(Math.random()-.5)*w,h=2+Math.random()*16,k=Math.random();
+  R(x,topY-h,2+(k>.6?1:0),2+(k>.6?1:0),FIREPAL(k));}}
 function drawClassicFists(){
   const sc=2,w=BIG_ARM[0].length;
   for(const sd of [0,1]){
@@ -1136,6 +1163,7 @@ function drawClassicFists(){
     ctx.globalAlpha=ga;
     for(let r=0;r<BIG_ARM.length;r++){const row=BIG_ARM[r];for(let c=0;c<w;c++){const ch=row[sd===1?w-1-c:c];if(ch!=='.')R(x0+c*sc,y0+r*sc,sc,sc,pal[ch]);}}
     if(hit){ctx.globalAlpha=.8;for(let k=0;k<3;k++)R(x0+6+k*10,y0-6-(k%2)*2,2,4,'#fff3a0');}  // little speed ticks above the fist
+    if(mashOpen()){ctx.globalAlpha=1;hudFlames(x0+w*sc/2,y0+14,w*sc*.9,26);hudFlames(x0+w*sc/2,y0+4,w*sc*.6,12);}
   }
   ctx.globalAlpha=1;
 }
@@ -1155,6 +1183,7 @@ function drawPad(){
       if(ch!=='.')R(cx-10+c*2,cy-9+o+r*2,2,2,FIST_PAL[ch]);}}
     text(lab,sd?cx+10:cx-13,cy-17+o,1,'#f4efe8','l');};
   btn(105,H-17,0,'L');btn(130,H-36,1,'R');
+  if(mashOpen()){ctx.globalAlpha=1;hudFlames(105,H-24,26,18);hudFlames(130,H-43,26,18);}
   ctx.globalAlpha=1;
 }
 function drawCountdown(){
@@ -1188,7 +1217,10 @@ function drawKingCharge(){
   R(W/2-tw0/2-4,46,tw0+8,16,'#0d0a08');R(W/2-tw0/2-4,59,(tw0+8)*k,3,'#ff8a00');
   text(txt,W/2,49,2,k>.85&&((gt*20)|0)%2?'#ffffff':'#ffd400','c',false);
 }
+let mashShown=false;const mashEl=document.getElementById('mash');
+function syncMash(){const on=mashOpen();if(on!==mashShown){mashShown=on;mashEl.hidden=!on;}}
 function drawStrip(){
+  syncMash();
   drawCountdown();
   drawSlowMo();
   drawKingCharge();
