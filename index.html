@@ -213,7 +213,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 <div id="wrap">
   <div id="stage">
     <canvas id="c" width="144" height="256" aria-label="펀치 타워 게임 화면"></canvas>
-    <div id="cutin" class="cutin" hidden><div class="band"><b>왕주먹!!</b><i>KING FIST</i></div></div>
+    <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>KING PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
   </div>
 </div>
@@ -427,6 +427,26 @@ function toggleBgm(){bgmOn=!bgmOn;try{localStorage.setItem('punchtower.bgm',bgmO
 document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmStop();else{const w=wantedTrack();if(w)bgmStart(w);}});
 addEventListener('keydown',e=>{if(e.key==='m'||e.key==='M'){if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
   toggleBgm();const b=ov.querySelector('#bgmbtn');if(b)b.textContent=bgmLabel();}});
+let growl=null;
+function kingGrowl(on){
+  if(!AC)return;
+  try{
+    if(!on){if(growl){const t=AC.currentTime;growl.g.gain.cancelScheduledValues(t);growl.g.gain.setTargetAtTime(0,t,.04);
+      const ns=growl.nodes;setTimeout(()=>ns.forEach(n=>{try{n.stop();}catch(e){}}),300);growl=null;}return;}
+    if(growl)return;
+    const t=AC.currentTime,g=AC.createGain(),lp=AC.createBiquadFilter(),trem=AC.createGain(),lfo=AC.createOscillator(),lfoG=AC.createGain();
+    lp.type='lowpass';lp.frequency.setValueAtTime(220,t);lp.frequency.exponentialRampToValueAtTime(1600,t+BOTH_HOLD);lp.Q.value=6;
+    const o1=AC.createOscillator(),o2=AC.createOscillator(),sr=AC.createBufferSource();
+    o1.type='sawtooth';o1.frequency.setValueAtTime(52,t);o1.frequency.exponentialRampToValueAtTime(118,t+BOTH_HOLD);
+    o2.type='square';o2.frequency.setValueAtTime(26,t);o2.frequency.exponentialRampToValueAtTime(59,t+BOTH_HOLD);
+    sr.buffer=nbuf;sr.loop=true;const nf=AC.createBiquadFilter();nf.type='lowpass';nf.frequency.value=380;const ng=AC.createGain();ng.gain.value=.5;
+    lfo.frequency.setValueAtTime(9,t);lfo.frequency.linearRampToValueAtTime(22,t+BOTH_HOLD);lfoG.gain.value=.45;trem.gain.value=.55;
+    lfo.connect(lfoG);lfoG.connect(trem.gain);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.55,t+.08);g.gain.linearRampToValueAtTime(.8,t+BOTH_HOLD);
+    o1.connect(lp);o2.connect(lp);sr.connect(nf);nf.connect(ng);ng.connect(lp);lp.connect(trem);trem.connect(g);g.connect(master);
+    [o1,o2,sr,lfo].forEach(n=>n.start(t));growl={g,nodes:[o1,o2,sr,lfo]};
+  }catch(e){growl=null;}
+}
 function vibe(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
 
 
@@ -542,7 +562,7 @@ function hit(side,power){
   // KING FIST gauge fills only from weak-point hits
   if(weak){altStreak=Math.min(superNeed(),altStreak+(charged?3:1));
     if(altStreak>=superNeed()&&!superReady){superReady=true;sfx.ready();vibe([20,30,20]);
-      pop(popX(40),pl.feet-36,'KING FIST!','#ff9a2a',1);fire(W/2,H+camY-20,14,50,-40);}}
+      pop(popX(40),pl.feet-36,'KING PUNCH!','#ff9a2a',1);fire(W/2,H+camY-20,14,50,-40);}}
   s.hp-=dmg;s.flash=weak||charged?1:.6;s.bump=weak?4:charged?2+2*power:crit?3:1;
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;
   const c=SLABC[s.type];
@@ -588,13 +608,13 @@ function doClear(){mode='clear';endT=0;clearTime=tNow;
 const cutin=document.getElementById('cutin'),band=cutin.querySelector('.band');
 function showCutin(){cutin.hidden=false;band.style.animation='none';void band.offsetWidth;band.style.animation='';
   setTimeout(()=>{cutin.hidden=true;},500);}
-function doSuper(){
+function doSuper(pre){
   if(mode!=='play'||!superReady)return;
   if(pl.jt>=0){pl.jt=-1;pl.feet=pl.to;}
   const start=pl.level+1,dest=pl.level+SUPER_FLOORS;ensureSlabs(dest+30);
   superReady=false;altStreak=0;superCount++;for(const h of holds.values())h.used=true;hum(-1);hitstop=0;impact=0;
   sup={t:0,start,dest,next:start,from:pl.feet,to:-dest*FH,launched:false,peak:false};
-  mode='super';sfx.superCharge();vibe(40);showCutin();
+  mode='super';if(pre)sup.t=.3;else sfx.superCharge();vibe(40);showCutin();
   lavaY=Math.max(lavaY,pl.feet+40);lavaY+=30;
 }
 function superBreak(s,k){
@@ -645,7 +665,7 @@ function die(){mode='dead';endT=0;bgmStop();sfx.die();vibe([60,40,120]);shake=6;
 // two thumbs only: left half of the screen = left hand, right half = right hand.
 // tap = punch · hold = walk that way + charge ki · release = ki punch
 // KING FIST: when charged, hold both sides together for a moment.
-const STRIP=H-34,BTN_L=44,BTN_R=W-44,BOTH_HOLD=.15;
+const STRIP=H-34,BTN_L=44,BTN_R=W-44,BOTH_HOLD=.5; // hold both sides this long to fire the KING PUNCH
 // dash: while walking (holding one side), tap the other side to burst forward in the walking direction
 const NUDGE=2.5; // px per punch toward the punching hand (alternate to stay put)
 const DASH=16,DASH_CD=.22,DASH_T=.12;
@@ -723,8 +743,15 @@ function update(dt){
   }
   hum(maxC);
   // both thumbs held -> KING FIST
-  if(superReady&&mode==='play'&&hasL&&hasR){bothT+=dt;if(bothT>=BOTH_HOLD){bothT=0;doSuper();}}
-  else bothT=0;
+  if(superReady&&mode==='play'&&hasL&&hasR){
+    if(bothT===0)kingGrowl(true);
+    bothT+=dt;const k=Math.min(1,bothT/BOTH_HOLD);
+    shake=Math.max(shake,.6+2.4*k);
+    // power pulled in from all around the boxer
+    for(let i=0;i<2+k*4;i++){const a=Math.random()*Math.PI*2,r=26+Math.random()*14-k*8,l=.28;
+      parts.push({x:pl.x+Math.cos(a)*r,y:pl.feet-8+Math.sin(a)*r*.8,vx:-Math.cos(a)*r/l,vy:-Math.sin(a)*r*.8/l,life:l,max:l,s:Math.random()<.4?2:1,g:0,fire:true});}
+    if(bothT>=BOTH_HOLD){bothT=0;kingGrowl(false);doSuper(true);}}
+  else{if(bothT>0)kingGrowl(false);bothT=0;}
   if(dir&&mode==='play'&&!(hasL&&hasR))pl.tx+=Math.sign(dir)*MOVE_SPD*dt;
   pl.tx=clamp(pl.tx,XMIN,XMAX);
   if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,dt*(dashT>0?36:16));
@@ -1080,8 +1107,23 @@ function drawCountdown(){
     ctx.globalAlpha=tNow<.45?1:Math.max(0,1-(tNow-.45)/.25);
     text('START!',W/2,70-(sc-4)*3,sc,'#ffd400','c','#0d0a08');ctx.globalAlpha=1;}
 }
+function drawKingCharge(){
+  if(!(bothT>0&&mode==='play'))return;
+  const k=Math.min(1,bothT/BOTH_HOLD),x=pl.x,y=pl.feet-8-camY;
+  ctx.globalAlpha=.45*k;R(0,0,W,H,'#0d0a08');ctx.globalAlpha=1;
+  ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(x,y,0,x,y,14+k*22);
+  g.addColorStop(0,`rgba(255,200,80,${.55*k+.2})`);g.addColorStop(.5,`rgba(255,120,30,${.35*k+.1})`);g.addColorStop(1,'rgba(255,80,20,0)');
+  ctx.fillStyle=g;ctx.fillRect(x-40,y-40,80,80);ctx.globalCompositeOperation='source-over';
+  // a ring that tightens onto the boxer as the charge completes
+  pxRing(x,y,Math.round(30-22*k),k>.85&&((gt*30)|0)%2?'#ffffff':'#ffd400');
+  const txt='KING PUNCH',tw0=tw(txt,2);
+  R(W/2-tw0/2-4,46,tw0+8,16,'#0d0a08');R(W/2-tw0/2-4,59,(tw0+8)*k,3,'#ff8a00');
+  text(txt,W/2,49,2,k>.85&&((gt*20)|0)%2?'#ffffff':'#ffd400','c',false);
+}
 function drawStrip(){
   drawCountdown();
+  drawKingCharge();
   if(mode!=='play'&&mode!=='super'&&mode!=='count')return;
   if(ctrlMode==='pad')drawPad();else drawClassicFists();
   const y0=STRIP,h=H-y0-3;
@@ -1091,7 +1133,7 @@ function drawStrip(){
     const p=.5+.5*Math.sin(gt*14);
     for(let x=0;x<w;x++){const hgt=h-2-((hash(x,(gt*18)|0)*5)|0);R(x0+x,y0+1+h-hgt,1,hgt,FIREPAL(.25+.5*(x%7)/7*p+.2*hash(x,(gt*24)|0)));}
     R(x0,y0+1,w,1,'#ffe27a');
-    text('KING',x0+w/2,y0+6,2,'#ffffff','c','#4a1408');text('FIST',x0+w/2,y0+19,1,'#4a1408','c',false);
+    text('KING',x0+w/2,y0+6,2,'#ffffff','c','#4a1408');text('PUNCH',x0+w/2,y0+19,1,'#4a1408','c',false);
     // fill shows how long both thumbs have been held
     if(bothT>0)R(x0,y0+h-2,w*Math.min(1,bothT/BOTH_HOLD),3,'#ffffff');
     if(((gt*4)|0)%2)text('HOLD L+R!',x0+w/2,y0-9,1,'#ffd04a','c');
@@ -1326,16 +1368,16 @@ function showHowto(){menuMusic();showOverlay(`
   <h2 class="big">조작법</h2>
   <ul class="rules win">
     <li><b>클래식</b>: 화면 <b>왼쪽 탭은 왼펀치</b>, <b>오른쪽 탭은 오른펀치</b></li>
-    <li><b>스틱+버튼</b>: 왼쪽은 <b>드래그 스틱</b>으로 이동(툭 튕기면 대시), 오른쪽은 <b>L·R 주먹 버튼</b>. 버튼을 꾹 눌렀다 떼면 기 펀치, 둘 다 꾹 = 왕주먹</li>
+    <li><b>스틱+버튼</b>: 왼쪽은 <b>드래그 스틱</b>으로 이동(툭 튕기면 대시), 오른쪽은 <b>L·R 주먹 버튼</b>. 버튼을 꾹 눌렀다 떼면 기 펀치, 둘 다 꾹 = 왕펀치</li>
     <li>클래식에서 <b>꾹 누르면</b> 그쪽으로 걸어가며 기가 모이고, <b>떼면</b> 모인 만큼 센 펀치</li>
     <li>걷는 중에 <b>반대쪽을 탭</b>하면 가던 방향으로 휙 <b>대시</b></li>
     <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
-    <li>약점을 <b>20번</b> 때리면 <b>왕주먹</b> 충전(쓸 때마다 10번씩 더 필요). 양쪽을 같이 꾹 누르면 5층 관통!</li>
+    <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(쓸 때마다 10번씩 더 필요). 양쪽을 같이 꾹 누르면 5층 관통!</li>
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
     <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
     <li>탑은 끝이 없어요. 밑에서 <b>용암</b>이 올라갈수록 점점 더 빨라져요. 누가 더 높이 가나 대결!</li>
   </ul>
-  <div class="hint">PC: ← → 펀치 · 꾹 = 이동 · ← + → 또는 ↑ 왕주먹</div>
+  <div class="hint">PC: ← → 펀치 · 꾹 = 이동 · ← + → 또는 ↑ 왕펀치</div>
   <button class="btn" type="button" data-act="back">돌아가기</button>
   ${CREDIT}`,{back:showTitle});}
 function showRanking(){menuMusic();showOverlay(`
