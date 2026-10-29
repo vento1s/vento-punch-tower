@@ -238,6 +238,16 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 @media (prefers-reduced-motion:reduce){.finale,.finale b{animation:none}}
 @keyframes mashShake{50%{transform:translate(3px,-2px) scale(1.06);color:#fff}}
 @media (prefers-reduced-motion:reduce){.mash{animation:none}}
+/* pause: small pixel 'II' button in the HUD gap between the difficulty tag and the clock */
+.pausebtn{position:absolute;left:calc(91 / 144 * 100%);top:calc(5 / 256 * 100%);width:calc(17 / 144 * 100%);height:calc(17 / 256 * 100%);
+  z-index:4;border:0;border-radius:0;padding:0;cursor:pointer;background:rgba(13,10,8,.7);
+  box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge)}
+.pausebtn[hidden]{display:none}
+.pausebtn::before,.pausebtn::after{content:"";position:absolute;top:28%;height:44%;width:16%;background:var(--gi)}
+.pausebtn::before{left:28%}.pausebtn::after{right:28%}
+.pausebtn:active{background:var(--gold)}
+.pausebtn:focus-visible{outline:2px dashed var(--gold);outline-offset:3px}
+.pmenu{width:calc(100% - 16px);max-width:260px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .cutin{position:absolute;inset:0;display:flex;align-items:center;pointer-events:none;z-index:2;overflow:hidden}
 .cutin[hidden]{display:none}
 .cutin .band{width:100%;padding:12px 0 8px;text-align:center;
@@ -255,6 +265,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 <div id="wrap">
   <div id="stage">
     <canvas id="c" width="144" height="256" aria-label="펀치 타워 게임 화면"></canvas>
+    <button id="pausebtn" class="pausebtn" type="button" aria-label="일시정지" hidden></button>
     <div id="mash" class="mash" hidden>갈겨!!</div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
     <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>KING PUNCH</i></div></div>
@@ -553,7 +564,8 @@ const superNeed=()=>Math.min(60,SUPER_NEED+superCount*10);
 
 function genCracks(){const out=[];for(let k=0;k<4;k++){let x=10+Math.random()*(IN-20),y=9;const p=[];
   for(let i=0;i<14;i++){p.push([x|0,y|0]);x+=(Math.random()*3-1.5);y-=Math.random()<.55?1:0;if(y<1)y=1;}out.push(p);}return out;}
-function newWeakX(prev){const lo=WALL+4+D.weakW/2,hi=W-WALL-4-D.weakW/2;let x;
+const WEAK_WIDEN=1.15; // weak points are 15% wider than each difficulty's base width
+function newWeakX(prev){const lo=WALL+4+D.weakW*WEAK_WIDEN/2,hi=W-WALL-4-D.weakW*WEAK_WIDEN/2;let x;
   for(let i=0;i<20;i++){x=lo+Math.random()*(hi-lo);if(prev==null||Math.abs(x-prev)>22)break;}return Math.round(x);}
 // floors are generated on demand: the tower never ends, the lava just keeps getting faster
 function makeSlab(n){
@@ -567,7 +579,7 @@ function makeSlab(n){
   const base=10+Math.floor(Math.min(n,70)*.8);
   const raw=type==='stone'?base*1.6:type==='vibranium'?base*.9:type==='tnt'?6:type==='boss'?40+Math.min(n,70)*2:base;
   const hp=Math.max(3,Math.round(raw*(type==='tnt'?1:D.hp)));
-  return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:newWeakX(null),ww:D.weakW,weakHits:0,wflash:0,wFrom:null,wT:1};
+  return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:newWeakX(null),ww:D.weakW*WEAK_WIDEN,weakHits:0,wflash:0,wFrom:null,wT:1};
 }
 function ensureSlabs(upTo){while(slabs.length<=upTo)slabs.push(makeSlab(slabs.length));}
 function newGame(){
@@ -840,6 +852,7 @@ addEventListener('blur',()=>{holds.clear();});
 // slow motion while charging the KING PUNCH: the world (lava, sparks, debris, animation) runs at 25%,
 // while the charge itself and your thumbs stay on real time
 function update(dt){
+  if(mode==='pause')return; // frozen; render keeps drawing the paused frame
   const real=dt;
   // charge: world barely slows; once it's full, time slams to a crawl for the 'kingSlow' beat, then the punch fires
   const tsTarget=kingSlowT>0?.07:(bothT>0&&mode==='play')?.85:1;
@@ -969,7 +982,7 @@ function drawTorch(n){
 function drawWeak(s,sy){
   const e=s.wT<1?(1-Math.pow(1-s.wT,3)):1;
   const cx=s.wFrom!=null&&s.wT<1?s.wFrom+(s.wx-s.wFrom)*e:s.wx;
-  const hw=s.ww/2,x0=Math.round(cx-hw),w=s.ww;
+  const hw=s.ww/2,x0=Math.round(cx-hw),w=Math.round(s.ww);
   const pulse=.5+.5*Math.sin(gt*10+s.n);
   // glowing core under the slab
   ctx.globalCompositeOperation='lighter';
@@ -1286,7 +1299,7 @@ function drawKingCharge(){
 let mashShown=false;const mashEl=document.getElementById('mash');
 function syncMash(){const on=mashOpen();if(on!==mashShown){mashShown=on;mashEl.hidden=!on;}}
 function drawStrip(){
-  syncMash();
+  syncMash();syncPauseBtn();
   drawKingHud(1/60);
   drawCountdown();
   drawSlowMo();
@@ -1447,6 +1460,33 @@ function startGame(){
     playerName=v;isGuest=false;try{localStorage.setItem('punchtower.name',v);}catch(e){}}
   if(!playerName){showTitle();return;}
   ov.hidden=true;beginCountdown();}
+// ---- pause / restart / back to menu ----
+const pauseBtn=document.getElementById('pausebtn');
+let pausedFrom=null,pausedAt=0;
+function syncPauseBtn(){const show=ov.hidden&&(mode==='play'||mode==='super'||mode==='count');if(pauseBtn.hidden===show)pauseBtn.hidden=!show;}
+function pauseGame(){
+  if(!(mode==='play'||mode==='super'||mode==='count'))return;
+  pausedFrom=mode;pausedAt=now();mode='pause';
+  holds.clear();bothT=0;hum(-1);kingGrowl(false);stick.id=null;stick.dx=0;bgmStop();sfx.select();
+  showOverlay(`<h2 class="big over">PAUSE</h2>
+    <div class="pmenu">
+      <button class="btn primary" id="go" data-act="resume"><i aria-hidden="true">▶</i>계속하기</button>
+      <div class="pair"><button class="btn2" type="button" data-act="restart">재시작</button><button class="btn2" type="button" data-act="menu">메뉴로</button></div>
+    </div>
+    ${CREDIT}`,{resume:resumeGame,restart:()=>{mode='title';ov.hidden=true;beginCountdown();},menu:()=>{mode='title';showTitle();}});
+}
+function resumeGame(){
+  if(mode!=='pause')return;
+  if(started)tStart+=now()-pausedAt; // the clock doesn't count paused time
+  mode=pausedFrom||'play';pausedFrom=null;ov.hidden=true;lastTap=now();
+  if(mode==='play'||mode==='super')bgmStart('game');
+}
+pauseBtn.addEventListener('pointerdown',e=>{e.stopPropagation();});
+pauseBtn.addEventListener('click',e=>{e.stopPropagation();initAudio();pauseGame();});
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k!=='escape'&&k!=='p')return;
+  if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
+  if(mode==='pause'){e.preventDefault();resumeGame();}else if(ov.hidden){e.preventDefault();pauseGame();}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&ov.hidden&&(mode==='play'||mode==='super'))pauseGame();}); // leaving the app pauses
 // every run opens with 3-2-1-GO; the clock and the lava start on GO
 // quick arcade call: "LET'S" (0.55s) -> "START!" and you're playing
 let countT=0,countShown=0;
@@ -1556,6 +1596,7 @@ function showHowto(){menuMusic();showOverlay(`
     <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(쓸 때마다 10번씩 더 필요). 양쪽을 같이 꾹 누르면 5층 관통!</li>
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
     <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
+    <li>게임 중 위쪽 <b>II</b> 버튼으로 일시정지, 재시작, 메뉴로 갈 수 있어요</li>
     <li>탑은 끝이 없어요. 밑에서 <b>용암</b>이 올라갈수록 점점 더 빨라져요. 누가 더 높이 가나 대결!</li>
   </ul>
   <div class="hint">PC: ← → 펀치 · 꾹 = 이동 · ← + → 또는 ↑ 왕펀치</div>
