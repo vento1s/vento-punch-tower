@@ -1421,8 +1421,12 @@ async function getTop(){
 }
 async function submitScore(en){
   saveLocal(en);
-  if(ONLINE){try{await supaInsert(en);const list=await supaAll();netErr='';
-    return {online:true,rank:list.findIndex(x=>x.id===en.id)+1,list};}catch(e){netErr=errCode(e);}}
+  if(ONLINE){
+    // save and read separately: if only the save is refused, still show the shared board
+    let saveErr='';try{await supaInsert(en);}catch(e){saveErr=errCode(e);}
+    try{const list=await supaAll();netErr='';
+      if(saveErr){const mine=list.concat([en]).sort(byRank);return {online:true,saveErr,rank:mine.findIndex(x=>x.id===en.id)+1,list:mine};}
+      return {online:true,rank:list.findIndex(x=>x.id===en.id)+1,list};}catch(e){netErr=errCode(e);}}
   const list=localAll();
   return {online:false,rank:list.findIndex(x=>x.id===en.id)+1,list};
 }
@@ -1435,7 +1439,7 @@ const BOARD_HEAD=`<li class="hd" aria-hidden="true"><span>NO.</span><span>NAME</
 const LIMIT=20;
 function boardHTML(res,hiId){
   const list=res.list||[];
-  const note=res.online?'전체 플레이어 랭킹':(ONLINE?`온라인 연결 실패${netErr?' ('+esc(netErr)+')':''} · 이 기기 기록만 보여요`:'이 기기에 저장된 랭킹');
+  const note=res.saveErr?`전체 랭킹 · 이번 기록은 서버 저장 실패 (${esc(res.saveErr)})`:res.online?'전체 플레이어 랭킹':(ONLINE?`온라인 연결 실패${netErr?' ('+esc(netErr)+')':''} · 이 기기 기록만 보여요`:'이 기기에 저장된 랭킹');
   if(!list.length)return `<p class="bnote">아직 기록이 없어요. 첫 1위를 차지하세요!</p><p class="bnote">${note}</p>`;
   let h=list.slice(0,LIMIT).map((x,i)=>rowHTML(x,i,hiId)).join('');
   const mi=hiId?list.findIndex(x=>x.id===hiId):-1;
