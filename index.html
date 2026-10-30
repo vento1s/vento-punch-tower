@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0b0811"><link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="상남자 김주먹"><meta name="description" content="상남자 김주먹이 엄지 두 개로 천장을 부수며 용암보다 높이 오르는 도트 연타 게임. VENTO AI STUDIO"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0}[hidden]{display:none!important}</style></head><body><title>상남자 김주먹: 펀치 타워</title>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0b0811"><link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="상남자 김주먹"><meta name="description" content="상남자 김주먹이 엄지 두 개로 천장을 부수며 용암보다 높이 오르는 도트 연타 게임. VENTO AI STUDIO"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0}[hidden]{display:none!important}</style></head><body><title>상남자 김주먹: 펀치펀치 타워</title>
 <meta name="author" content="VENTO AI STUDIO">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,6 +46,12 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .logo{position:relative;margin:2px 0 4px;display:grid;gap:.18em;font-family:var(--f-pixel);font-weight:400;
   font-size:clamp(28px,11.5cqw,46px);line-height:1;letter-spacing:.02em;text-align:center}
 .logo .lw{position:relative;display:block}
+/* Korean bitmap logo: sizes on multiples of the font's 11px grid so the pixels stay square */
+.logo.ko{font-family:var(--f-display);font-size:55px;gap:4px;margin-top:10px;line-height:1.05;letter-spacing:.02em}
+.logo.ko .lw.sm{font-size:33px}
+.logo.ko .lw+.lw{font-size:55px}
+.logosub{margin-top:-2px;padding:5px 12px 4px;background:var(--ink);color:var(--gold);font-family:var(--f-display);font-size:22px;letter-spacing:.06em;
+  box-shadow:0 -3px 0 0 var(--amber),0 3px 0 0 var(--amber),-3px 0 0 0 var(--amber),3px 0 0 0 var(--amber),6px 6px 0 0 rgba(0,0,0,.5)}
 .logo .lf{position:relative;display:block;color:transparent;-webkit-background-clip:text;background-clip:text;
   background-image:linear-gradient(180deg,#fff3a0 0 14%,var(--gold) 14% 50%,var(--amber) 50% 86%,#e05a00 86%)}
 .logo .lo{position:absolute;left:0;right:0;top:0;color:var(--ink);
@@ -264,7 +270,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 
 <div id="wrap">
   <div id="stage">
-    <canvas id="c" width="144" height="256" aria-label="펀치 타워 게임 화면"></canvas>
+    <canvas id="c" width="144" height="256" aria-label="상남자 김주먹 게임 화면"></canvas>
     <button id="pausebtn" class="pausebtn" type="button" aria-label="일시정지" hidden></button>
     <div id="mash" class="mash" hidden>갈겨!!</div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
@@ -1559,7 +1565,8 @@ function setTog(id,on){const b=ov.querySelector('#'+id);if(!b)return;b.classList
 // title layout: one 296px column, everything on the same left/right edges.
 // importance: START (big, full width) > ranking / how-to (medium pair) > guest, music, sound (small)
 function showTitle(){menuMusic();showOverlay(`
-  <h1 class="logo" aria-label="PUNCH TOWER"><span class="lw"><span class="lo" aria-hidden="true">PUNCH</span><span class="lf">PUNCH</span></span><span class="lw"><span class="lo" aria-hidden="true">TOWER</span><span class="lf">TOWER</span></span></h1>
+  <h1 class="logo ko" aria-label="상남자 김주먹: 펀치펀치 타워"><span class="lw sm"><span class="lo" aria-hidden="true">상남자</span><span class="lf">상남자</span></span><span class="lw"><span class="lo" aria-hidden="true">김주먹</span><span class="lf">김주먹</span></span></h1>
+  <div class="logosub" aria-hidden="true">펀치펀치 타워</div>
   <div class="menu">
     <div class="sect">
       <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 (비우면 게스트)" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>

@@ -1,7 +1,7 @@
 // PUNCH TOWER service worker: the game opens and plays offline.
 // Game files: network first (so updates show up), falling back to the cached copy.
 // Fonts: cache first. The ranking server (Supabase) is never cached.
-const CACHE = 'punch-tower-v2';
+const CACHE = 'punch-tower-v3';
 const CORE = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
