@@ -540,16 +540,17 @@ function vibe(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
 
 /* ---------- world data ---------- */
 const ZONES=[
- {name:'DUNGEON',bg:'#140e1d',back:'#261d34',backL:'#30263f',wall:'#46385a',wallL:'#5c4b73',wallD:'#2a2039'},
- {name:'MINE',bg:'#150f0a',back:'#2d2117',backL:'#3a2b1e',wall:'#5a432f',wallL:'#78593f',wallD:'#33251a'},
- {name:'ICE CAVE',bg:'#0b1520',back:'#182c40',backL:'#203a52',wall:'#3a6888',wallL:'#5e94b8',wallD:'#1f3d56'},
- {name:'FORGE',bg:'#1a0a0a',back:'#331613',backL:'#421e1a',wall:'#683026',wallL:'#8c4434',wallD:'#3a1510'},
- {name:'CASTLE',bg:'#101218',back:'#262a34',backL:'#303542',wall:'#575d6e',wallL:'#7c8396',wallD:'#2d313b'},
+ {name:'UNDERGROUND',bg:'#1c100b',back:'#2f1b10',backL:'#3a2313',wall:'#5a432f',wallL:'#78593f',wallD:'#33251a'},
+ {name:'SURFACE',bg:'#8fd3ff',back:'#6a5a48',backL:'#7a6a58',wall:'#7a6a56',wallL:'#a8947a',wallD:'#4a3e32'},
+ {name:'MOUNTAIN',bg:'#4a8ee0',back:'#4a5560',backL:'#5a6570',wall:'#5e6a74',wallL:'#8c9caa',wallD:'#363e46'},
+ {name:'SKY',bg:'#2e5cbe',back:'#c8cede',backL:'#eef2fa',wall:'#b8c0d4',wallL:'#eef2fa',wallD:'#7a849c'},
+ {name:'SPACE',bg:'#06050f',back:'#1e2333',backL:'#2a3046',wall:'#3a4258',wallL:'#7a8aaa',wallD:'#1e2333'},
 ];
 const SLABC={brick:['#b5523b','#6e2a20','#d97456'],stone:['#7d7f8c','#4b4d58','#a6a9b6'],gold:['#e0a82a','#8a5a0c','#ffe27a'],
  tnt:['#c42a2a','#6a1010','#ff6a50'],vibranium:['#3a2f5c','#17122b','#b7a8ff'],boss:['#5e6b78','#2c333c','#a4b5c6'],final:['#6a4a8a','#2c1c40','#e8c050']};
 const TNAME={brick:'BRICK',stone:'STONE',gold:'GOLD',tnt:'TNT',vibranium:'VIBRANIUM',boss:'IRON GATE',final:'THE ROOF'};
-const zoneOfLevel=n=>ZONES[Math.max(0,Math.floor((n-1)/10))%ZONES.length];
+// 1-10 underground, 11-20 surface, 21-30 mountains, 31-40 sky, 41+ space (forever)
+const zoneOfLevel=n=>ZONES[Math.min(ZONES.length-1,Math.max(0,Math.floor((n-1)/10)))];
 const zoneAtY=y=>zoneOfLevel(Math.floor(-y/FH)+1);
 const ROOF=-TOP*FH;
 
@@ -946,15 +947,157 @@ function update(dt){
 }
 
 /* ---------- draw ---------- */
+/* ---------- scenery: underground -> surface -> mountains -> sky -> space ---------- */
+const SURF=10,GROUND=-SURF*FH;
+const fAt=sy=>-(camY+sy)/FH;               // floor height at a screen row
+const clamp01=v=>v<0?0:v>1?1:v;
+const DIRT=['#140b07','#190e09','#1e110a','#24140c','#2a170e','#301b10','#361f12','#3d2314','#442816','#4c2d18','#57341b'];
+const dirtCol=f=>DIRT[Math.max(0,Math.min(DIRT.length-1,Math.floor(f)))];
+const SKYK=[[10,[150,214,255]],[17,[110,190,248]],[26,[70,146,230]],[33,[46,96,196]],[38,[32,52,130]],[42,[16,14,50]],[47,[7,6,20]],[60,[5,4,16]]];
+const skyCache=new Map();
+function skyCol(f){const key=Math.round(f*6);let c=skyCache.get(key);if(c)return c;f=key/6;
+  let a=SKYK[0],b=SKYK[SKYK.length-1],v;
+  if(f<=a[0])v=a[1];else if(f>=b[0])v=b[1];
+  else{for(let i=1;i<SKYK.length;i++)if(f<=SKYK[i][0]){a=SKYK[i-1];b=SKYK[i];break;}
+    const t=(f-a[0])/(b[0]-a[0]);v=a[1].map((x,j)=>Math.round(x+(b[1][j]-x)*t));}
+  c=`rgb(${v[0]},${v[1]},${v[2]})`;if(skyCache.size<4000)skyCache.set(key,c);return c;}
+// screen y of a ground-rooted layer with parallax k (k=1 moves with the tower)
+const layerY=(k,d)=>(GROUND-camY)*k+(1-k)*179+d;
+function drawScenery(){
+  const gl=GROUND-camY;
+  for(let sy=-8;sy<H+8;sy+=2){const f=fAt(sy);R(-8,sy,W+16,2,f<SURF?dirtCol(f):skyCol(f));}
+  if(gl>-8){
+    ctx.save();ctx.beginPath();ctx.rect(-8,-8,W+16,Math.min(H+16,gl+8));ctx.clip();
+    const fc=fAt(H/2);
+    if(fc>34)drawSpace(fc);
+    if(fc<33)drawHills();
+    if(fc>14&&fc<42){ctx.globalAlpha=clamp01((fc-15)/5);drawMountains();ctx.globalAlpha=clamp01((fc-28)/3);drawCloudSea(fc);ctx.globalAlpha=1;}
+    if(fc>10&&fc<44)drawClouds();
+    if(fc>11&&fc<34)drawBirds();
+    ctx.restore();
+    drawSurface(gl);
+  }
+  if(gl<H+8)drawUnder(gl);
+}
+function drawUnder(gl){ // pebbles, gems, roots and the odd fossil in the dirt
+  const y0=Math.max(-8,gl),C=10,top=Math.floor((camY+y0)/C),bot=Math.ceil((camY+H)/C);
+  for(let cy=top;cy<=bot;cy++)for(let cx=-1;cx<15;cx++){
+    const h=hash(cx*31+7,cy*17+3),wy=cy*C+((hash(cy,cx)*C)|0),sy=wy-camY,x=cx*C+((hash(cx,cy+5)*C)|0);
+    if(sy<gl+3)continue;
+    const f=-wy/FH,d=dirtCol(f);
+    if(h>.9){R(x,sy,3,2,DIRT[Math.min(10,Math.floor(f)+3)]||'#6a4426');R(x,sy+2,3,1,'rgba(0,0,0,.35)');}
+    else if(h>.885){const tw=((gt*4+cx+cy)|0)%6===0;const gc=['#7af0ff','#ff7ad8','#9aff7a','#ffd04a'][(cx+cy*3)&3];
+      R(x,sy,2,2,gc);if(tw){R(x-1,sy,4,1,'#fff');R(x,sy-1,1,4,'#fff');}}
+    else if(h>.875&&f<SURF-1){R(x,sy+1,6,1,'#cbbfa6');R(x-1,sy,2,3,'#cbbfa6');R(x+5,sy,2,3,'#cbbfa6');}
+  }
+  // roots hanging under the grass
+  if(gl>-30&&gl<H)for(let i=0;i<9;i++){const x=WALL+6+((hash(i,41)*(IN-12))|0),len=6+((hash(i,42)*16)|0);
+    for(let j=0;j<len;j++)R(x+Math.round(Math.sin(j*.5+i)*1.2),gl+3+j,1,1,'#7a5430');}
+}
+function drawSurface(gl){
+  if(gl<-50||gl>H+4)return;
+  // trees, a little house, a fence and flowers standing on the ground
+  const tree=(x,s)=>{R(x-1,gl-6*s,2+s,6*s,'#5a3a1e');
+    for(let dy=-7*s;dy<=0;dy++){const w=Math.round(Math.sqrt(49*s*s-dy*dy)*.75);R(x-w,gl-6*s-4*s+dy,w*2+1,1,dy<-4*s?'#7fd04a':'#4aa83a');}};
+  tree(WALL+10,1);tree(WALL+78,2);tree(WALL+104,1);
+  const hx=WALL+30;R(hx,gl-14,24,14,'#f2e3c4');R(hx,gl-14,24,1,'#d8c49e');
+  for(let i=0;i<9;i++)R(hx-2+i,gl-15-i,28-i*2,1,i%2?'#d8443a':'#e8584a');
+  R(hx+9,gl-8,6,8,'#7a4a2a');R(hx+3,gl-11,4,4,'#7ac8ff');R(hx+17,gl-11,4,4,'#7ac8ff');R(hx+18,gl-24,3,6,'#8a5a3a');
+  for(let x=WALL+58;x<WALL+72;x+=4){R(x,gl-6,1,6,'#e8d8b8');}R(WALL+58,gl-4,14,1,'#e8d8b8');
+  for(let i=0;i<10;i++){const x=WALL+((hash(i,61)*IN)|0);R(x,gl-2,1,2,'#3a8a2a');R(x,gl-3,1,1,['#ff6a8a','#ffe04a','#ffffff'][i%3]);}
+  R(-8,gl-2,W+16,2,'#4caf3a');for(let x=-8;x<W+8;x+=3)R(x,gl-3,1,1,'#7fdc4a');R(-8,gl,W+16,3,'#6a4422');
+}
+function drawHills(){ // far green hills on the horizon, linger a few floors after the ground
+  const b0=layerY(.3,0),b1=layerY(.55,4);
+  if(b0-40<H)for(let x=-8;x<W+8;x++){const h=Math.round(22+9*Math.sin(x*.06)+5*Math.sin(x*.17+1));R(x,b0-h,1,h+H,'#6aa8c8');}
+  if(b1-30<H)for(let x=-8;x<W+8;x++){const h=Math.round(14+7*Math.sin(x*.09+2)+4*Math.sin(x*.23));R(x,b1-h,1,h+H,'#56a04a');R(x,b1-h,1,1,'#7ccc5a');}
+}
+const MT=[
+ {k:.4,d:18,col:'#8a9cc8',sh:'#6c7caa',ln:'#7888b6',snow:'#f2f6ff',ss:'#c6d2ea',sl:2.6,pk:[[14,300],[70,400],[132,320]]},
+ {k:.6,d:-146,col:'#5a8a6e',sh:'#46705a',ln:'#3e6450',snow:'#eef4f8',ss:'#b8c8d6',sl:2.3,pk:[[-10,230],[44,280],[102,210],[156,250]],pine:1},
+];
+function drawMountains(){
+  for(const m of MT){const base=layerY(m.k,m.d);if(base-420>H)continue;
+    for(let x=-8;x<W+8;x++){let h=-1e9,pi=0;
+      for(let i=0;i<m.pk.length;i++){const v=m.pk[i][1]-Math.abs(x-m.pk[i][0])*m.sl;if(v>h){h=v;pi=i;}}
+      h+=(hash(x>>1,pi+9)*4)|0;const top=Math.round(base-h);if(top>=H+8)continue;
+      const right=x>m.pk[pi][0];R(x,top,1,H+8-top,right?m.sh:m.col);
+      const snow=Math.round(h-(m.pk[pi][1]-60-((hash(x>>1,3)*12)|0)));if(snow>0)R(x,top,1,snow,right?m.ss:m.snow);
+      // rock strata: slanted lines fixed to the mountain so the face reads as rock, not fog
+      if(!(x&1)){const ph=(x*(right?.5:-.5));for(let ly=Math.ceil((top+Math.max(snow,0)+4-base-ph)/13)*13;base+ly+ph<H+8;ly+=13){
+        const yy=Math.round(base+ly+ph);if(hash(x>>2,ly)>.3)R(x,yy,2,1,m.ln);}}
+    }
+    if(m.pine)for(let i=0;i<26;i++){ // pine trees scattered over the lower slopes
+      const x=((hash(i,71)*(W+16))|0)-8;let h=-1e9;for(const q of m.pk)h=Math.max(h,q[1]-Math.abs(x-q[0])*m.sl);
+      const y=Math.round(base-h+40+hash(i,73)*90);if(y<-10||y>H+10)continue;
+      for(let j=0;j<7;j++)R(x-(j>>1),y+j,1+(j>>1)*2,1,j<2?'#3e7a4a':'#2e5e3a');R(x,y+7,1,2,'#4a3020');}
+  }
+}
+function drawCloudSea(fc){ // a sea of clouds below: mountain peaks poke through, it sinks away near space
+  const e0=layerY(.5,-444);if(e0>H+4)return;
+  for(let x=-8;x<W+8;x+=2){const e=Math.round(e0+3*Math.sin(x*.21+gt*.6)+2*Math.sin(x*.07));
+    R(x,e,2,H+8-e,'#e4eefa');R(x,e,2,2,'#ffffff');R(x,e+5,2,1,'#cfdcf0');}
+  if(fc>34){ctx.save();ctx.globalAlpha*=clamp01((fc-34)/8)*.55;R(-8,e0-4,W+16,H,'#1a1a50');ctx.restore();}
+}
+function drawClouds(){ // puffy clouds drifting at mid parallax
+  const k=.7,top=camY*k,C=58;
+  for(let cy=Math.floor(top/C)-1;cy<=Math.ceil((top+H)/C)+1;cy++){
+    const sy=Math.round(cy*C+hash(cy,21)*20-top),f=fAt(sy);
+    const dens=f<11?0:f<30?.45:f<40?.6:0;if(hash(cy,23)>dens)continue;
+    const a=clamp01((44-f)/5);if(a<=0)continue;
+    const w=18+((hash(cy,25)*26)|0),x=Math.round(((hash(cy,27)*(W+60))+gt*(2+hash(cy,29)*3))%(W+60))-30;
+    ctx.globalAlpha=a*.92;
+    R(x,sy,w,5,'#ffffff');R(x+3,sy-3,w*.5,4,'#ffffff');R(x+w*.45,sy-5,w*.35,6,'#ffffff');R(x+1,sy+5,w-2,2,'#d6e4f4');
+    ctx.globalAlpha=1;}
+}
+function drawBirds(){
+  for(let i=0;i<5;i++){const L=i*90+hash(i,51)*60,sy=Math.round(L-camY*.8)%420-60;if(sy<-6||sy>H)continue;
+    const f=fAt(sy);if(f<11.5||f>33)continue;
+    const x=Math.round((gt*(10+i*3)+hash(i,53)*W)%(W+20))-10,up=((gt*6+i)|0)%2;
+    R(x-2,sy-(up?1:0),2,1,'#2a3a5a');R(x,sy,1,1,'#2a3a5a');R(x+1,sy-(up?1:0),2,1,'#2a3a5a');}
+}
+const PLAN=[['#e8a060','#b06a38','#ffd0a0'],['#7ab8e8','#3a6ea8','#d0ecff'],['#c07ae0','#7a3aa0','#f0c8ff'],['#9ae08a','#4a9a4a','#d8ffd0'],['#e86a5a','#a03a30','#ffb8a8']];
+function disc(x,y,r,b,d,l){for(let dy=-r;dy<=r;dy++){const w=Math.round(Math.sqrt(r*r-dy*dy));if(!w)continue;
+  const sh=Math.round(w*.35);R(x-w,y+dy,w*2,1,b);R(x+sh,y+dy,w-sh,1,d);if(dy<-r*.25)R(x-w+1,y+dy,Math.max(1,Math.round(w*.45)),1,l);}}
+function drawSpace(fc){
+  // stars (far, slow)
+  const k=.15,top=camY*k;
+  for(let cy=Math.floor(top/14)-1;cy<=Math.ceil((top+H)/14)+1;cy++)for(let cx=0;cx<11;cx++){
+    const h=hash(cy*3+1,cx*7+2);if(h<.55)continue;
+    const x=cx*14+((hash(cx,cy)*14)|0),sy=Math.round(cy*14+hash(cy,cx+9)*14-top);
+    const a=clamp01((fAt(sy)-36)/7);if(a<=0)continue;
+    const tw=((gt*3+h*20)|0)%7===0;ctx.globalAlpha=a*(tw?.35:1);
+    R(x,sy,1,1,h>.97?'#ffe9a8':h>.93?'#a8d8ff':'#ffffff');
+    if(h>.988){R(x-1,sy,3,1,'#ffffff');R(x,sy-1,1,3,'#ffffff');}}
+  ctx.globalAlpha=1;
+  const pk=.3,ptop=camY*pk;
+  // nebula glow that slowly changes colour the higher you go
+  if(fc>44){const C=300;for(let cy=Math.floor(ptop/C)-1;cy<=Math.ceil((ptop+H)/C)+1;cy++){
+    const sy=cy*C+150-ptop,x=20+hash(cy,91)*(W-40),col=['255,90,200','90,160,255','160,90,255','90,255,200'][(hash(cy,93)*4)|0];
+    const g=ctx.createRadialGradient(x,sy,0,x,sy,90);g.addColorStop(0,`rgba(${col},${.16*clamp01((fc-44)/6)})`);g.addColorStop(1,`rgba(${col},0)`);
+    ctx.fillStyle=g;ctx.fillRect(x-90,sy-90,180,180);}}
+  // the moon right after leaving the sky, then random planets forever
+  const my=Math.round(-500-camY*pk);const ma=clamp01((fAt(my)-40)/4);
+  if(ma>0&&my>-20&&my<H+20){ctx.globalAlpha=ma;disc(W-WALL-26,my,11,'#d8d8e0','#a8a8b8','#f4f4fa');
+    R(W-WALL-30,my-3,3,2,'#b0b0c0');R(W-WALL-24,my+3,4,3,'#b0b0c0');R(W-WALL-21,my-6,2,2,'#b0b0c0');ctx.globalAlpha=1;}
+  const C=240;
+  for(let cy=Math.floor(ptop/C)-1;cy<=Math.ceil((ptop+H)/C)+1;cy++){
+    const h=hash(cy,77);if(h<.3)continue;
+    const r=5+((hash(cy,5)*10)|0),x=WALL+16+((hash(cy,9)*(IN-32))|0),sy=Math.round(cy*C+hash(cy,3)*(C-60)-ptop);
+    if(sy<-30||sy>H+30)continue;const a=clamp01((fAt(sy)-46)/4);if(a<=0)continue;
+    const [b,d,l]=PLAN[(hash(cy,11)*PLAN.length)|0];ctx.globalAlpha=a;disc(x,sy,r,b,d,l);
+    if(h>.68)for(let i=-r-6;i<=r+6;i++){const yy=sy+Math.round(i*.28);if(i<-r*.7||i>r*.7||yy>sy)R(x+i,yy,1,1,l);}
+    ctx.globalAlpha=1;}
+  // a shooting star now and then
+  const ss=(gt*.35)%1;if(ss<.12&&fc>42){const sx=W-((gt*.35|0)*53%W),t=ss/.12;
+    for(let i=0;i<8;i++)R(sx-t*90+i*2,30+t*40+(hash(gt*.35|0,1)*60|0)-i,1,1,`rgba(255,255,255,${(1-i/8)*.9})`);}
+}
 function drawWalls(){
   const r0=Math.floor(camY/6)-1,r1=Math.ceil((camY+H)/6)+1;
   for(let r=r0;r<=r1;r++){
     const wy=r*6,sy=wy-camY;
     if(wy<ROOF-6)continue;
     const z=zoneAtY(wy);
-    R(WALL,sy,IN,6,z.back);R(WALL,sy,IN,1,z.bg);
-    const off=(r&1)*6;
-    for(let x=WALL-12+off;x<W-WALL;x+=12){if(x>=WALL)R(x,sy,1,6,z.bg);if(hash(r,x)>.82)R(Math.max(WALL,x+1),sy+1,Math.min(11,W-WALL-x-1),5,z.backL);}
     R(0,sy,WALL,6,z.wall);R(W-WALL,sy,WALL,6,z.wall);R(0,sy,WALL,1,z.wallD);R(W-WALL,sy,WALL,1,z.wallD);
     const o2=(r&1)*4;
     for(let x=o2-7;x<WALL;x+=7){if(x>=0){R(x,sy,1,6,z.wallD);R(W-WALL+x,sy,1,6,z.wallD);}
@@ -1336,11 +1479,11 @@ function render(){
   const z=zoneAtY(camY+H/2);
   R(0,0,W,H,z.bg);
   ctx.save();ctx.translate(ox,oy);
-  drawSky();drawWalls();
+  drawScenery();drawSky();drawWalls();
   const nLo=Math.max(1,Math.floor(-(camY+H)/FH)-1),nHi=Math.ceil(-camY/FH)+2;ensureSlabs(nHi+1);
   for(let n=nLo;n<=nHi;n++){
     const y=-n*FH-camY;if(y>-10&&y<H)text(String(n),WALL-2,y-8,1,zoneOfLevel(n).wallL,'r',false);}
-  for(let n=nLo;n<=nHi+1;n++){const y=-(n-1)*FH-camY;if(y>-30&&y<H+40&&n%3===1)drawTorch(n);}
+  for(let n=nLo;n<=nHi+1;n++){const y=-(n-1)*FH-camY;if(y>-30&&y<H+40&&n%3===1&&n<=SURF)drawTorch(n);}
   const gy=-camY;if(gy<H){const z0=ZONES[0];R(WALL,gy,IN,H,z0.wallD);for(let x=0;x<IN;x+=6)R(WALL+x,gy,5,1,z0.wall);}
   for(let n=nLo;n<=nHi;n++){const y=-n*FH-camY;if(y>-16&&y<H+2)drawSlab(slabs[n]);}
   drawImpactFrame();
