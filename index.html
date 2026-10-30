@@ -567,7 +567,7 @@ let comboFX={dx:12,at:-9};
 const guardPos=sd=>({x:pl.x+(sd?4:-4),y:pl.feet-3});
 const SUPER_NEED=20,SUPER_FLOORS=5;
 // each KING FIST used raises the next charge by 10 weak hits (20, 30, 40 … up to 60) so it can't carry a run forever
-const superNeed=()=>Math.min(60,SUPER_NEED+superCount*10);
+const superNeed=()=>SUPER_NEED; // always 20 weak-point hits, every time
 
 function genCracks(){const out=[];for(let k=0;k<4;k++){let x=10+Math.random()*(IN-20),y=9;const p=[];
   for(let i=0;i<14;i++){p.push([x|0,y|0]);x+=(Math.random()*3-1.5);y-=Math.random()<.55?1:0;if(y<1)y=1;}out.push(p);}return out;}
@@ -703,27 +703,37 @@ function doSuper(pre,cutinShown){
   if(pl.jt>=0){pl.jt=-1;pl.feet=pl.to;}
   const start=pl.level+1,dest=pl.level+SUPER_FLOORS;ensureSlabs(dest+30);
   superReady=false;altStreak=0;superCount++;for(const h of holds.values())h.used=true;hum(-1);hitstop=0;impact=0;
-  sup={t:0,start,dest,next:start,from:pl.feet,to:-dest*FH,launched:false,peak:false};kHud.hits=0;kHud.mash=0;
+  sup={t:0,start,dest,next:start,from:pl.feet,to:-dest*FH,launched:false,peak:false};kHud.hits=0;kHud.mash=0;kHud.g=0;kHud.maxT=0;
   mode='super';if(cutinShown)sup.t=.45;else if(pre)sup.t=.3;else sfx.superCharge(); // after the slow beat: launch at oncevibe(40);if(!cutinShown)showCutin();
   lavaY=Math.max(lavaY,pl.feet+40);lavaY+=30;
 }
 // big on-screen counter for the KING PUNCH climb (HUD layer, never behind sparks)
-const kHud={hits:0,mash:0,hitPop:0,mashPop:0};
+const kHud={hits:0,mash:0,hitPop:0,mashPop:0,g:0,maxT:0};
 function drawKingHud(dt){
   if(!(mode==='super'&&sup&&sup.launched&&!sup.peak))return; // the finale takes over at the peak
   kHud.hitPop=Math.max(0,kHud.hitPop-dt);kHud.mashPop=Math.max(0,kHud.mashPop-dt);
   const y=40,sc=kHud.hitPop>0?7:6;
-  R(W/2-46,y-4,92,kHud.mash>0?62:46,'rgba(13,10,8,.72)');
+  const open=sup.mashT>0||sup.maxed;
+  R(W/2-46,y-4,92,sup.maxed?92:open?74:46,'rgba(13,10,8,.72)');
   text(String(kHud.hits),W/2-6,y+(7-sc)*2,sc,kHud.hitPop>0?'#ffffff':'#ffd400','c','#c24e00');
   text('HIT',W/2+tw(String(kHud.hits),sc)/2,y+(sc*5)-10,2,'#ff8a00','l','#0d0a08');
   if(kHud.mash>0){const hue=(gt*900)%360,ms=kHud.mashPop>0?3:2;
     text('+'+kHud.mash+' MASH',W/2,y+40-(ms-2)*2,ms,`hsl(${hue},100%,65%)`,'c','#0d0a08');}
+  if(open){ // mash gauge: shoots up with every tap, MAX = bonus floors
+    const tgt=sup.maxed?1:Math.min(1,(sup.taps||0)/MASH_TAPS);kHud.g+=(tgt-kHud.g)*Math.min(1,dt*22);
+    const gx=W/2-42,gy=y+56,gw=84,segs=MASH_TAPS,fill=kHud.g*segs;
+    R(gx-1,gy-1,gw+2,10,'#0d0a08');
+    for(let i=0;i<segs;i++){const sx=gx+Math.round(i*gw/segs),sw=Math.round((i+1)*gw/segs)-Math.round(i*gw/segs)-1;
+      const on=i<fill;R(sx,gy,sw,8,!on?'#2a1d38':sup.maxed?`hsl(${(gt*900+i*18)%360},100%,62%)`:FIREPAL(.25+.7*i/segs));
+      if(on)R(sx,gy,sw,2,'rgba(255,255,255,.45)');}
+    if(sup.maxed){kHud.maxT=Math.max(0,kHud.maxT-dt);const big=kHud.maxT>0;
+      text('MAX! +'+MAX_BONUS+'F',W/2,gy+(big?11:12),big?3:2,((gt*12)|0)%2?'#ffffff':'#ffd400','c','#c24e00');}}
 }
 // finale: how far you smashed through, with the mash bonus called out
 const finaleEl=document.getElementById('finale');let finaleTO=null;
-function showFinale(total,mash){
+function showFinale(total,mash,maxB=0){
   finaleEl.querySelector('b').textContent=total+'층 돌파!';
-  finaleEl.querySelector('i').textContent=mash>0?'갈겨 보너스 +'+mash+'층':'';
+  finaleEl.querySelector('i').textContent=(mash>0?'갈겨 보너스 +'+mash+'층':'')+(maxB?' · MAX +'+maxB+'층':'');
   finaleEl.classList.toggle('big',mash>=6);
   finaleEl.hidden=false;finaleEl.style.animation='none';void finaleEl.offsetWidth;finaleEl.style.animation='';
   clearTimeout(finaleTO);finaleTO=setTimeout(()=>{finaleEl.hidden=true;},1500);
@@ -747,14 +757,20 @@ function superBreak(s,k){
   if(s.type==='tnt')sfx.boom();
 }
 // KING PUNCH mash: while rising, every 2 taps (either hand) breaks one more floor, up to +10
-const MASH_T=1.8,MASH_MAX=10,RISE_FLOORS_PER_S=11;
+const MASH_T=1.8,MASH_MAX=10,MASH_TAPS=MASH_MAX*2,MAX_BONUS=5,RISE_FLOORS_PER_S=11;
 function superMash(side){
   if(!sup||!sup.launched||!(sup.mashT>0))return;
   sup.taps++;tapFX[side]=1;
   if(AC){const t=AC.currentTime;tone(t,.05,300+sup.taps*12,120,'square',.08);noise(t,.04,2400,1,.3);}
   if(sup.taps%2===0&&sup.dest-sup.base<MASH_MAX){sup.dest++;ensureSlabs(sup.dest+30);
     sup.mashT=Math.max(sup.mashT,.35); // keep the window open while you're still going
-    kHud.mash=sup.dest-sup.base;kHud.mashPop=.16;vibe(12);shake=Math.max(shake,3);}
+    kHud.mash=sup.dest-sup.base;kHud.mashPop=.16;vibe(12);shake=Math.max(shake,3);
+    if(sup.dest-sup.base>=MASH_MAX&&!sup.maxed){ // gauge full: a few bonus floors on top
+      sup.maxed=true;sup.dest+=MAX_BONUS;ensureSlabs(sup.dest+30);sup.mashT=Math.max(sup.mashT,.3);
+      kHud.maxT=.5;shake=Math.max(shake,9);flashO=.6;flashCol='#ffe9a8';vibe([30,20,30,20,60]);
+      if(AC){const t=AC.currentTime;[784,988,1175,1568,1976].forEach((f,i)=>tone(t+i*.045,.12,f,f,'square',.09));noise(t,.25,3000,1,.35);}
+      for(let i=0;i<36;i++){const a=Math.random()*Math.PI*2,sp=90+Math.random()*120,l=.5+Math.random()*.4;
+        parts.push({x:pl.x,y:pl.feet-30,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:60,col:['#ffd400','#ffffff','#7af0ff','#ff7af0'][i%4]});}}}
 }
 function updateSuper(dt){
   sup.t+=dt;const T=sup.t,CH=.45,RISE=.55;
@@ -782,7 +798,7 @@ function updateSuper(dt){
     rings.push({x:pl.x,y:pl.feet-30,life:.45,max:.45,big:true});rings.push({x:pl.x,y:pl.feet-30,life:.3,max:.3,big:false});
     for(let i=0;i<40;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*140;
       const l=.4+Math.random()*.5;parts.push({x:pl.x,y:pl.feet-30,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:120,fire:true});}
-    showFinale(n,sup.dest-sup.base);
+    showFinale(n,sup.dest-sup.base-(sup.maxed?MAX_BONUS:0),sup.maxed?MAX_BONUS:0);
     vibe([80,30,120]);}
   if(sup.peak){sup.endT=(sup.endT||0)+dt;}
   if(sup.peak&&sup.endT>=.4){
@@ -1747,7 +1763,7 @@ function showHowto(){menuMusic();showOverlay(`
     <li>클래식에서 <b>꾹 누르면</b> 그쪽으로 걸어가며 기가 모이고, <b>떼면</b> 모인 만큼 센 펀치</li>
     <li>걷는 중에 <b>반대쪽을 탭</b>하면 가던 방향으로 휙 <b>대시</b></li>
     <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
-    <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(쓸 때마다 10번씩 더 필요). 양쪽을 같이 꾹 누르면 5층 관통!</li>
+    <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(매번 20번). 양쪽을 같이 꾹 누르면 5층 관통! 올라가는 동안 갈겨서 게이지를 꽉 채우면 <b>MAX 보너스</b>!</li>
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
     <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
     <li>게임 중 위쪽 <b>II</b> 버튼으로 일시정지, 재시작, 메뉴로 갈 수 있어요</li>
