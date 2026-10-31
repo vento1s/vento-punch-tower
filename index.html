@@ -571,6 +571,13 @@ const superNeed=()=>SUPER_NEED; // always 20 weak-point hits, every time
 
 function genCracks(){const out=[];for(let k=0;k<4;k++){let x=10+Math.random()*(IN-20),y=9;const p=[];
   for(let i=0;i<14;i++){p.push([x|0,y|0]);x+=(Math.random()*3-1.5);y-=Math.random()<.55?1:0;if(y<1)y=1;}out.push(p);}return out;}
+// TIME: a countdown that good smashing keeps topping up. Run out and the lava surges.
+const TIME_START=30,TIME_MAX=60,T_BREAK=1.5,T_CLEAN=1.5,T_BOSS=4,T_WEAK=.2,T_KING=.6;
+// CHILL: weak-point hits cool the lava; full chill = lava at half speed. It drains when you stop hitting weak points.
+const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
+let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
+function addTime(v,label){if(timeUp)return;timeLeft=Math.min(TIME_MAX,timeLeft+v);timeFlash=.35;
+  if(label)pop(popX(30),pl.feet-44,label,'#7af0ff',1);}
 const WEAK_WIDEN=1.15; // weak points are 15% wider than each difficulty's base width
 function newWeakX(prev){const lo=WALL+4+D.weakW*WEAK_WIDEN/2,hi=W-WALL-4-D.weakW*WEAK_WIDEN/2;let x;
   for(let i=0;i<20;i++){x=lo+Math.random()*(hi-lo);if(prev==null||Math.abs(x-prev)>22)break;}return Math.round(x);}
@@ -595,7 +602,7 @@ function newGame(){
   pl={level:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;sup=null;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;
+  altStreak=0;superReady=false;sup=null;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;chill=0;timeUp=false;timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -660,7 +667,8 @@ function hit(side,power){
   if(fever>0)chip(fx,fy,'#fff',2,110);
   sfx.hit(combo,crit,s.type);
   if(charged)sfx.kipunch(power);
-  if(weak){weakCount++;weakStreak++;s.weakHits++;s.wflash=1;sfx.weak(weakStreak);weakFX(s.wx,fy,dmg);}
+  if(weak){weakCount++;weakStreak++;s.weakHits++;s.wflash=1;sfx.weak(weakStreak);weakFX(s.wx,fy,dmg);
+    chill=Math.min(1,chill+CHILL_HIT);addTime(T_WEAK);}
   else if(charged){weakStreak=0;
     rings.push({x:fx,y:fy,life:.22,max:.22,big:true,col:'#9ff4ff'});
     for(let i=0;i<6+power*10;i++){const a=-Math.PI*Math.random(),sp=60+Math.random()*90;
@@ -682,6 +690,8 @@ function debris(s){const y=-s.n*FH;const c=SLABC[s.type];
 function breakSlab(s){
   s.broken=true;s.hp=0;debris(s);sfx.brk(s.type);vibe(30);
   shake=Math.max(shake,4.5);hitstop=Math.max(hitstop,.085);
+  {const clean=weakStreak>=4,t=T_BREAK+(clean?T_CLEAN:0)+(s.type==='boss'?T_BOSS:0);
+   addTime(t,(clean?'CLEAN ':'')+'+'+t.toFixed(1)+'s');}
   let dest=s.n;
   if(s.type==='tnt'){sfx.boom();shake=8;pop(popX(38),pl.feet-30,'BOOM!','#ff6a50',2);
     for(let k=1;k<=2;k++){const n2=slabs[s.n+k];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='vibranium'){n2.broken=true;debris(n2);dest=n2.n;}else break;}}
@@ -750,7 +760,7 @@ function superBreak(s,k){
   const y=-s.n*FH+5;
   fire(pl.x,y,22,IN*.8,-40);
   rings.push({x:pl.x,y,life:.3,max:.3,big:true});
-  kHud.hits=k;kHud.hitPop=.14;
+  kHud.hits=k;kHud.hitPop=.14;addTime(T_KING);
   sfx.superBreak(k);vibe(25);
   shake=Math.max(shake,7);hitstop=Math.max(hitstop,.045);flashO=.35;flashCol='#ffffff';
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();}
@@ -944,7 +954,15 @@ function update(dt){
     if(started)tNow=t-tStart;
     if(t-lastTap>D.win){combo=0;if(!superReady)altStreak=0;}
     if(started){const tg=slabs[pl.level+1];// lava speeds up with height, and the climb itself accelerates it (×2 by floor 90, ×3 by 180)
-      let v=(D.lava+pl.level*D.grow)*(1+pl.level/90);
+      // past 40F the climb keeps getting harder, but at half the rate (it used to wall everyone in the 50s)
+      const L=pl.level<=40?pl.level:40+(pl.level-40)*.5;
+      let v=(D.lava+L*D.grow)*(1+L/90);
+      chill=Math.max(0,chill-CHILL_DECAY*dt);v*=1-CHILL_SLOW*chill;
+      timeLeft=Math.max(0,timeLeft-dt);timeFlash=Math.max(0,timeFlash-dt);
+      if(timeLeft<=10&&!timeUp){timeBeep-=dt;if(timeBeep<=0){timeBeep=timeLeft<=5?.5:1;if(AC){const t=AC.currentTime;tone(t,.06,timeLeft<=5?1320:990,timeLeft<=5?1320:990,'square',.06);}}}
+      if(timeLeft<=0&&!timeUp){timeUp=true;pop(W/2,pl.feet-50,'TIME UP!','#ff3a5a',2);sfx.warn();shake=6;vibe([80,40,80]);}
+      if(timeUp)v=Math.max(v*3,220); // out of time: the lava rushes up
+      {const z=zoneOfLevel(pl.level+1);if(lastZone&&z!==lastZone){pop(W/2,pl.feet-58,z.name,'#ffd04a',2);if(AC){const t=AC.currentTime;[660,880,1320].forEach((f,i)=>tone(t+i*.07,.12,f,f,'square',.07));}}lastZone=z;}
       if(tg&&(tg.type==='boss'||tg.type==='final'))v*=.6;if(fever>0)v*=.85;
       lavaY-=v*dt;lavaY=Math.min(lavaY,pl.feet+110);
       const dist=lavaY-pl.feet;
@@ -1169,6 +1187,9 @@ function drawWeak(s,sy){
   // bracket corners
   const bc=s.wflash>0?'#ffffff':'#ff3a5a';
   R(x0-1,sy+10,2,1,bc);R(x0-1,sy+10,1,2,bc);R(x0+w-1,sy+10,2,1,bc);R(x0+w,sy+10,1,2,bc);
+  // "WEAK" tag on the block face, right over the spot
+  {const tx=clamp(Math.round(cx),WALL+13,W-WALL-13);R(tx-12,sy+2,25,7,'rgba(13,10,8,.8)');
+   text('WEAK',tx,sy+3,1,s.wflash>0?'#ffffff':pulse>.5?'#ffe27a':'#ff3a5a','c',false);}
   // pointer for the slab you're punching
   if(s.n===pl.level+1&&mode==='play'){const by=sy+14+Math.round(Math.sin(gt*8)*1.5);
     R(Math.round(cx)-2,by,5,1,'#ff3a5a');R(Math.round(cx)-1,by+1,3,1,'#ff3a5a');R(Math.round(cx),by+2,1,1,'#ff3a5a');}
@@ -1211,9 +1232,9 @@ function drawSlab(s){
     if(tcut>cut){ctx.globalAlpha=.5;R(x0+cut,sy,tcut-cut,10,'#fff3c0');}
     ctx.globalAlpha=1;
     const col=r>.5?'#9aff7a':r>.25?'#ffd400':'#ff3a5a';
-    R(x0,sy-4,IN,3,'#0d0a08');                       // track
-    if(tcut>cut)R(x0+cut,sy-3,tcut-cut,1,'#fff3c0'); // trailing chunk
-    R(x0,sy-3,cut,1,col);                            // remaining HP
+    R(x0,sy-5,IN,4,'#0d0a08');                       // track
+    if(tcut>cut)R(x0+cut,sy-4,tcut-cut,2,'#fff3c0'); // trailing chunk
+    R(x0,sy-4,cut,2,col);                            // remaining HP
     if(cut>0&&cut<IN){ctx.globalAlpha=.7;R(x0+cut-1,sy,1,10,'#ffffff');ctx.globalAlpha=1;}}
   if(s.n<=pl.level+3)drawWeak(s,sy);
 }
@@ -1338,9 +1359,12 @@ function drawHUD(){
   const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');const tagX=4+tw(fl,2)+5;
   text('ENDLESS',tagX,4,1,'#a597b8',false);
   text(D.tag,tagX,11,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
-  const m=Math.floor(tNow/60),sec=tNow%60;
-  text(String(m).padStart(2,'0')+':'+sec.toFixed(1).padStart(4,'0'),W-4,4,1,'#ffd04a','r');
-  text(zoneOfLevel(pl.level+1).name,W-4,11,1,'#a597b8','r',false);
+  { // TIME countdown, top right (elapsed time is still kept for the ranking)
+    const low=timeLeft<=10,blink=low&&((gt*(timeLeft<=5?8:4))|0)%2;
+    const col=timeFlash>0?'#7af0ff':low?(blink?'#ffffff':'#ff3a5a'):'#ffd04a';
+    const ts=timeLeft>=10?String(Math.ceil(timeLeft)):timeLeft.toFixed(1);
+    text(ts,W-4,3,2,col,'r');text('TIME',W-7-tw(ts,2),4,1,low?'#ff3a5a':'#a597b8','r',false);
+    const bw=40,fr=clamp(timeLeft/TIME_MAX,0,1);R(W-4-bw,14,bw,2,'#2a1d38');R(W-4-bw,14,Math.round(bw*fr),2,col);}
   const s=slabs[pl.level+1];
   if(s&&!s.broken){const bw=W-8,ratio=Math.max(0,s.hp/s.max);
     R(4,18,bw,7,'#2a1d38');R(4,18,Math.ceil(bw*ratio),7,SLABC[s.type][0]);R(4,18,Math.ceil(bw*ratio),1,SLABC[s.type][2]);
@@ -1348,7 +1372,9 @@ function drawHUD(){
   // progress meter
   // lava gauge: how much room is left below you (full = safe, empty = lava at your feet)
   {const room=clamp((lavaY-pl.feet)/(4*FH),0,1);R(3,36,3,150,'rgba(10,6,16,.7)');
-   R(3,36+150*(1-room),3,150*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,'#ff7a1a');}
+   R(3,36+150*(1-room),3,150*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,chill>.05?'#7af0ff':'#ff7a1a');
+   if(chill>.05)R(7,186-Math.round(40*chill),2,Math.round(40*chill),'#7af0ff');}
+  if(mode==='play'&&chill>.45){ctx.globalAlpha=.6+.4*Math.sin(gt*10);text('LAVA SLOW',W/2,H-68,1,'#7af0ff','c');ctx.globalAlpha=1;}
   if(fever>0){text('FEVER x2',W/2,62,1,`hsl(${(gt*720+120)%360},95%,70%)`,'c');
     ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle=`hsl(${(gt*720)%360},95%,60%)`;ctx.lineWidth=2;ctx.strokeRect(1,30,W-2,H-31);ctx.globalAlpha=1;}
   const dist=lavaY-pl.feet;
@@ -1768,6 +1794,8 @@ function showHowto(){menuMusic();showOverlay(`
     <li>클래식에서 <b>꾹 누르면</b> 그쪽으로 걸어가며 기가 모이고, <b>떼면</b> 모인 만큼 센 펀치</li>
     <li>걷는 중에 <b>반대쪽을 탭</b>하면 가던 방향으로 휙 <b>대시</b></li>
     <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
+    <li><b>TIME</b>이 0이 되면 용암이 몰려와요. 블록을 부수면 +1.5초, 약점을 4번 넘게 연속으로 때려서 부수면 <b>CLEAN</b> +3초, 보스 블록은 +5.5초.</li>
+    <li>약점을 때릴수록 용암이 식어서 <b>LAVA SLOW</b>(최대 절반 속도). 손을 놓으면 다시 빨라져요.</li>
     <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(매번 20번). 양쪽을 같이 꾹 누르면 5층 관통! 올라가는 동안 미친 듯이 갈겨서 게이지 끝에 닿으면 <b>MAX 보너스</b>! 느려지면 게이지가 내려가요.</li>
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
     <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
