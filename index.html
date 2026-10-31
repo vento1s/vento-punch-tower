@@ -231,6 +231,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px -3px 0 var(--ink),6px 6px 0 #c24e00;
   animation:mashShake .16s steps(2) infinite}
 .mash[hidden]{display:none}
+.mash small{display:block;margin-top:6px;font-size:.38em;color:#fff}
 .finale{position:absolute;left:0;right:0;top:30%;display:grid;justify-items:center;gap:6px;pointer-events:none;z-index:2;animation:finIn 1.5s steps(30) forwards}
 .finale[hidden]{display:none}
 .finale b{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,12cqw,48px);color:var(--gold);
@@ -272,7 +273,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   <div id="stage">
     <canvas id="c" width="144" height="256" aria-label="상남자 김주먹 게임 화면"></canvas>
     <button id="pausebtn" class="pausebtn" type="button" aria-label="일시정지" hidden></button>
-    <div id="mash" class="mash" hidden>갈겨!!</div>
+    <div id="mash" class="mash" hidden>갈겨!!<small>위아래로 쓱싹쓱싹!</small></div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
     <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>KING PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
@@ -578,7 +579,7 @@ const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
 function addTime(v,label){if(timeUp)return;timeLeft=Math.min(TIME_MAX,timeLeft+v);timeFlash=.35;
   if(label)pop(popX(30),pl.feet-44,label,'#7af0ff',1);}
-const WEAK_WIDEN=1.15; // weak points are 15% wider than each difficulty's base width
+const WEAK_WIDEN=1.3; // weak points are 30% wider than each difficulty's base width
 function newWeakX(prev){const lo=WALL+4+D.weakW*WEAK_WIDEN/2,hi=W-WALL-4-D.weakW*WEAK_WIDEN/2;let x;
   for(let i=0;i<20;i++){x=lo+Math.random()*(hi-lo);if(prev==null||Math.abs(x-prev)>22)break;}return Math.round(x);}
 // floors are generated on demand: the tower never ends, the lava just keeps getting faster
@@ -731,11 +732,15 @@ function drawKingHud(dt){
     text('+'+kHud.mash+' MASH',W/2,y+40-(ms-2)*2,ms,`hsl(${hue},100%,65%)`,'c','#0d0a08');}
   if(open){ // mash gauge: shoots up with every tap, MAX = bonus floors
     const tgt=sup.maxed?1:(sup.gauge||0);kHud.g+=(tgt-kHud.g)*Math.min(1,dt*30);
-    const gx=W/2-42,gy=y+56,gw=84,segs=MASH_TAPS,fill=kHud.g*segs;
+    const gx=W/2-42,gy=y+56,gw=84,segs=20,fill=kHud.g*segs;
     R(gx-1,gy-1,gw+2,10,'#0d0a08');
     for(let i=0;i<segs;i++){const sx=gx+Math.round(i*gw/segs),sw=Math.round((i+1)*gw/segs)-Math.round(i*gw/segs)-1;
       const on=i<fill;R(sx,gy,sw,8,!on?'#2a1d38':sup.maxed?`hsl(${(gt*900+i*18)%360},100%,62%)`:FIREPAL(.25+.7*i/segs));
       if(on)R(sx,gy,sw,2,'rgba(255,255,255,.45)');}
+    if(sup.mashT>0&&!sup.maxed){const b=Math.round(Math.sin(gt*18)*6);
+      for(const ax of [W*.25,W*.75]){const x=Math.round(ax),y=H-96;
+        for(let i=0;i<5;i++){R(x-i,y-14+b+i,i*2+1,1,'#ffd400');R(x-i,y+14-b-i,i*2+1,1,'#ffd400');}
+        R(x-1,y-9+b,3,18-2*b,'rgba(255,212,0,.55)');}}
     if(sup.maxed){kHud.maxT=Math.max(0,kHud.maxT-dt);const big=kHud.maxT>0;
       text('MAX! +'+MAX_BONUS+'F',W/2,gy+(big?11:12),big?3:2,((gt*12)|0)%2?'#ffffff':'#ffd400','c','#c24e00');}}
 }
@@ -767,17 +772,22 @@ function superBreak(s,k){
   if(s.type==='tnt')sfx.boom();
 }
 // KING PUNCH mash: while rising, every 2 taps (either hand) breaks one more floor, up to +10
-const MASH_T=1.8,MASH_MAX=10,MASH_TAPS=MASH_MAX*2,MAX_BONUS=5,RISE_FLOORS_PER_S=11;
-// mash gauge: each tap kicks it up, it drains all the time. ~8 taps/s just holds it; you need a real frenzy (12+/s) to hit the top
-const GAUGE_UP=.11,GAUGE_DOWN=.85,MASH_CAP=4.5,MASH_GRACE=.35;
-function superMash(side){
-  if(!sup||!sup.launched||!(sup.mashT>0))return;
-  sup.taps++;tapFX[side]=1;
-  if(AC){const t=AC.currentTime;tone(t,.05,300+sup.taps*12,120,'square',.08);noise(t,.04,2400,1,.3);}
-  if(!sup.maxed){sup.gauge=Math.min(1,(sup.gauge||0)+GAUGE_UP);
+const MASH_T=1.8,MASH_MAX=10,MAX_BONUS=5,RISE_FLOORS_PER_S=11;
+// KING PUNCH rub: scrub the screen up and down. Distance rubbed (canvas px) breaks floors and kicks the gauge up;
+// the gauge drains all the time: ~300px/s only holds it, you need a wild ~450px/s+ scrub to reach the very top
+const RUB_GAIN=.0028,GAUGE_DOWN=.85,RUB_FLOOR=55,MASH_CAP=4.5,MASH_GRACE=.35;
+function superRub(dy,side){
+  if(!sup||!sup.launched||!(sup.mashT>0)||!dy)return;
+  const d=Math.abs(dy),dir=Math.sign(dy);tapFX[side]=1;
+  if(dir!==sup.rubDir){sup.rubDir=dir;sup.strokes=(sup.strokes||0)+1; // each change of direction: a swish
+    if(AC){const t=AC.currentTime;noise(t,.06,1800+Math.min(2400,sup.strokes*60),1,.28);tone(t,.04,dir<0?520:380,dir<0?700:300,'square',.05);}}
+  sup.rub=(sup.rub||0)+d;
+  if(!sup.maxed){sup.gauge=Math.min(1,(sup.gauge||0)+d*RUB_GAIN);
     if((sup.mashAge||0)<MASH_CAP)sup.mashT=Math.max(sup.mashT,MASH_GRACE);} // keep the window open while you're still going
-  if(sup.taps%2===0&&sup.dest-sup.base-(sup.maxed?MAX_BONUS:0)<MASH_MAX){sup.dest++;ensureSlabs(sup.dest+30);
-    kHud.mash=sup.dest-sup.base-(sup.maxed?MAX_BONUS:0);kHud.mashPop=.16;vibe(12);shake=Math.max(shake,3);}
+  const want=Math.min(MASH_MAX,Math.floor(sup.rub/RUB_FLOOR)),got=sup.dest-sup.base-(sup.maxed?MAX_BONUS:0);
+  if(want>got){sup.dest+=want-got;ensureSlabs(sup.dest+30);
+    kHud.mash=want;kHud.mashPop=.16;vibe(12);shake=Math.max(shake,3);
+    if(AC){const t=AC.currentTime;tone(t,.05,300+want*40,140,'square',.08);}}
   {
     if(sup.gauge>=1&&!sup.maxed){ // gauge hit the very top: bonus floors
       sup.maxed=true;sup.dest+=MAX_BONUS;ensureSlabs(sup.dest+30);sup.mashT=Math.max(sup.mashT,.3);
@@ -842,7 +852,7 @@ function dash(dirSide){
 function press(id,side){if(holds.has(id))return;
   if(mode==='play'&&ctrlMode==='classic')for(const h of holds.values()){if(!h.used&&h.side!==side&&h.t>=HOLD_T){
     holds.set(id,{side,t:0,c:0,used:true});dash(h.side);return;}}
-  if(mode==='super'){holds.set(id,{side,t:0,c:0,used:true});superMash(side);return;}
+  if(mode==='super'){holds.set(id,{side,t:0,c:0,used:true,rub:true});return;} // KING PUNCH: rub up and down
   holds.set(id,{side,t:0,c:0,used:false});
   if(ctrlMode==='pad')hit(side); // pad buttons punch on press; classic waits to see tap vs hold
 }
@@ -857,14 +867,17 @@ stage.addEventListener('pointerdown',e=>{if(!ov.hidden)return;e.preventDefault()
   try{stage.setPointerCapture(e.pointerId);}catch(_){}
   if(ctrlMode==='pad'){
     if(x<W/2){if(stick.id===null)stick={id:e.pointerId,ox:x,oy:y,dx:0,t0:now(),dashed:false};return;} // left half: stick
-    press(e.pointerId,x<W*.75?0:1);markDrag(e.pointerId,x);return;}                                   // right half: L / R fist
-  press(e.pointerId,x<W/2?0:1);markDrag(e.pointerId,x);});
+    press(e.pointerId,x<W*.75?0:1);markDrag(e.pointerId,x,y);return;}                                   // right half: L / R fist
+  press(e.pointerId,x<W/2?0:1);markDrag(e.pointerId,x,y);});
 // slide a punching thumb left/right = positioning in steps: each swipe step moves 3x a punch nudge
-const DRAG_START=5,DRAG_STEP=8,DRAG_MOVE=NUDGE*3;
-function markDrag(id,x){const h=holds.get(id);if(h){h.x0=x;h.lx=x;h.drag=false;}}
-stage.addEventListener('pointermove',e=>{const h=holds.get(e.pointerId);if(!h||h.x0===undefined||mode!=='play')return;
+// a resting/pressing thumb wobbles: only a clear slide counts as a drag, and once walking it takes a big slide
+const DRAG_START=9,DRAG_START_WALK=18,DRAG_STEP=8,DRAG_MOVE=NUDGE*3;
+function markDrag(id,x,y){const h=holds.get(id);if(h){h.x0=x;h.lx=x;h.drag=false;h.ly=y;}}
+stage.addEventListener('pointermove',e=>{const h=holds.get(e.pointerId);if(!h||h.x0===undefined)return;
+  if(mode==='super'){const [,y]=toCanvas(e);if(h.ly!==undefined)superRub(y-h.ly,h.side);h.ly=y;return;}
+  if(mode!=='play')return;
   const [x]=toCanvas(e);
-  if(!h.drag&&Math.abs(x-h.x0)>=DRAG_START){h.drag=true;h.lx=h.x0;}   // past a small threshold it's a drag, not a tap
+  if(!h.drag&&Math.abs(x-h.x0)>=(h.t>=HOLD_T?DRAG_START_WALK:DRAG_START)){h.drag=true;h.lx=h.x0;}   // past the threshold it's a drag, not a tap/hold
   if(h.drag){let d=x-h.lx;
     if(!h.stepped){pl.tx=clamp(pl.tx+Math.sign(d||x-h.x0)*DRAG_MOVE,XMIN,XMAX);h.stepped=true;h.lx=x;}  // first step right away
     else while(Math.abs(d)>=DRAG_STEP){const sg=Math.sign(d);pl.tx=clamp(pl.tx+sg*DRAG_MOVE,XMIN,XMAX);h.lx+=sg*DRAG_STEP;d=x-h.lx;}}});
@@ -1184,12 +1197,13 @@ function drawWeak(s,sy){
   R(x0+1,sy+8,Math.max(1,w-2),1,core);
   R(Math.round(cx)-1,sy+3,2,6,'#3a0812');R(Math.round(cx),sy+4,1,5,core);
   R(Math.round(cx)-3,sy+5,1,2,core);R(Math.round(cx)+2,sy+6,1,2,core);
+  R(x0,sy+8,w,2,'#3a0812');
+  R(x0+1,sy+8,Math.max(1,w-2),1,core);
+  R(Math.round(cx)-1,sy+3,2,6,'#3a0812');R(Math.round(cx),sy+4,1,5,core);
+  R(Math.round(cx)-3,sy+5,1,2,core);R(Math.round(cx)+2,sy+6,1,2,core);
   // bracket corners
   const bc=s.wflash>0?'#ffffff':'#ff3a5a';
   R(x0-1,sy+10,2,1,bc);R(x0-1,sy+10,1,2,bc);R(x0+w-1,sy+10,2,1,bc);R(x0+w,sy+10,1,2,bc);
-  // "WEAK" tag on the block face, right over the spot
-  {const tx=clamp(Math.round(cx),WALL+13,W-WALL-13);R(tx-12,sy+2,25,7,'rgba(13,10,8,.8)');
-   text('WEAK',tx,sy+3,1,s.wflash>0?'#ffffff':pulse>.5?'#ffe27a':'#ff3a5a','c',false);}
   // pointer for the slab you're punching
   if(s.n===pl.level+1&&mode==='play'){const by=sy+14+Math.round(Math.sin(gt*8)*1.5);
     R(Math.round(cx)-2,by,5,1,'#ff3a5a');R(Math.round(cx)-1,by+1,3,1,'#ff3a5a');R(Math.round(cx),by+2,1,1,'#ff3a5a');}
@@ -1796,7 +1810,7 @@ function showHowto(){menuMusic();showOverlay(`
     <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
     <li><b>TIME</b>이 0이 되면 용암이 몰려와요. 블록을 부수면 +1.5초, 약점을 4번 넘게 연속으로 때려서 부수면 <b>CLEAN</b> +3초, 보스 블록은 +5.5초.</li>
     <li>약점을 때릴수록 용암이 식어서 <b>LAVA SLOW</b>(최대 절반 속도). 손을 놓으면 다시 빨라져요.</li>
-    <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(매번 20번). 양쪽을 같이 꾹 누르면 5층 관통! 올라가는 동안 미친 듯이 갈겨서 게이지 끝에 닿으면 <b>MAX 보너스</b>! 느려지면 게이지가 내려가요.</li>
+    <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(매번 20번). 양쪽을 같이 꾹 누르면 5층 관통! 올라가는 동안 화면을 <b>위아래로 쓱싹쓱싹</b> 문지르면 더 뚫고, 게이지 끝에 닿으면 <b>MAX 보너스</b>! 느려지면 게이지가 내려가요.</li>
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
     <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
     <li>게임 중 위쪽 <b>II</b> 버튼으로 일시정지, 재시작, 메뉴로 갈 수 있어요</li>
