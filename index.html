@@ -858,7 +858,7 @@ function superBreak(s,k){
   rings.push({x:pl.x,y,life:.3,max:.3,big:true});
   kHud.hits=k;kHud.hitPop=.14;addTime(T_KING);
   sfx.superBreak(k);vibe(25);
-  shake=Math.max(shake,7);hitstop=Math.max(hitstop,.045);flashO=.35;flashCol='#ffffff';
+  shake=Math.max(shake,7);flashO=.35;flashCol='#ffffff'; // no hit-stop during the KING climb: it must keep pace with the rubbing
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();}
   if(s.type==='tnt')sfx.boom();
 }
@@ -909,7 +909,10 @@ function updateSuper(dt){
   if(sup.mashEnd&&!sup.maxed&&sup.mashT>0)sup.gauge=Math.max(0,sup.gauge-GAUGE_DOWN*dt);
   sup.mashT=rubLeft();
   sup.to=-sup.dest*FH;
-  if(pl.feet>sup.to)pl.feet=Math.max(sup.to,pl.feet-RISE_FLOORS_PER_S*(.7+.3*sup.pw)*(sup.mashT>0?1:4)*FH*dt); // time's up: zip to the floor you earned and finish
+  { // climb: never more than ~0.3s behind what you've earned; once time's up, close the gap almost at once
+    const behind=Math.max(0,(pl.feet-sup.to)/FH),base=RISE_FLOORS_PER_S*(.7+.3*sup.pw);
+    const spd=sup.mashT>0?Math.max(base,behind/.3):Math.max(base*4,behind/.12);
+    if(pl.feet>sup.to)pl.feet=Math.max(sup.to,pl.feet-spd*FH*dt);}
   const k=(pl.feet<=sup.to&&sup.mashT<=0)?1:0;
   // flaming corkscrew trail + blazing fist
   fire(pl.x,pl.feet-6,6,10,70);
