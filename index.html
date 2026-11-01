@@ -1829,11 +1829,16 @@ function smashStart(btn,stopBtn,next){
   const orc=ov.getBoundingClientRect(),br=btn.getBoundingClientRect(),SC=11;
   const fc=fistCanvas(Math.ceil((br.top-orc.top+br.height*.55)/SC)+16),fw=fc.width*SC,fh=fc.height*SC;
   Object.assign(fc.style,{position:'absolute',left:(br.left-orc.left+br.width/2-fw/2)+'px',top:(br.top-orc.top+br.height*.55-fh)+'px',
-    width:fw+'px',height:fh+'px',imageRendering:'pixelated',zIndex:5,pointerEvents:'none',
-    transform:`translateY(${-(br.top-orc.top+br.height)-40}px)`,transition:'transform .24s cubic-bezier(.55,0,1,.6)'});
-  ov.appendChild(fc);void fc.offsetWidth;
-  if(AC){const t=AC.currentTime;noise(t,.26,600,.7,.35,'bandpass',3200);tone(t,.26,900,200,'sawtooth',.12);} // whoosh
-  requestAnimationFrame(()=>{fc.style.transform='translateY(0)';});
+    width:fw+'px',height:fh+'px',imageRendering:'pixelated',zIndex:5,pointerEvents:'none'});
+  ov.appendChild(fc);
+  // timed to the voice shout (~0.87s): drop in and hover, wind up trembling while the voice plays, slam as it ends
+  const off=-(br.top-orc.top+br.height)-40,hov=-96,top=hov-38,T_IN=240,T_WIND=470,T_SLAM=170,IMPACT=T_IN+T_WIND+T_SLAM;
+  const Y=y=>`translateY(${y}px)`;
+  fc.animate([{transform:Y(off)},{transform:Y(hov)}],{duration:T_IN,easing:'cubic-bezier(.2,.8,.3,1)',fill:'forwards'});
+  setTimeout(()=>{const k=[];for(let i=0;i<=10;i++){const e=i/10;k.push({transform:`translate(${i%2?3:-3}px,${hov+(top-hov)*e*(2-e)}px)`});}
+    fc.animate(k,{duration:T_WIND,fill:'forwards'});},T_IN);
+  setTimeout(()=>{fc.animate([{transform:Y(top)},{transform:Y(0)}],{duration:T_SLAM,easing:'cubic-bezier(.6,0,1,.4)',fill:'forwards'});
+    if(AC){const t=AC.currentTime;noise(t,.18,600,.7,.35,'bandpass',3200);tone(t,.18,900,200,'sawtooth',.12);}},T_IN+T_WIND); // whoosh
   setTimeout(()=>{ // impact
     stopBtn(false);btn.style.visibility='hidden';if(cue)cue.style.visibility='hidden';
     sfx.boom();vibe([50,30,90]);
@@ -1851,8 +1856,8 @@ function smashStart(btn,stopBtn,next){
     // dust ring on the floor
     fc.animate([{transform:'translateY(0)'},{transform:'translateY(-14px)'},{transform:'translateY(0)'}],{duration:260});
     setTimeout(()=>{fc.animate([{opacity:1},{opacity:0}],{duration:200,fill:'forwards'});},420);
-    setTimeout(next,650);
-  },250);}
+    setTimeout(next,700);
+  },IMPACT);}
 function showSplash(){
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
