@@ -531,6 +531,7 @@ const KL_COL=['#ff3a3a','#ff8a1a','#ffd400','#3ad84a','#3a8aff','#c84aff'],KL_R=
 let kingLevel=0,kingFireLv=0,orbs=[],orbT=0;
 const kingNeed=()=>KL_NEED[Math.min(kingLevel,KL_NEED.length-1)];
 function kingLevelUp(lv){ // a new orb pops out of the boxer and joins the tail
+  kHud.lvPop=.35;
   const col=KL_COL[lv-1];orbs.push({lv,x:pl.x,y:pl.feet-10});
   flashO=.2+lv*.05;flashCol=lv>=6?'#e8c8ff':'#ffe9a8';shake=Math.max(shake,2+lv);vibe(lv>=6?[40,30,40,30,120]:20+lv*10);
   rings.push({x:pl.x,y:pl.feet-10,life:.4,max:.4,big:lv>=3,col});
@@ -1671,12 +1672,15 @@ function drawStrip(){
   const x0=BTN_L+1,w=ctrlMode==='pad'?44:BTN_R-BTN_L-2; // pad mode leaves room for the fist buttons
   if(superReady){
     R(x0,y0+1,w,1,kingLevel>=6?'#7af0ff':'#ffe27a');
-    text('KING',x0+w/2,y0+5,2,'#ffffff','c','#4a1408');
-    // level pips in the orb colours (6th = the brutal one), then a thin bar toward the next level
-    {const n=KL_NEED.length,cx=Math.round(x0+w/2),pw=5,gap=2,tot=n*pw+(n-1)*gap,sx=cx-Math.floor(tot/2);
-     for(let i=0;i<n;i++){const px2=sx+i*(pw+gap);R(px2,y0+19,pw,pw,'#4a1408');
-       if(i<kingLevel)R(px2+1,y0+20,pw-2,pw-2,i===5?KL_COL[((gt*10)|0)%6]:KL_COL[i]);}}
-    if(kingLevel<KL_NEED.length&&bothT===0){const nf=Math.min(1,altStreak/kingNeed());R(x0+3,y0+h-2,w-6,2,'#4a1408');R(x0+3,y0+h-2,Math.round((w-6)*nf),2,'#7af0ff');}
+    // big "LV n" on top (pops white for a moment when it goes up) ...
+    {kHud.lvPop=Math.max(0,(kHud.lvPop||0)-1/60);const pop6=kHud.lvPop>0,six=kingLevel>=KL_NEED.length;
+     R(x0+6,y0+2,w-12,13,'rgba(13,10,8,.55)');
+     text('LV'+kingLevel,x0+w/2,y0+3,2,pop6?'#ffffff':six?'#7af0ff':'#ffd400','c','#4a1408');}
+    // ... and the same 20-cell gauge as before KING, still filling toward the next level
+    {const six=kingLevel>=KL_NEED.length,need=kingNeed(),n=six?need:Math.min(need,altStreak),segs=20,fill=Math.floor(n/need*segs);
+     R(x0+2,y0+16,w-4,12,'rgba(13,10,8,.7)');
+     for(let i=0;i<segs;i++){const sx=x0+3+i*((w-6)/segs);
+       R(sx,y0+17,Math.max(1,(w-6)/segs-1),10,i<fill?(six?['#3a8aff','#7af0ff','#cff6ff'][(i+((gt*12)|0))%3]:FIREPAL(.3+.6*i/segs)):'#2a1d38');}}
     // fill shows how long both thumbs have been held
     if(bothT>0)R(x0,y0+h-2,w*Math.min(1,bothT/BOTH_HOLD),3,'#ffffff');
     if(((gt*4)|0)%2)text('HOLD L+R!',x0+w/2,y0-9,1,'#ffd04a','c');
