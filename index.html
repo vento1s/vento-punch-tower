@@ -559,11 +559,21 @@ function drawOrbs(){
     o.x=clamp(o.x,WALL+r,W-WALL-r);lx=o.x;ly=o.y;lr=r;}
   for(let i=orbs.length-1;i>=0;i--){const o=orbs[i],r=KL_R[o.lv-1],six=o.lv>=6;
     const x=Math.round(o.x),y=Math.round(o.y-camY+Math.sin(gt*5+i*1.3)*1.2);
-    const col=six?KL_COL[((gt*10)|0)%6]:KL_COL[o.lv-1];
-    ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(x,y,0,x,y,r*2.4);
-    g.addColorStop(0,col+'aa');g.addColorStop(1,col+'00');ctx.fillStyle=g;ctx.fillRect(x-r*2.4,y-r*2.4,r*4.8,r*4.8);ctx.globalCompositeOperation='source-over';
-    pxDisc(x,y,r,col);if(r>=3)pxDisc(x-Math.round(r*.35),y-Math.round(r*.35),Math.max(1,Math.round(r*.35)),'#ffffff');else R(x-1,y-1,1,1,'#ffffff');
-    if(six){pxRing(x,y,r+2+((gt*12)|0)%3,KL_COL[(((gt*10)|0)+3)%6]);if(Math.random()<.5)parts.push({x:o.x+(Math.random()-.5)*r*2,y:o.y+(Math.random()-.5)*r*2,vx:0,vy:-20,life:.4,max:.4,s:1,g:0,col:KL_COL[(Math.random()*6)|0]});}}
+    // FIREBALL (same size as the old orb): flame tongues licking upward in the level's colour, a hot core inside.
+    // Lv6 burns blue like the fire at the bottom.
+    const outer=six?'#3a8aff':KL_COL[o.lv-1],mid=six?'#7af0ff':'#ffd04a',core=six?'#e8fbff':'#fff6c8';
+    ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(x,y,0,x,y,r*2.6);
+    g.addColorStop(0,outer+'99');g.addColorStop(1,outer+'00');ctx.fillStyle=g;ctx.fillRect(x-r*2.6,y-r*2.6,r*5.2,r*5.2);ctx.globalCompositeOperation='source-over';
+    const tongues=Math.max(2,r);
+    for(let t=0;t<tongues;t++){ // flickering tongues on the top half
+      const tx=x-r+Math.round((t+.5)*(2*r+1)/tongues),fh=Math.round(r*.6+r*(.5+.5*hash(t+i*7,(gt*16)|0))*(1-Math.abs(tx-x)/(r+1)));
+      const tw2=Math.max(1,Math.round(r/2.5));R(tx-(tw2>>1),y-r-fh+1,tw2,fh,outer);
+      if(fh>2)R(tx,y-r-fh+1,1,1,mid);}
+    pxDisc(x,y,r,outer);
+    pxDisc(x,y+Math.round(r*.15),Math.max(1,Math.round(r*.7)),mid);
+    pxDisc(x,y+Math.round(r*.25),Math.max(1,Math.round(r*.38)),core);
+    if(Math.random()<.18+r*.04)parts.push({x:o.x+(Math.random()-.5)*r*1.6,y:o.y-r,vx:(Math.random()-.5)*8,vy:-18-Math.random()*20,life:.35,max:.35,s:1,g:0,fire:!six,ki:six});
+    if(six)pxRing(x,y,r+3+((gt*12)|0)%2,((gt*10)|0)%2?'#cff6ff':'#3a8aff');}
 }
 function startKingSlow(){
   kingSlowT=KING_SLOW;for(const h of holds.values())h.used=true;hum(-1);
