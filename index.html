@@ -1412,7 +1412,7 @@ function drawSuperPlayer(){
   if(T<.45){
     const top=Math.round(pl.feet-13-camY);
     // pulsing flame outline
-    const fl=FIREPAL(.5+.5*Math.sin(gt*40));ctx.globalAlpha=.55;R(px-2,top-2,12,16,fl);ctx.globalAlpha=1;
+    aura(CROUCH,px,top,FIREPAL(.5+.5*Math.sin(gt*40)),.9);
     pal.s=((gt*20)|0)%2?'#ffd04a':'#f2b68a';
     sprite(CROUCH,px,top,pal,false);
     return;}
@@ -1429,6 +1429,11 @@ function drawSuperPlayer(){
     R(fx+x,fy+y,1,1,FIREPAL(1-d/5+Math.random()*.15));}}
   sprite(["sss","sSs","sss"],fx,fy+3,{s:'#fff6d0',S:'#ffd04a'},false);
 }
+// glow that hugs the sprite's own outline (1px all round) instead of a box behind it
+function aura(rows,px,top,col,alpha){ctx.globalAlpha=alpha;
+  for(let y=0;y<rows.length;y++){const row=rows[y];for(let x=0;x<row.length;x++)if(row[x]!=='.'){
+    R(px+x-1,top+y,1,1,col);R(px+x+1,top+y,1,1,col);R(px+x,top+y-1,1,1,col);R(px+x,top+y+1,1,1,col);}}
+  ctx.globalAlpha=1;}
 function drawPlayer(){
   if(mode==='super'&&sup){drawSuperPlayer();return;}
   const hop=pl.punchT>0?3*(pl.punchT/PUNCH):0;
@@ -1447,7 +1452,7 @@ function drawPlayer(){
     const aimTop=Math.round(-tgtN()*FH-camY+12);for(let y=top-4;y>Math.min(top-26,aimTop);y-=3)R(cx,y,1,1,on?'#ff3a5a':'#f4efe8');
     if(on){text('L',cx-9,top-3,1,lastSide===0?'#ff3a5a':'#ffe27a',false);text('R',cx+7,top-3,1,lastSide===1?'#ff3a5a':'#ffe27a',false);}
     ctx.globalAlpha=1;}}
-  if(fev){ctx.globalAlpha=.35;R(px-3,top-2,14,17,pal.g);ctx.globalAlpha=1;}
+  if(fev)aura(BODY,px,top,pal.g,.8);
   for(let y=0;y<BODY.length;y++){const row=BODY[y];for(let x=0;x<8;x++){const ch=row[x];if(ch!=='.')R(px+x,top+y,1,1,pal[ch]);}}
   const tail=((gt*10)|0)%2;const lean=pl.tx-pl.x>1?-1:pl.tx-pl.x<-1?1:0;
   R(px+7,top+2,1,1,pal.r);R(px+8+lean,top+3-tail,1,1,pal.r);R(px+9+lean,top+3,1,1,pal.r);
