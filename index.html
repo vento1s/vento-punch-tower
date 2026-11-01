@@ -537,6 +537,7 @@ function kingLevelUp(lv){ // a new orb pops out of the boxer and joins the tail
   for(let i=0;i<14+lv*6;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*80,l=.4+Math.random()*.3;
     parts.push({x:pl.x,y:pl.feet-10,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:Math.random()<.4?2:1,g:30,col:lv>=6?KL_COL[i%6]:col});}
   pop(popX(40),pl.feet-36,lv>=6?'LV6 !!!':'KING LV'+lv+'!',lv>=6?'#e8c8ff':col,lv>=5?2:1);
+  if(lv===5)setTimeout(()=>{if(mode==='play')pop(popX(40),pl.feet-50,'LV6? WEAK x100','#c84aff',1);},700);
   if(AC){const t=AC.currentTime,base=[262,294,330,392,523,659][lv-1];[1,1.25,1.5,2].slice(0,lv>=5?4:3).forEach((m,i)=>tone(t+i*.04,.22,base*m,base*m*1.02,'square',.07));
     if(lv>=6){noise(t,.6,2600,.8,.35,'bandpass',6000);tone(t+.16,.6,1318,2637,'triangle',.08);}}}
 function fireKing(){kingFireLv=kingLevel;bothT=0;kingGrowl(false);startKingSlow();}
@@ -810,7 +811,7 @@ function drawKingHud(dt){
   if(!(mode==='super'&&sup&&sup.launched&&!sup.peak))return; // the finale takes over at the peak
   kHud.hitPop=Math.max(0,kHud.hitPop-dt);kHud.mashPop=Math.max(0,kHud.mashPop-dt);
   const y=40,sc=kHud.hitPop>0?7:6;
-  const open=sup.mashT>0||sup.maxed;
+  const left=rubLeft(),open=left>0||sup.maxed;
   R(W/2-46,y-4,92,sup.maxed?110:open?94:46,'rgba(13,10,8,.72)');
   text(String(kHud.hits),W/2-6,y+(7-sc)*2,sc,kHud.hitPop>0?'#ffffff':'#ffd400','c','#c24e00');
   text('HIT',W/2+tw(String(kHud.hits),sc)/2,y+(sc*5)-10,2,'#ff8a00','l','#0d0a08');
@@ -824,10 +825,10 @@ function drawKingHud(dt){
       const on=i<fill;R(sx,gy,sw,8,!on?'#2a1d38':sup.maxed?`hsl(${(gt*900+i*18)%360},100%,62%)`:FIREPAL(.25+.7*i/segs));
       if(on)R(sx,gy,sw,2,'rgba(255,255,255,.45)');}
     { // time left to rub: shrinking bar + seconds (full until you start rubbing)
-      const rem=Math.max(0,sup.mashT),fr=sup.rubDur?rem/sup.rubDur:0,low=sup.rubOn&&rem<1,tc=low?(((gt*10)|0)%2?'#ffffff':'#ff3a5a'):'#7af0ff';
+      const rem=left,fr=sup.rubDur?rem/sup.rubDur:0,low=sup.rubOn&&rem<1,tc=low?(((gt*10)|0)%2?'#ffffff':'#ff3a5a'):'#7af0ff';
       R(gx-1,gy+11,gw+2,5,'#0d0a08');R(gx,gy+12,Math.round(gw*fr),3,tc);
       text(rem.toFixed(1)+'s',W/2,gy+18,2,tc,'c','#0d0a08');}
-    if(sup.mashT>0&&!sup.maxed){const b=Math.round(Math.sin(gt*18)*6);
+    if(left>0&&!sup.maxed){const b=Math.round(Math.sin(gt*18)*6);
       for(const ax of [W*.25,W*.75]){const x=Math.round(ax),y=H-96;
         for(let i=0;i<5;i++){R(x-i,y-14+b+i,i*2+1,1,'#ffd400');R(x-i,y+14-b-i,i*2+1,1,'#ffd400');}
         R(x-1,y-9+b,3,18-2*b,'rgba(255,212,0,.55)');}}
@@ -867,13 +868,16 @@ const MASH_T=1.8,MASH_MAX=15,MAX_BONUS=5,RISE_FLOORS_PER_S=11;
 // the gauge drains all the time: ~300px/s only holds it, you need a wild ~450px/s+ scrub to reach the very top
 const RUB_GAIN=.0028,GAUGE_DOWN=.85,RUB_FLOOR=70,MASH_CAP=3.5,MASH_GRACE=.35;
 const RUB_START=20,RUB_WAIT=2.5;
+// seconds of rubbing left, straight from the wall clock (full until the clock starts)
+const rubLeft=()=>!sup?0:sup.mashEnd?Math.max(0,sup.mashEnd-now()):(sup.rubDur||0);
+function startRubClock(){if(sup&&!sup.mashEnd){sup.rubOn=true;sup.mashEnd=now()+sup.rubDur;}}
 function superRub(dy,side){
-  if(!sup||!sup.launched||!(sup.mashT>0)||!dy)return;
-  if(sup.mashEnd&&now()>=sup.mashEnd){sup.mashT=0;return;} // time's up: no more floors, even mid hit-stop
+  if(!sup||!sup.launched||!dy||sup.mashT===undefined)return;
+  if(sup.mashEnd&&rubLeft()<=0){sup.mashT=0;return;} // time's up: no more floors, even mid hit-stop
   const d=Math.abs(dy),dir=Math.sign(dy);tapFX[side]=1;
   if(dir!==sup.rubDir){sup.rubDir=dir;sup.strokes=(sup.strokes||0)+1; // each change of direction: a swish
     if(AC){const t=AC.currentTime;noise(t,.06,1800+Math.min(2400,sup.strokes*60),1,.28);tone(t,.04,dir<0?520:380,dir<0?700:300,'square',.05);}}
-  sup.rub=(sup.rub||0)+d;
+  sup.rub=(sup.rub||0)+d;if(sup.rub>=RUB_START)startRubClock(); // the clock starts the moment you really rub
   if(!sup.maxed)sup.gauge=Math.min(1,(sup.gauge||0)+d*RUB_GAIN);
   const want=Math.min(sup.mMax,Math.floor(sup.rub/sup.rubF)),got=sup.dest-sup.base-(sup.maxed?sup.mBonus:0);
   if(want>got){sup.dest+=want-got;ensureSlabs(sup.dest+30);
@@ -901,12 +905,11 @@ function updateSuper(dt){
   if(sup.mashT===undefined){sup.mashT=sup.rubDur;sup.base=sup.dest;sup.taps=0;sup.gauge=0;sup.mashAge=0;} // the clock: fixed seconds by level
   // the clock only starts once you actually start rubbing (your thumbs are still on the screen from the charge);
   // if you never rub, it gives up after RUB_WAIT
-  if(sup.mashT>0&&!sup.rubOn){sup.waitT=(sup.waitT||0)+dt;if((sup.rub||0)>=RUB_START||sup.waitT>=RUB_WAIT)sup.rubOn=true;}
-  if(sup.mashT>0&&sup.rubOn){sup.mashAge+=dt;if(!sup.maxed)sup.gauge=Math.max(0,sup.gauge-GAUGE_DOWN*dt);
-    if(!sup.mashEnd)sup.mashEnd=now()+sup.mashT; // wall clock: hit-stop on every smashed floor must not stretch it
-    sup.mashT=Math.max(0,sup.mashEnd-now());}
+  if(!sup.mashEnd){sup.waitT=(sup.waitT||0)+dt;if(sup.waitT>=RUB_WAIT)startRubClock();} // never rubbed: give up after a while
+  if(sup.mashEnd&&!sup.maxed&&sup.mashT>0)sup.gauge=Math.max(0,sup.gauge-GAUGE_DOWN*dt);
+  sup.mashT=rubLeft();
   sup.to=-sup.dest*FH;
-  if(pl.feet>sup.to)pl.feet=Math.max(sup.to,pl.feet-RISE_FLOORS_PER_S*(.7+.3*sup.pw)*(sup.mashT>0?1:2)*FH*dt);
+  if(pl.feet>sup.to)pl.feet=Math.max(sup.to,pl.feet-RISE_FLOORS_PER_S*(.7+.3*sup.pw)*(sup.mashT>0?1:4)*FH*dt); // time's up: zip to the floor you earned and finish
   const k=(pl.feet<=sup.to&&sup.mashT<=0)?1:0;
   // flaming corkscrew trail + blazing fist
   fire(pl.x,pl.feet-6,6,10,70);
@@ -1066,7 +1069,7 @@ function update(dt){
   if(mode==='super'){tNow=t-tStart;updateSuper(dt);}
   else if(mode==='play'){
     if(started)tNow=t-tStart;
-    if(t-lastTap>D.win){combo=0;altStreak=0;} // a broken chain loses the progress toward the next KING (banked ones stay)
+    if(t-lastTap>D.win)combo=0; // weak hits toward the next KING level are kept even when the chain breaks
     if(pl.reach>0&&pl.jt<0&&!alignedUnder(tgt()))hopTo(pl.level+pl.reach);
     if(started){const tg=tgt();// lava speeds up with height, and the climb itself accelerates it (×2 by floor 90, ×3 by 180)
       // past 40F the climb keeps getting harder, but at half the rate (it used to wall everyone in the 50s)
@@ -1537,7 +1540,7 @@ function drawBigFist(cx,cy,sc,mirror,pal){const w=BIG_FIST[0].length,h=BIG_FIST.
 const BIG_ARM=["......ssssssss........", "....ssssssssssss......", "...sHHssssssssssss....", "..sHsssLssssLsssssss..", "..sHssLLsssLLssssLsss.", ".sHsssLssssLsssssLssss", ".sHsssLsssLssssssLssss", ".sssssLLLLLLLLLLLLssss", "sHssssssssssssssLssss.", "sHssssssssssssssLsssD.", "sssssssssssssssLsssDD.", "sssssLLLLLLLLLLsssDDD.", "ssssssssssssssssssDD..", "sssssssssssssssssDD...", ".ssssssssssssssDDD....", ".sssssssssssDDD.......", "..sssssssssDD.........", "..sssssssssD..........", "..ssssssssDD..........", "..HsssssssDD..........", "..wwwwwwwwwwG.........", ".wwwwwwwwwwwGG........", ".wwwwwwwwwwwGG........", "wwwwwwwwwwwwGGG.......", "wwwwwwwwwwwwGGG......."];
 const ARM_PAL={s:'#f2a08c',L:'#9e4a3a',H:'#ffc4b2',D:'#c87864',w:'#f4efe8',G:'#c4bccd'};
 const ARM_HOT={s:'#ffb8a2',L:'#b4584a',H:'#ffe2d8',D:'#dc8c76',w:'#ffffff',G:'#d6cfe0'};
-const mashOpen=()=>mode==='super'&&sup&&sup.launched&&sup.mashT>0;
+const mashOpen=()=>mode==='super'&&sup&&sup.launched&&rubLeft()>0;
 function hudFlames(cx,topY,w,n){for(let i=0;i<n;i++){const x=cx+(Math.random()-.5)*w,h=2+Math.random()*16,k=Math.random();
   R(x,topY-h,2+(k>.6?1:0),2+(k>.6?1:0),FIREPAL(k));}}
 function drawClassicFists(){
@@ -1645,6 +1648,10 @@ function drawStrip(){
     // fill shows how long both thumbs have been held
     if(bothT>0)R(x0,y0+h-2,w*Math.min(1,bothT/BOTH_HOLD),3,'#ffffff');
     if(((gt*4)|0)%2)text('HOLD L+R!',x0+w/2,y0-9,1,'#ffd04a','c');
+    if(kingLevel===KL_NEED.length-1){ // at Lv5: the road to the brutal Lv6, in plain numbers
+      const n6=Math.min(altStreak,KL_NEED[KL_NEED.length-1]);R(x0-2,y0-21,w+4,10,'rgba(13,10,8,.8)');
+      text('LV6 '+n6+'/'+KL_NEED[KL_NEED.length-1],x0+w/2,y0-19,1,KL_COL[((gt*8)|0)%6],'c',false);}
+    else if(kingLevel>=KL_NEED.length){R(x0-2,y0-21,w+4,10,'rgba(13,10,8,.8)');text('LV6 MAX!!',x0+w/2,y0-19,1,KL_COL[((gt*10)|0)%6],'c',false);}
   }else if(mode==='play'){
     R(x0,y0+1,w,h,'rgba(10,6,16,.6)');
     const need=kingNeed(),n=Math.min(need,altStreak),segs=20,fill=Math.floor(n/need*segs);
