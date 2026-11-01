@@ -527,7 +527,8 @@ const KING_SLOW=.5;let kingSlowT=0,timeScale=1;
 // Power vs the old KING PUNCH: Lv1 x0.6, Lv2 x1, Lv3 x1.6, Lv4 x2.2, Lv5 x3, Lv6 x4.5 (1.5x Lv5)
 const KL_NEED=[30,30,30,30,30,150],KL_POW=[.6,1,1.6,2.2,3,4.5];
 const KL_RUB=[2,3,3.5,4,5,5.5]; // seconds of rubbing (갈겨!!) you get after firing, by level
-const KL_COL=['#ff3a3a','#ff8a1a','#ffd400','#3ad84a','#3a8aff','#c84aff'],KL_R=[2,3,4,5,7,8];
+const KL_COL=['#ff3a3a','#ff8a1a','#ffd400','#3ad84a','#3a8aff','#c84aff'],KL_R=[1,1.5,2,2.5,3.5,4.5]; // half the old size
+const PET_ATK=.05; // every fire pet trailing you adds 5% punch power
 let kingLevel=0,kingFireLv=0,orbs=[],orbT=0;
 const kingNeed=()=>KL_NEED[Math.min(kingLevel,KL_NEED.length-1)];
 function kingLevelUp(lv){ // a new orb pops out of the boxer and joins the tail
@@ -538,6 +539,7 @@ function kingLevelUp(lv){ // a new orb pops out of the boxer and joins the tail
   for(let i=0;i<14+lv*6;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*80,l=.4+Math.random()*.3;
     parts.push({x:pl.x,y:pl.feet-10,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:Math.random()<.4?2:1,g:30,col:lv>=6?KL_COL[i%6]:col});}
   pop(popX(40),pl.feet-36,lv>=6?'LV6 !!!':'KING LV'+lv+'!',lv>=6?'#e8c8ff':col,lv>=5?2:1);
+  setTimeout(()=>{if(mode==='play')pop(popX(40),pl.feet-24,'ATK +'+Math.round(PET_ATK*100*orbs.length)+'%','#ffd04a',1);},350);
   if(lv===5)setTimeout(()=>{if(mode==='play')pop(popX(40),pl.feet-50,'LV6? WEAK x'+KL_NEED[5],'#c84aff',1);},700);
   if(AC){const t=AC.currentTime,base=[262,294,330,392,523,659][lv-1];[1,1.25,1.5,2].slice(0,lv>=5?4:3).forEach((m,i)=>tone(t+i*.04,.22,base*m,base*m*1.02,'square',.07));
     if(lv>=6){noise(t,.6,2600,.8,.35,'bandpass',6000);tone(t+.16,.6,1318,2637,'triangle',.08);}}}
@@ -557,7 +559,7 @@ function drawOrbs(){
     let dx=o.x-lx,dy=o.y-ly,d=Math.hypot(dx,dy);if(d<.01){dx=behind;dy=0;d=1;}
     o.x=lx+dx/d*gap;o.y=ly+dy/d*gap; // fixed spacing: a string of beads, never a clump
     o.x=clamp(o.x,WALL+r,W-WALL-r);lx=o.x;ly=o.y;lr=r;}
-  for(let i=orbs.length-1;i>=0;i--){const o=orbs[i],r=KL_R[o.lv-1],six=o.lv>=6;
+  for(let i=orbs.length-1;i>=0;i--){const o=orbs[i],r=Math.max(1,Math.round(KL_R[o.lv-1])),six=o.lv>=6;
     const x=Math.round(o.x),y=Math.round(o.y-camY+Math.sin(gt*5+i*1.3)*1.2);
     // FIREBALL (same size as the old orb): flame tongues licking upward in the level's colour, a hot core inside.
     // Lv6 burns blue like the fire at the bottom.
@@ -743,6 +745,7 @@ function hit(side,power){
   else dmg=s.type==='vibranium'?0:charged?Math.ceil(1+3*power):1;
   const crit=false;
   if(fever>0)dmg*=2;
+  if(orbs.length&&dmg>0){const v=dmg*(1+PET_ATK*orbs.length);dmg=Math.floor(v)+(Math.random()<v-Math.floor(v)?1:0);} // fire pets: +5% each (rounded by chance, exact on average)
   // KING FIST gauge fills only from weak-point hits
   if(weak&&kingLevel<KL_NEED.length){altStreak+=charged?3:1;
     if(altStreak>=kingNeed()){altStreak-=kingNeed();kingLevel++;superReady=true;if(kingLevel>=KL_NEED.length)altStreak=0;
@@ -2038,7 +2041,7 @@ function showHowto(){menuMusic();showOverlay(`
     <li><b>TIME</b>이 0이 되면 용암이 몰려와요. 블록을 부수면 +1.5초, 약점을 4번 넘게 연속으로 때려서 부수면 <b>CLEAN</b> +3초, 보스 블록은 +5.5초.</li>
     <li>약점을 때릴수록 용암이 식어서 <b>LAVA SLOW</b>(최대 절반 속도). 손을 놓으면 다시 빨라져요.</li>
     <li><b>기울기</b>를 켜면 폰을 왼쪽/오른쪽으로 기울이는 쪽으로 걸어가요. 게임 시작할 때 들고 있던 각도가 기준이에요.</li>
-    <li><b>왕주먹 단계</b>: 약점을 <b>30번</b> 때릴 때마다 LV이 하나씩 올라가요(LV1~LV5). LV5에서 <b>150번</b> 더 때리면 극악의 <b>LV6</b>. 단계마다 무지개 구슬이 하나씩 따라다니고, 아래 불꽃이 커져요(LV6은 파란 불).</li>
+    <li><b>왕주먹 단계</b>: 약점을 <b>30번</b> 때릴 때마다 LV이 하나씩 올라가요(LV1~LV5). LV5에서 <b>150번</b> 더 때리면 극악의 <b>LV6</b>. 단계마다 <b>불꽃 펫</b>이 하나씩 따라다녀요. 펫 1마리당 펀치 공격력 <b>+5%</b>(LV6이면 +30%). 아래 불꽃도 커져요(LV6은 파란 불).</li>
     <li>양쪽을 같이 꾹 누르면 모은 단계 그대로 발사! 위력은 LV1 0.6배 · LV2 1배 · LV3 1.6배 · LV4 2.2배 · LV5 3배 · LV6 4.5배.</li>
     <li>올라가는 동안 화면을 <b>위아래로 크고 빠르게</b> 쓱싹! 양옆 노란 가이드 끝에서 끝까지(화면 높이의 60%) 쓸 때마다 땅! 땅! 뚫고 올라가요. 짧게 비비면 거의 안 쳐줘요.</li>
     <li>문지를 시간: LV1 2초 · LV2 3초 · LV3 3.5초 · LV4 4초 · LV5 5초 · LV6 5.5초. 빠르게 계속 쓸어 게이지가 차면 <b>MAX</b>: 그때부터 1.5배. 안 비비면 헛방!</li>
