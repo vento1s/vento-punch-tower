@@ -776,6 +776,7 @@ const MASH_T=1.8,MASH_MAX=15,MAX_BONUS=5,RISE_FLOORS_PER_S=11;
 // KING PUNCH rub: scrub the screen up and down. Distance rubbed (canvas px) breaks floors and kicks the gauge up;
 // the gauge drains all the time: ~300px/s only holds it, you need a wild ~450px/s+ scrub to reach the very top
 const RUB_GAIN=.0028,GAUGE_DOWN=.85,RUB_FLOOR=70,MASH_CAP=3.5,MASH_GRACE=.35;
+const RUB_START=20,RUB_WAIT=2.5;
 function superRub(dy,side){
   if(!sup||!sup.launched||!(sup.mashT>0)||!dy)return;
   const d=Math.abs(dy),dir=Math.sign(dy);tapFX[side]=1;
@@ -808,8 +809,11 @@ function updateSuper(dt){
     for(let i=0;i<30;i++){const a=Math.PI+Math.random()*Math.PI;parts.push({x:pl.x,y:pl.feet,vx:Math.cos(a)*120,vy:Math.sin(a)*30,life:.5,col:'rgba(230,220,240,.7)',s:2,g:0});}}
   // rise at a steady blazing speed toward the current target floor; mashing during MASH_T raises the target
   if(sup.mashT===undefined){sup.mashT=MASH_T;sup.base=sup.dest;sup.taps=0;sup.gauge=0;sup.mashAge=0;}
-  if(sup.mashT>0){sup.mashAge+=dt;if(!sup.maxed)sup.gauge=Math.max(0,sup.gauge-GAUGE_DOWN*dt);}
-  sup.mashT=Math.max(0,sup.mashT-dt);
+  // the clock only starts once you actually start rubbing (your thumbs are still on the screen from the charge);
+  // if you never rub, it gives up after RUB_WAIT
+  if(sup.mashT>0&&!sup.rubOn){sup.waitT=(sup.waitT||0)+dt;if((sup.rub||0)>=RUB_START||sup.waitT>=RUB_WAIT)sup.rubOn=true;}
+  if(sup.mashT>0&&sup.rubOn){sup.mashAge+=dt;if(!sup.maxed)sup.gauge=Math.max(0,sup.gauge-GAUGE_DOWN*dt);
+    sup.mashT=Math.max(0,sup.mashT-dt);}
   sup.to=-sup.dest*FH;
   if(pl.feet>sup.to)pl.feet=Math.max(sup.to,pl.feet-RISE_FLOORS_PER_S*FH*dt);
   const k=(pl.feet<=sup.to&&sup.mashT<=0)?1:0;
@@ -874,7 +878,8 @@ stage.addEventListener('pointerdown',e=>{if(!ov.hidden)return;e.preventDefault()
 const DRAG_START=9,DRAG_START_WALK=18,DRAG_STEP=8,DRAG_MOVE=NUDGE*3;
 function markDrag(id,x,y){const h=holds.get(id);if(h){h.x0=x;h.lx=x;h.drag=false;h.ly=y;}}
 stage.addEventListener('pointermove',e=>{const h=holds.get(e.pointerId);if(!h||h.x0===undefined)return;
-  if(mode==='super'){const [,y]=toCanvas(e);if(h.ly!==undefined)superRub(y-h.ly,h.side);h.ly=y;return;}
+  if(mode==='super'){const [,y]=toCanvas(e);if(h.ly===undefined)h.ly=y;
+    if(Math.abs(y-h.ly)>=2){superRub(y-h.ly,h.side);h.ly=y;}return;} // ignore thumb tremble under 2px
   if(mode!=='play')return;
   const [x]=toCanvas(e);
   if(!h.drag&&Math.abs(x-h.x0)>=(h.t>=HOLD_T?DRAG_START_WALK:DRAG_START)){h.drag=true;h.lx=h.x0;}   // past the threshold it's a drag, not a tap/hold
