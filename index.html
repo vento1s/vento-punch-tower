@@ -571,6 +571,19 @@ const holds=new Map();let bothT=0,chargeOsc=null,chargeGain=null;
 const HOLD_T=.16,CHARGE_T=.9,MOVE_SPD=42;
 let ghosts=[],dashCD=0,dashT=0;
 // control schemes: 'classic' = tap halves (hold to walk), 'pad' = left-side drag stick + right-side L/R fist buttons
+// TILT: lean the phone left/right and the boxer walks that way (on top of the thumb controls).
+// iOS asks permission once (must come from a tap); the neutral angle is taken when each game starts.
+let tiltOn=false;try{tiltOn=localStorage.getItem('punchtower.tilt')==='on';}catch(e){}
+let tiltG=null,tiltZero=0,tiltBound=false;
+const TILT_DEAD=4,TILT_FULL=18;
+function onTilt(e){if(e.gamma!=null)tiltG=e.gamma;}
+function bindTilt(){if(!tiltBound){addEventListener('deviceorientation',onTilt);tiltBound=true;}}
+function enableTilt(done){ // call from a tap; only a clear 'denied' turns tilt off
+  const D0=window.DeviceOrientationEvent;
+  if(!D0){done(false);return;}
+  if(typeof D0.requestPermission==='function'){D0.requestPermission().then(r=>{if(r!=='denied'){bindTilt();done(true);}else done(false);}).catch(()=>{bindTilt();done(true);});}
+  else{bindTilt();done(true);}}
+if(tiltOn&&!(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function'))bindTilt(); // Android: no prompt needed
 let ctrlMode='classic';try{if(localStorage.getItem('punchtower.ctrl')==='pad')ctrlMode='pad';}catch(e){}
 const STICK_MAX=14;let stick={id:null,ox:0,oy:0,dx:0,t0:0,dashed:false};
 let comboFX={dx:12,at:-9};
@@ -611,6 +624,7 @@ function makeSlab(n){
 }
 function ensureSlabs(upTo){while(slabs.length<=upTo)slabs.push(makeSlab(slabs.length));}
 function newGame(){
+  tiltZero=tiltG==null?0:tiltG; // whatever angle you hold the phone at now counts as level
   D=DIFFS[diffIdx];
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
@@ -979,6 +993,8 @@ function update(dt){
     if(bothT>=BOTH_HOLD){bothT=0;kingGrowl(false);startKingSlow();}}
   else{if(bothT>0)kingGrowl(false);bothT=0;}
   if(dir&&mode==='play'&&!(hasL&&hasR))pl.tx+=Math.sign(dir)*MOVE_SPD*dt;
+  if(tiltOn&&tiltG!=null&&mode==='play'&&!(hasL&&hasR)){const d=tiltG-tiltZero,a=Math.abs(d);
+    if(a>TILT_DEAD)pl.tx+=Math.sign(d)*Math.min(1,(a-TILT_DEAD)/TILT_FULL)*MOVE_SPD*1.4*dt;}
   pl.tx=clamp(pl.tx,XMIN,XMAX);
   if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,dt*(dashT>0?36:16));
   // the hop up to the next floor never waits for hit-stop: chained weak hits would otherwise freeze the boxer
@@ -1868,12 +1884,15 @@ function showTitle(){menuMusic();showOverlay(`
     <div class="pair"><button class="btn2" type="button" data-act="rank">랭킹</button><button class="btn2" type="button" data-act="howto">조작법</button></div>
     <div class="tail">
       <div class="stat" id="bestline">${bestLine()}</div>
-      <div class="togs">${togHTML('bgmbtn','music','음악',bgmOn)}${togHTML('sndlink','sound','소리',soundOn)}</div>
+      <div class="togs">${togHTML('bgmbtn','music','음악',bgmOn)}${togHTML('sndlink','sound','소리',soundOn)}${togHTML('tiltbtn','tilt','기울기',tiltOn)}</div>
     </div>
   </div>
   ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,
     sound:()=>{setSound(!soundOn);setTog('sndlink',soundOn);if(soundOn){sfx.select();menuMusic();}},
-    music:()=>{toggleBgm();setTog('bgmbtn',bgmOn);}});
+    music:()=>{toggleBgm();setTog('bgmbtn',bgmOn);},
+    tilt:()=>{const set=on=>{tiltOn=on;setTog('tiltbtn',on);try{localStorage.setItem('punchtower.tilt',on?'on':'off');}catch(e){}};
+      if(tiltOn){set(false);sfx.same();return;}
+      enableTilt(ok=>{set(ok);if(ok)sfx.select();else{sfx.same();const b=ov.querySelector('#tiltbtn');if(b){b.querySelector('b').textContent='불가';setTimeout(()=>setTog('tiltbtn',false),1400);}}});}});
   ov.querySelectorAll('.ctrl button').forEach(b=>b.addEventListener('click',()=>{initAudio();ctrlMode=b.dataset.c;
     try{localStorage.setItem('punchtower.ctrl',ctrlMode);}catch(e){}
     ov.querySelectorAll('.ctrl button').forEach(x=>x.setAttribute('aria-pressed',x===b));sfx.select();}));
@@ -1894,6 +1913,7 @@ function showHowto(){menuMusic();showOverlay(`
     <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
     <li><b>TIME</b>이 0이 되면 용암이 몰려와요. 블록을 부수면 +1.5초, 약점을 4번 넘게 연속으로 때려서 부수면 <b>CLEAN</b> +3초, 보스 블록은 +5.5초.</li>
     <li>약점을 때릴수록 용암이 식어서 <b>LAVA SLOW</b>(최대 절반 속도). 손을 놓으면 다시 빨라져요.</li>
+    <li><b>기울기</b>를 켜면 폰을 왼쪽/오른쪽으로 기울이는 쪽으로 걸어가요. 게임 시작할 때 들고 있던 각도가 기준이에요.</li>
     <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(매번 20번). 뚫은 층마다 +1초, 착지하면 용암이 1.5초 얼었다가 반 속도로 기어와요. 양쪽을 같이 꾹 누르면 발사! 올라가는 동안 화면을 <b>위아래로 쓱싹쓱싹</b> 문지른 만큼만 뚫어요(최대 15층, 안 비비면 헛방). 게이지 끝에 닿으면 <b>MAX 보너스</b>! 느려지면 게이지가 내려가요.</li>
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
     <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
