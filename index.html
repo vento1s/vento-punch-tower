@@ -335,10 +335,19 @@ function text(s,x,y,sc,col,align,sh){
 let AC=null,master=null,nbuf=null;
 // all sound on/off (effects + music), remembered per device
 let soundOn=true;try{soundOn=localStorage.getItem('punchtower.sound')!=='off';}catch(e){}
-function setSound(on){soundOn=on;if(!on&&typeof bgmStop==='function')bgmStop();try{localStorage.setItem('punchtower.sound',on?'on':'off');}catch(e){}
+function setSound(on){soundOn=on;mediaChannel(on);if(!on&&typeof bgmStop==='function')bgmStop();try{localStorage.setItem('punchtower.sound',on?'on':'off');}catch(e){}
   if(master&&AC)master.gain.setTargetAtTime(on?.7:0,AC.currentTime,.02);}
 const soundLabel=()=>soundOn?'SOUND ON':'SOUND OFF';
+// iOS mutes Web Audio when the ringer switch is on silent. Playing a (silent) media element and asking for the
+// 'playback' audio session moves the page onto the media channel, so the game is heard in silent/vibrate mode too.
+const SILENT_WAV='data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';let silentEl=null;
+function mediaChannel(on){
+  try{if(navigator.audioSession)navigator.audioSession.type=on?'playback':'auto';}catch(e){}
+  try{if(on){if(!silentEl){silentEl=new Audio(SILENT_WAV);silentEl.loop=true;silentEl.setAttribute('playsinline','');silentEl.preload='auto';}
+      const pr=silentEl.play();if(pr&&pr.catch)pr.catch(()=>{});}
+    else if(silentEl)silentEl.pause();}catch(e){}}
 function initAudio(){
+  if(soundOn)mediaChannel(true);
   try{
     if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();
       const comp=AC.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=6;
@@ -550,8 +559,8 @@ const ZONES=[
 const SLABC={brick:['#b5523b','#6e2a20','#d97456'],stone:['#7d7f8c','#4b4d58','#a6a9b6'],gold:['#e0a82a','#8a5a0c','#ffe27a'],
  tnt:['#c42a2a','#6a1010','#ff6a50'],vibranium:['#3a2f5c','#17122b','#b7a8ff'],boss:['#5e6b78','#2c333c','#a4b5c6'],final:['#6a4a8a','#2c1c40','#e8c050']};
 const TNAME={brick:'BRICK',stone:'STONE',gold:'GOLD',tnt:'TNT',vibranium:'VIBRANIUM',boss:'IRON GATE',final:'THE ROOF'};
-// 1-10 underground, 11-20 surface, 21-30 mountains, 31-40 sky, 41+ space (forever)
-const zoneOfLevel=n=>ZONES[Math.min(ZONES.length-1,Math.max(0,Math.floor((n-1)/10)))];
+// 1-20 underground, 21-45 surface, 46-70 mountains, 71-95 sky, 96+ space (forever)
+const zoneOfLevel=n=>ZONES[n<=SURF?0:Math.min(ZONES.length-1,1+Math.floor((n-SURF-1)/(10*ZS)))];
 const zoneAtY=y=>zoneOfLevel(Math.floor(-y/FH)+1);
 const ROOF=-TOP*FH;
 
@@ -1005,11 +1014,14 @@ function update(dt){
 
 /* ---------- draw ---------- */
 /* ---------- scenery: underground -> surface -> mountains -> sky -> space ---------- */
-const SURF=10,GROUND=-SURF*FH;
+// zones: underground 1-20F, surface 21-45F, mountains 46-70F, sky 71-95F, space 96F+.
+// Above ground the scenery is drawn with a slow "virtual" camera that moves ZS times slower than the tower,
+// so each backdrop lasts ZS times as many floors (all sky-side numbers below are in virtual floors, ground = 10).
+const ZS=2.5,SURF=20,GROUND=-SURF*FH,SURF_V=10,GROUND_V=-SURF_V*FH;let sceneG=GROUND;
 const fAt=sy=>-(camY+sy)/FH;               // floor height at a screen row
 const clamp01=v=>v<0?0:v>1?1:v;
 const DIRT=['#140b07','#190e09','#1e110a','#24140c','#2a170e','#301b10','#361f12','#3d2314','#442816','#4c2d18','#57341b'];
-const dirtCol=f=>DIRT[Math.max(0,Math.min(DIRT.length-1,Math.floor(f)))];
+const dirtCol=f=>DIRT[Math.max(0,Math.min(DIRT.length-1,Math.floor(f*10/SURF)))];
 const SKYK=[[10,[150,214,255]],[17,[110,190,248]],[26,[70,146,230]],[33,[46,96,196]],[38,[32,52,130]],[42,[16,14,50]],[47,[7,6,20]],[60,[5,4,16]]];
 const skyCache=new Map();
 function skyCol(f){const key=Math.round(f*6);let c=skyCache.get(key);if(c)return c;f=key/6;
@@ -1019,18 +1031,20 @@ function skyCol(f){const key=Math.round(f*6);let c=skyCache.get(key);if(c)return
     const t=(f-a[0])/(b[0]-a[0]);v=a[1].map((x,j)=>Math.round(x+(b[1][j]-x)*t));}
   c=`rgb(${v[0]},${v[1]},${v[2]})`;if(skyCache.size<4000)skyCache.set(key,c);return c;}
 // screen y of a ground-rooted layer with parallax k (k=1 moves with the tower)
-const layerY=(k,d)=>(GROUND-camY)*k+(1-k)*179+d;
+const layerY=(k,d)=>(sceneG-camY)*k+(1-k)*179+d;
 function drawScenery(){
-  const gl=GROUND-camY;
-  for(let sy=-8;sy<H+8;sy+=2){const f=fAt(sy);R(-8,sy,W+16,2,f<SURF?dirtCol(f):skyCol(f));}
+  const camR=camY,gl=GROUND-camR,camV=GROUND_V-(179+(gl-179)/ZS); // virtual camera for the sky side
+  for(let sy=-8;sy<H+8;sy+=2){const f=-(camR+sy)/FH;R(-8,sy,W+16,2,f<SURF?dirtCol(f):skyCol(-(camV+sy)/FH));}
   if(gl>-8){
     ctx.save();ctx.beginPath();ctx.rect(-8,-8,W+16,Math.min(H+16,gl+8));ctx.clip();
+    camY=camV;sceneG=GROUND_V;
     const fc=fAt(H/2);
     if(fc>34)drawSpace(fc);
     if(fc<33)drawHills();
     if(fc>14&&fc<42){ctx.globalAlpha=clamp01((fc-15)/5);drawMountains();ctx.globalAlpha=clamp01((fc-28)/3);drawCloudSea(fc);ctx.globalAlpha=1;}
     if(fc>10&&fc<44)drawClouds();
     if(fc>11&&fc<34)drawBirds();
+    camY=camR;sceneG=GROUND;
     ctx.restore();
     drawSurface(gl);
   }
@@ -1042,7 +1056,7 @@ function drawUnder(gl){ // pebbles, gems, roots and the odd fossil in the dirt
     const h=hash(cx*31+7,cy*17+3),wy=cy*C+((hash(cy,cx)*C)|0),sy=wy-camY,x=cx*C+((hash(cx,cy+5)*C)|0);
     if(sy<gl+3)continue;
     const f=-wy/FH,d=dirtCol(f);
-    if(h>.9){R(x,sy,3,2,DIRT[Math.min(10,Math.floor(f)+3)]||'#6a4426');R(x,sy+2,3,1,'rgba(0,0,0,.35)');}
+    if(h>.9){R(x,sy,3,2,DIRT[Math.min(10,Math.floor(f*10/SURF)+3)]||'#6a4426');R(x,sy+2,3,1,'rgba(0,0,0,.35)');}
     else if(h>.885){const tw=((gt*4+cx+cy)|0)%6===0;const gc=['#7af0ff','#ff7ad8','#9aff7a','#ffd04a'][(cx+cy*3)&3];
       R(x,sy,2,2,gc);if(tw){R(x-1,sy,4,1,'#fff');R(x,sy-1,1,4,'#fff');}}
     else if(h>.875&&f<SURF-1){R(x,sy+1,6,1,'#cbbfa6');R(x-1,sy,2,3,'#cbbfa6');R(x+5,sy,2,3,'#cbbfa6');}
@@ -1742,6 +1756,45 @@ function animStartButton(c){
   tick();
   return pressNow=>{if(pressNow){forced=0;drawStartButton(c,0);}else run=false;};
 }
+// PUSH: a giant fist drops out of the sky and smashes the arcade button to bits
+function fistCanvas(armH){ // sleeve + forearm + the big fist turned knuckles-down, in pixels
+  const fw=BIG_FIST[0].length,fh=BIG_FIST.length,c=document.createElement('canvas');c.width=fw;c.height=armH+fh;
+  const x=c.getContext('2d'),P=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(a,b,w,h);},sl=armH-14;
+  P(2,0,13,sl,'#f4efe8');P(2,0,1,sl,'#c4bccd');P(13,0,2,sl,'#c4bccd');P(2,sl-2,13,2,'#c4bccd');      // white gi sleeve, up off the screen
+  P(4,sl,9,14,BIG_FIST_PAL.s);P(4,sl,2,14,BIG_FIST_PAL.H);P(11,sl,2,14,BIG_FIST_PAL.S); // forearm
+  P(3,sl,1,14,BIG_FIST_PAL.k);P(13,sl,1,14,BIG_FIST_PAL.k);
+  for(let r=0;r<fh;r++){const row=BIG_FIST[fh-1-r];for(let q=0;q<fw;q++){const ch=row[q];if(ch!=='.')P(q,armH+r,1,1,BIG_FIST_PAL[ch]);}}
+  return c;}
+function smashStart(btn,stopBtn,next){
+  const cue=ov.querySelector('.pushcue');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){stopBtn(true);sfx.select();setTimeout(next,170);return;}
+  const orc=ov.getBoundingClientRect(),br=btn.getBoundingClientRect(),SC=11;
+  const fc=fistCanvas(Math.ceil((br.top-orc.top+br.height*.55)/SC)+16),fw=fc.width*SC,fh=fc.height*SC;
+  Object.assign(fc.style,{position:'absolute',left:(br.left-orc.left+br.width/2-fw/2)+'px',top:(br.top-orc.top+br.height*.55-fh)+'px',
+    width:fw+'px',height:fh+'px',imageRendering:'pixelated',zIndex:5,pointerEvents:'none',
+    transform:`translateY(${-(br.top-orc.top+br.height)-40}px)`,transition:'transform .24s cubic-bezier(.55,0,1,.6)'});
+  ov.appendChild(fc);void fc.offsetWidth;
+  if(AC){const t=AC.currentTime;noise(t,.26,600,.7,.35,'bandpass',3200);tone(t,.26,900,200,'sawtooth',.12);} // whoosh
+  requestAnimationFrame(()=>{fc.style.transform='translateY(0)';});
+  setTimeout(()=>{ // impact
+    stopBtn(false);btn.style.visibility='hidden';if(cue)cue.style.visibility='hidden';
+    sfx.boom();vibe([50,30,90]);
+    ov.animate([{transform:'translate(0,0)'},{transform:'translate(-9px,7px)'},{transform:'translate(8px,-6px)'},{transform:'translate(-5px,4px)'},{transform:'translate(0,0)'}],{duration:320});
+    const fl=document.createElement('div');Object.assign(fl.style,{position:'absolute',inset:0,background:'#fff3c0',zIndex:6,pointerEvents:'none'});
+    ov.appendChild(fl);fl.animate([{opacity:.85},{opacity:0}],{duration:260,fill:'forwards'});
+    // shards of the button fly everywhere
+    const cols=['#e8344a','#ff6a7a','#8a1020','#c8c0d0','#4a4458','#ffd400'],cx=br.left-orc.left+br.width/2,cy=br.top-orc.top+br.height*.6;
+    for(let i=0;i<34;i++){const d=document.createElement('div'),sz=(6+Math.random()*14)|0,a=-Math.PI*Math.random()-(Math.random()<.25?0:0),sp=180+Math.random()*420;
+      Object.assign(d.style,{position:'absolute',left:(cx+(Math.random()-.5)*br.width*.8)+'px',top:(cy+(Math.random()-.5)*br.height*.5)+'px',
+        width:sz+'px',height:sz+'px',background:cols[i%cols.length],zIndex:4,pointerEvents:'none'});
+      ov.appendChild(d);const vx=Math.cos(a)*sp*(Math.random()<.5?-1:1),vy=Math.sin(a)*sp;
+      d.animate([{transform:'translate(0,0) rotate(0deg)',opacity:1},{transform:`translate(${vx*.9}px,${vy*.5+520}px) rotate(${(Math.random()-.5)*720}deg)`,opacity:.9}],
+        {duration:900+Math.random()*300,easing:'cubic-bezier(.2,.6,.6,1)',fill:'forwards'});}
+    // dust ring on the floor
+    fc.animate([{transform:'translateY(0)'},{transform:'translateY(-14px)'},{transform:'translateY(0)'}],{duration:260});
+    setTimeout(()=>{fc.animate([{opacity:1},{opacity:0}],{duration:200,fill:'forwards'});},420);
+    setTimeout(next,650);
+  },250);}
 function showSplash(){
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
@@ -1762,7 +1815,7 @@ function showSplash(){
   const stopBtn=animStartButton(document.getElementById('btncv'));
   let pushed=false;
   document.getElementById('startbtn').addEventListener('click',e=>{e.stopPropagation();if(pushed)return;pushed=true;
-    stopBtn(true);initAudio();sfx.select();setTimeout(play,170);});
+    initAudio();smashStart(e.currentTarget,stopBtn,play);});
   document.getElementById('sndbtn').addEventListener('click',e=>{e.stopPropagation();setSound(!soundOn);
     const b=e.currentTarget;b.classList.toggle('off',!soundOn);b.setAttribute('aria-pressed',soundOn);b.querySelector('span').textContent=soundLabel();
     if(soundOn){initAudio();sfx.select();}});
