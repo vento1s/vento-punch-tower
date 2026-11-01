@@ -1702,10 +1702,13 @@ function drawStrip(){
       text('LV6 '+n6+'/'+KL_NEED[KL_NEED.length-1],x0+w/2,y0-19,1,KL_COL[((gt*8)|0)%6],'c',false);}
     else if(kingLevel>=KL_NEED.length){R(x0-2,y0-21,w+4,10,'rgba(13,10,8,.8)');text('LV6 MAX!!',x0+w/2,y0-19,1,KL_COL[((gt*10)|0)%6],'c',false);}
   }else if(mode==='play'){
+    // same layout as after KING: "LV1" waiting (unlit) on top, the 20-cell gauge filling toward it below
     R(x0,y0+1,w,h,'rgba(10,6,16,.6)');
-    const need=kingNeed(),n=Math.min(need,altStreak),segs=20,fill=Math.floor(n/need*segs);
-    text('WEAK',x0+3,y0+5,1,'#a597b8',false);text(String(n).padStart(2,'0')+'/'+need,x0+w-3,y0+5,1,n>=need*.75?'#ffd04a':'#f4efe8','r',false);
-    for(let i=0;i<segs;i++){const sx=x0+3+i*((w-6)/segs);R(sx,y0+14,Math.max(1,(w-6)/segs-1),12,i<fill?FIREPAL(.3+.6*i/segs):'#2a1d38');}
+    const need=kingNeed(),n=Math.min(need,altStreak),segs=20,fill=Math.floor(n/need*segs),close=n>=need*.75;
+    R(x0+6,y0+2,w-12,13,'rgba(13,10,8,.55)');
+    text('LV1',x0+w/2,y0+3,2,close&&((gt*6)|0)%2?'#ff8a1a':'#5a4a6a','c','#0d0a08');
+    R(x0+2,y0+16,w-4,12,'rgba(13,10,8,.7)');
+    for(let i=0;i<segs;i++){const sx=x0+3+i*((w-6)/segs);R(sx,y0+17,Math.max(1,(w-6)/segs-1),10,i<fill?FIREPAL(.3+.6*i/segs):'#2a1d38');}
   }
 }
 function render(){
