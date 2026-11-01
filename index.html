@@ -869,6 +869,7 @@ const RUB_GAIN=.0028,GAUGE_DOWN=.85,RUB_FLOOR=70,MASH_CAP=3.5,MASH_GRACE=.35;
 const RUB_START=20,RUB_WAIT=2.5;
 function superRub(dy,side){
   if(!sup||!sup.launched||!(sup.mashT>0)||!dy)return;
+  if(sup.mashEnd&&now()>=sup.mashEnd){sup.mashT=0;return;} // time's up: no more floors, even mid hit-stop
   const d=Math.abs(dy),dir=Math.sign(dy);tapFX[side]=1;
   if(dir!==sup.rubDir){sup.rubDir=dir;sup.strokes=(sup.strokes||0)+1; // each change of direction: a swish
     if(AC){const t=AC.currentTime;noise(t,.06,1800+Math.min(2400,sup.strokes*60),1,.28);tone(t,.04,dir<0?520:380,dir<0?700:300,'square',.05);}}
@@ -905,7 +906,7 @@ function updateSuper(dt){
     if(!sup.mashEnd)sup.mashEnd=now()+sup.mashT; // wall clock: hit-stop on every smashed floor must not stretch it
     sup.mashT=Math.max(0,sup.mashEnd-now());}
   sup.to=-sup.dest*FH;
-  if(pl.feet>sup.to)pl.feet=Math.max(sup.to,pl.feet-RISE_FLOORS_PER_S*(.7+.3*sup.pw)*FH*dt);
+  if(pl.feet>sup.to)pl.feet=Math.max(sup.to,pl.feet-RISE_FLOORS_PER_S*(.7+.3*sup.pw)*(sup.mashT>0?1:2)*FH*dt);
   const k=(pl.feet<=sup.to&&sup.mashT<=0)?1:0;
   // flaming corkscrew trail + blazing fist
   fire(pl.x,pl.feet-6,6,10,70);
