@@ -273,7 +273,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   <div id="stage">
     <canvas id="c" width="144" height="256" aria-label="상남자 김주먹 게임 화면"></canvas>
     <button id="pausebtn" class="pausebtn" type="button" aria-label="일시정지" hidden></button>
-    <div id="mash" class="mash" hidden>갈겨!!<small>위아래로 쓱싹쓱싹!</small></div>
+    <div id="mash" class="mash" hidden>갈겨!!<small>끝에서 끝까지 크게 쓱싹!</small></div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
     <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>KING PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
@@ -828,10 +828,12 @@ function drawKingHud(dt){
       const rem=left,fr=sup.rubDur?rem/sup.rubDur:0,low=sup.rubOn&&rem<1,tc=low?(((gt*10)|0)%2?'#ffffff':'#ff3a5a'):'#7af0ff';
       R(gx-1,gy+11,gw+2,5,'#0d0a08');R(gx,gy+12,Math.round(gw*fr),3,tc);
       text(rem.toFixed(1)+'s',W/2,gy+18,2,tc,'c','#0d0a08');}
-    if(left>0&&!sup.maxed){const b=Math.round(Math.sin(gt*18)*6);
-      for(const ax of [W*.25,W*.75]){const x=Math.round(ax),y=H-96;
-        for(let i=0;i<5;i++){R(x-i,y-14+b+i,i*2+1,1,'#ffd400');R(x-i,y+14-b-i,i*2+1,1,'#ffd400');}
-        R(x-1,y-9+b,3,18-2*b,'rgba(255,212,0,.55)');}}
+    if(left>0){ // sweep guide on both walls: rub from cap to cap
+      const mid=H/2,y0=Math.round(mid-STROKE_FULL/2),y1=Math.round(mid+STROKE_FULL/2);
+      sup.wFlash=Math.max(0,(sup.wFlash||0)-dt);const hot=sup.wFlash>0;
+      for(const x of [6,W-8]){R(x,y0,2,y1-y0,'rgba(255,212,0,.35)');
+        for(let i=0;i<4;i++){R(x-3+i,y0-4+i,8-2*i,1,hot?'#ffffff':'#ffd400');R(x-3+i,y1+3-i,8-2*i,1,hot?'#ffffff':'#ffd400');}
+        if(sup.fy!=null){const fy=Math.round(sup.fy);R(x-2,fy-1,6,3,'#7af0ff');}}}
     if(sup.maxed){kHud.maxT=Math.max(0,kHud.maxT-dt);const big=kHud.maxT>0;
       text('MAX! +'+sup.mBonus+'F',W/2,gy+(big?32:33),big?3:2,((gt*12)|0)%2?'#ffffff':'#ffd400','c','#c24e00');}}
 }
@@ -870,7 +872,7 @@ const RUB_GAIN=.0028,GAUGE_DOWN=.85,RUB_FLOOR=70,MASH_CAP=3.5,MASH_GRACE=.35;
 const RUB_START=20,RUB_WAIT=2.5;
 // floors per second = RUB_RATE x level power x how hard you rub: nothing below RUB_V0 px/s, full speed at RUB_V1 px/s
 // (a lazy rub gets a floor or two, a wild one gets a lot; no cap, so a great rub at Lv6 really flies)
-const RUB_V0=150,RUB_V1=650,RUB_RATE=3.5;
+const RUB_V0=150,RUB_V1=900,RUB_RATE=3.5;
 function rubEarn(){
   if(!sup.mashEnd)return;
   const tn=now(),dtw=Math.min(.1,tn-(sup.lastT||tn));sup.lastT=tn;if(dtw<=0)return;
@@ -886,15 +888,23 @@ function rubEarn(){
 // seconds of rubbing left, straight from the wall clock (full until the clock starts)
 const rubLeft=()=>!sup?0:sup.mashEnd?Math.max(0,sup.mashEnd-now()):(sup.rubDur||0);
 function startRubClock(){if(sup&&!sup.mashEnd){sup.rubOn=true;sup.mashEnd=now()+sup.rubDur;}}
-function superRub(dy,side){
+// a stroke = one sweep up or down. Only BIG sweeps count: full credit at STROKE_FULL of the screen height
+// (about 3cm above and below the middle on a 10cm phone), nothing under STROKE_MIN. Credit lands when the sweep turns.
+const STROKE_MIN=.2*H,STROKE_FULL=.6*H;
+function creditStroke(L){
+  const w=clamp01((L-STROKE_MIN)/(STROKE_FULL-STROKE_MIN));sup.lastW=w;sup.wFlash=w>=1?.25:0;
+  if(sup.mashEnd&&rubLeft()>0)sup.rubAcc=(sup.rubAcc||0)+L*w;
+  if(!sup.maxed&&rubLeft()>0)sup.gauge=Math.min(1,(sup.gauge||0)+L*w*RUB_GAIN);
+  if(w<.5&&sup.mashEnd&&now()-(sup.bigHint||0)>1.2){sup.bigHint=now();pop(W/2,pl.feet-56,'BIGGER!','#ff3a5a',2);}}
+function superRub(dy,side,y){
   if(!sup||!sup.launched||!dy||sup.mashT===undefined)return;
   if(sup.mashEnd&&rubLeft()<=0){sup.mashT=0;return;} // time's up: no more floors, even mid hit-stop
-  const d=Math.abs(dy),dir=Math.sign(dy);tapFX[side]=1;
-  if(dir!==sup.rubDir){sup.rubDir=dir;sup.strokes=(sup.strokes||0)+1; // each change of direction: a swish
+  const d=Math.abs(dy),dir=Math.sign(dy);tapFX[side]=1;if(y!=null)sup.fy=y;
+  if(dir!==sup.rubDir){if(sup.rubDir)creditStroke(sup.strokeLen||0);sup.strokeLen=0;
+    sup.rubDir=dir;sup.strokes=(sup.strokes||0)+1; // each change of direction: a swish
     if(AC){const t=AC.currentTime;noise(t,.06,1800+Math.min(2400,sup.strokes*60),1,.28);tone(t,.04,dir<0?520:380,dir<0?700:300,'square',.05);}}
   sup.rub=(sup.rub||0)+d;if(sup.rub>=RUB_START)startRubClock(); // the clock starts the moment you really rub
-  if(!sup.maxed)sup.gauge=Math.min(1,(sup.gauge||0)+d*RUB_GAIN);
-  if(sup.mashEnd)sup.rubAcc=(sup.rubAcc||0)+d; // floors are earned from rubbing SPEED (see rubEarn), not distance
+  sup.strokeLen=(sup.strokeLen||0)+d; // credited (floors + gauge) when the sweep turns, weighted by its size
   {
     if(sup.gauge>=1&&!sup.maxed){ // gauge hit the very top: bonus floors
       sup.maxed=true;sup.dest+=sup.mBonus;ensureSlabs(sup.dest+30);
@@ -989,7 +999,7 @@ const DRAG_START=9,DRAG_START_WALK=18,DRAG_STEP=8,DRAG_MOVE=NUDGE*3;
 function markDrag(id,x,y){const h=holds.get(id);if(h){h.x0=x;h.lx=x;h.drag=false;h.ly=y;}}
 stage.addEventListener('pointermove',e=>{const h=holds.get(e.pointerId);if(!h||h.x0===undefined)return;
   if(mode==='super'){const [,y]=toCanvas(e);if(h.ly===undefined)h.ly=y;
-    if(Math.abs(y-h.ly)>=2){superRub(y-h.ly,h.side);h.ly=y;}return;} // ignore thumb tremble under 2px
+    if(Math.abs(y-h.ly)>=2){superRub(y-h.ly,h.side,y);h.ly=y;}return;} // ignore thumb tremble under 2px
   if(mode!=='play')return;
   const [x]=toCanvas(e);
   if(!h.drag&&Math.abs(x-h.x0)>=(h.t>=HOLD_T?DRAG_START_WALK:DRAG_START)){h.drag=true;h.lx=h.x0;}   // past the threshold it's a drag, not a tap/hold
@@ -2007,7 +2017,7 @@ function showHowto(){menuMusic();showOverlay(`
     <li><b>TIME</b>이 0이 되면 용암이 몰려와요. 블록을 부수면 +1.5초, 약점을 4번 넘게 연속으로 때려서 부수면 <b>CLEAN</b> +3초, 보스 블록은 +5.5초.</li>
     <li>약점을 때릴수록 용암이 식어서 <b>LAVA SLOW</b>(최대 절반 속도). 손을 놓으면 다시 빨라져요.</li>
     <li><b>기울기</b>를 켜면 폰을 왼쪽/오른쪽으로 기울이는 쪽으로 걸어가요. 게임 시작할 때 들고 있던 각도가 기준이에요.</li>
-    <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(매번 20번, 최대 5개까지 쌓여요). 뚫은 층마다 +1초, 착지하면 용암이 1.5초 얼었다가 반 속도로 기어와요. 약점 20번마다 <b>왕주먹 단계</b>가 올라가고 무지개 구슬이 하나씩 따라다녀요(LV5까지, LV5에서 100번 더 때리면 극악의 <b>LV6</b>). 양쪽을 같이 꾹 누르면 모은 단계 그대로 발사! LV5는 예전의 3배, LV6은 그 2배 올라가는 동안 화면을 <b>위아래로 쓱싹쓱싹</b> <b>빠르게</b> 문지를수록 많이 뚫어요(느리면 거의 못 올라가요). 문지를 시간은 모은 단계만큼(LV1 2초 · LV2 3초 · LV3 3.5초 · LV4 4초 · LV5 5초 · LV6 7초)(최대 15층, 안 비비면 헛방). 게이지 끝에 닿으면 <b>MAX 보너스</b>! 느려지면 게이지가 내려가요.</li>
+    <li>약점을 <b>20번</b> 때리면 <b>왕펀치</b> 충전(매번 20번, 최대 5개까지 쌓여요). 뚫은 층마다 +1초, 착지하면 용암이 1.5초 얼었다가 반 속도로 기어와요. 약점 20번마다 <b>왕주먹 단계</b>가 올라가고 무지개 구슬이 하나씩 따라다녀요(LV5까지, LV5에서 100번 더 때리면 극악의 <b>LV6</b>). 양쪽을 같이 꾹 누르면 모은 단계 그대로 발사! LV5는 예전의 3배, LV6은 그 2배 올라가는 동안 화면을 <b>위아래로 쓱싹쓱싹</b> <b>크고 빠르게</b> 문지를수록 많이 뚫어요. 화면 양옆 노란 가이드 끝에서 끝까지(화면 높이의 60%) 크게 쓸어야 제대로 인정되고, 짧게 비비거나 느리면 거의 못 올라가요. 문지를 시간은 모은 단계만큼(LV1 2초 · LV2 3초 · LV3 3.5초 · LV4 4초 · LV5 5초 · LV6 7초)(최대 15층, 안 비비면 헛방). 게이지 끝에 닿으면 <b>MAX 보너스</b>! 느려지면 게이지가 내려가요.</li>
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
     <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
     <li>게임 중 위쪽 <b>II</b> 버튼으로 일시정지, 재시작, 메뉴로 갈 수 있어요</li>
