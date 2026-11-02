@@ -1730,24 +1730,28 @@ function drawKingCharge(){
 let mashShown=false;const mashEl=document.getElementById('mash');
 function syncMash(){const on=mashOpen();if(on!==mashShown){mashShown=on;mashEl.hidden=!on;}}
 // KING fire: burns along the whole bottom of the screen, behind the fist buttons; its size is the level
-// BACKGROUND FIRE: the KING level burns behind the tower, rising from the bottom of the screen.
-// Lv1 a low glow on the floor ... Lv6 a blaze two floors tall (blue). You can read your charge without looking down.
-const BGF_H=[10,20,32,44,58,76];
-function drawBgFire(){
-  if(!(superReady&&kingLevel>0)||mode==='title')return;
-  const lv=Math.min(6,kingLevel),blue=lv>=6,full=BGF_H[lv-1]+24; // +24: starts behind the fist buttons, so the visible part is BGF_H
-  const PAL=blue?(k=>k>.82?'#ffffff':k>.64?'#cff6ff':k>.44?'#7af0ff':k>.24?'#3a8aff':'#2436a8'):FIREPAL;
-  // a soft glow first, so it reads as a big fire far away
-  const g=ctx.createLinearGradient(0,H-full*1.6,0,H);g.addColorStop(0,blue?'rgba(80,160,255,0)':'rgba(255,120,30,0)');g.addColorStop(1,blue?'rgba(80,160,255,.45)':'rgba(255,120,30,.45)');
-  ctx.fillStyle=g;ctx.fillRect(0,H-full*1.6,W,full*1.6);
-  ctx.globalAlpha=.62;
-  for(let x=0;x<W;x+=2){ // licking flame columns, 2px wide, each with its own flicker
-    const n1=Math.sin(x*.09+gt*3.1)*.5+.5,n2=Math.sin(x*.23-gt*5.3)*.5+.5,fl=.55+.3*n1+.15*n2+.1*hash(x>>1,(gt*12)|0);
-    const hgt=Math.max(2,Math.round(full*fl)),base=H;
-    const a=Math.round(hgt*.4),b2=Math.round(hgt*.3);
-    R(x,base-hgt,2,a,PAL(.28));R(x,base-hgt+a,2,b2,PAL(.5));R(x,base-hgt+a+b2,2,hgt-a-b2,PAL(.78));}
+// KING AURA (Super-Saiyan style): flames streaming up off the boxer's body, bigger with every level.
+// Lv1 a faint gold flicker hugging him ... Lv5 a roaring gold blaze ... Lv6 a towering blue one.
+const AURA_H=[6,10,15,20,26,34],AURA_W=[5,6,7,8,9,11];
+function drawKingAura(){
+  if(!(superReady&&kingLevel>0)||mode==='title'||mode==='dead'||(mode==='super'))return;
+  const lv=Math.min(6,kingLevel),blue=lv>=6,ah=AURA_H[lv-1],aw=AURA_W[lv-1];
+  let feet=pl.feet;if(pl.jt>=0)feet-=Math.sin(Math.PI*pl.jt)*10;
+  const cx=pl.x,fy=feet-camY;                     // bottom of the aura = his feet
+  const OUT=blue?'#2a6aff':'#ffb000',MID=blue?'#7af0ff':'#ffe14a',IN=blue?'#e8fbff':'#fff8c8';
+  // soft glow
+  ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(cx,fy-10,0,cx,fy-10,aw+ah*.6);g.addColorStop(0,blue?'rgba(90,170,255,.35)':'rgba(255,200,60,.32)');g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;ctx.fillRect(cx-aw-ah,fy-10-aw-ah,(aw+ah)*2,(aw+ah)*2);ctx.globalCompositeOperation='source-over';
+  ctx.globalAlpha=.85;
+  for(let dx=-aw;dx<=aw;dx++){ // flame tongues: tallest at the shoulders, flickering upward
+    const e=Math.abs(dx)/aw,prof=Math.pow(1-e*e,.6),fl=.6+.4*hash(dx+20,(gt*(14+lv*2))|0)+.15*Math.sin(gt*9+dx);
+    const top=Math.round(fy-14-ah*prof*fl),bot=Math.round(fy-1-(1-prof)*6);if(bot<=top)continue;
+    const len=bot-top,x=Math.round(cx+dx);
+    R(x,top,1,Math.max(1,Math.round(len*.35)),OUT);R(x,top+Math.round(len*.35),1,Math.max(1,Math.round(len*.3)),MID);
+    if(Math.abs(dx)<aw-1)R(x,top+Math.round(len*.65),1,Math.max(1,len-Math.round(len*.65)),IN);}
   ctx.globalAlpha=1;
-  if(Math.random()<.2+lv*.12)parts.push({x:Math.random()*W,y:camY+H-full*.8,vx:(Math.random()-.5)*10,vy:-25-Math.random()*25-lv*4,life:.8,col:blue?'#7af0ff':'#ffd04a',s:1,g:-5}); // embers
+  if(Math.random()<.25+lv*.12)parts.push({x:cx+(Math.random()-.5)*aw*2,y:feet-6-Math.random()*10,vx:(Math.random()-.5)*6,vy:-30-Math.random()*20-lv*5,life:.4,col:blue?'#bff6ff':'#fff1a0',s:1,g:0}); // rising sparks
 }
 function drawKingFire(){
   if(!(superReady&&mode==='play'))return;
@@ -1801,6 +1805,7 @@ function render(){
   R(0,0,W,H,z.bg);
   ctx.save();ctx.translate(ox,oy);
   drawScenery();drawSky();drawWalls();
+  drawKingAura(); // the KING level as an aura: behind the floors (weak points stay visible) and behind the boxer
   const nLo=Math.max(1,Math.floor(-(camY+H)/FH)-1),nHi=Math.ceil(-camY/FH)+2;ensureSlabs(nHi+1);
   for(let n=nLo;n<=nHi;n++){
     const y=-n*FH-camY;if(y>-10&&y<H)text(String(n),WALL-2,y-8,1,zoneOfLevel(n).wallL,'r',false);}
@@ -1816,7 +1821,6 @@ function render(){
       for(let i=0;i<18;i++){const x=(hash(i,5)*W)|0,len=10+((hash(i,8)*22)|0);const y=((gt*520+i*53)%(H+40))-40;
         R(x,y,1,len,i%3?'rgba(255,240,210,.35)':'rgba(255,170,60,.5)');}}
   }
-  drawBgFire(); // in front of the tower and lava, behind the boxer: always visible
   drawOrbs();
   drawPlayer();
   drawShield();
