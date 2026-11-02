@@ -1061,9 +1061,14 @@ stage.addEventListener('pointerup',e=>{if(!endStick(e.pointerId))release(e.point
 stage.addEventListener('pointercancel',e=>{if(!endStick(e.pointerId))holds.delete(e.pointerId);});
 stage.addEventListener('contextmenu',e=>e.preventDefault());
 const LKEYS=['arrowleft','f','a'],RKEYS=['arrowright','j','d'];
+let keyMode=false; // last input came from a keyboard (for the on-screen hint)
+addEventListener('pointerdown',()=>{keyMode=false;},true);
 addEventListener('keydown',e=>{
   if(!ov.hidden){return;}
-  const k=e.key.toLowerCase();
+  const k=e.key.toLowerCase();keyMode=true;
+  // KING climb on a computer: alternate UP and DOWN; each press counts as one full-size sweep (same key twice = nothing)
+  if(mode==='super'&&sup&&['arrowup','arrowdown','w','s'].includes(k)){e.preventDefault();
+    if(!e.repeat){const up=k==='arrowup'||k==='w';superRub(up?-STROKE_FULL:STROKE_FULL,up?1:0);}return;}
   if(LKEYS.includes(k)||RKEYS.includes(k)){e.preventDefault();if(!e.repeat)press('k'+k,RKEYS.includes(k)?1:0);return;}
   if(e.repeat)return;
   if(['arrowup','w',' '].includes(k)){e.preventDefault();doSuper();}});
@@ -1743,7 +1748,8 @@ function drawKingCharge(){
   text(txt,W/2,49,2,k>.85&&((gt*20)|0)%2?'#ffffff':'#ffd400','c',false);
 }
 let mashShown=false;const mashEl=document.getElementById('mash');
-function syncMash(){const on=mashOpen();if(on!==mashShown){mashShown=on;mashEl.hidden=!on;}}
+function syncMash(){const on=mashOpen();if(on!==mashShown){mashShown=on;mashEl.hidden=!on;
+  if(on){const sm=mashEl.querySelector('small');if(sm)sm.textContent=keyMode?'위 아래 키 번갈아 연타!':'끝에서 끝까지 크게 쓱싹!';}}}
 // KING fire: burns along the whole bottom of the screen, behind the fist buttons; its size is the level
 // KING AURA (Super-Saiyan style): an egg-shaped flame shell that starts at his soles, swells out to the sides and
 // closes to a flickering point above his head. It grows each level but always stays under the ceiling
