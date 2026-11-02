@@ -1760,12 +1760,14 @@ function drawKingAura(){
 }
 // KING slot, one row: "LV n" on the left, 10 tall cells filling left to right toward the next level on the right
 function kingRow(x0,y0,w,h,label,labelCol,frac,cellCol){
-  // no box behind it; half-size label and gauge, centred in the slot
-  const n=10,cw=2,gap=1,ch=Math.round((h-6)/2),gw=n*(cw+gap)-gap,lw=tw(label,1),tot=lw+4+gw;
-  const lx=Math.round(x0+(w-tot)/2),gx=lx+lw+4,cy=Math.round(y0+1+(h-ch)/2),fill=Math.floor(frac*n+1e-6);
-  text(label,lx,cy+Math.round((ch-5)/2),1,labelCol,'l','#0d0a08');
-  R(gx-1,cy-1,gw+2,ch+2,'rgba(13,10,8,.55)'); // thin dark rim so the cells read over anything
-  for(let i=0;i<n;i++){const sx=gx+i*(cw+gap);R(sx,cy,cw,ch,i<fill?cellCol(i,n):'#2a1d38');if(i<fill)R(sx,cy,cw,1,'rgba(255,255,255,.4)');}}
+  // no box; cells rise left to right like signal bars (5px -> 14px), all standing on one baseline.
+  // The label is the same height as the first (smallest) cell and sits on that baseline too.
+  const n=10,cw=2,gap=1,h0=5,h1=14,gw=n*(cw+gap)-gap,lw=tw(label,1),tot=lw+3+gw;
+  const lx=Math.round(x0+(w-tot)/2),gx=lx+lw+3,base=Math.round(y0+1+(h+h1)/2),fill=Math.floor(frac*n+1e-6);
+  text(label,lx,base-h0,1,labelCol,'l','#0d0a08');
+  for(let i=0;i<n;i++){const ch=Math.round(h0+(h1-h0)*i/(n-1)),sx=gx+i*(cw+gap),sy=base-ch;
+    R(sx-1,sy-1,cw+2,ch+2,'rgba(13,10,8,.6)');  // thin dark rim per cell so it reads over anything
+    R(sx,sy,cw,ch,i<fill?cellCol(i,n):'#2a1d38');if(i<fill)R(sx,sy,cw,1,'rgba(255,255,255,.45)');}}
 function drawKingFire(){
   if(!(superReady&&mode==='play'))return;
   const y0=STRIP,h=H-y0-3,x0=0,w=W;
