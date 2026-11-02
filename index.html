@@ -822,7 +822,8 @@ function doSuper(pre,cutinShown){
     for(let i=0;i<4;i++)rings.push({x:pl.x,y:pl.feet-12,life:.3+i*.12,max:.3+i*.12,big:true,col:KL_COL[i]});
     if(AC){const t=AC.currentTime;sfx.boom();setTimeout(()=>sfx.boom(),140);[523,659,784,1046,1318,1568,2093].forEach((f,i)=>tone(t+i*.05,.3,f,f,'square',.07));}}
   sup={lv:lvF,pw,rubDur:KL_RUB[lvF-1],mMax:Math.round(MASH_MAX*pw),mBonus:Math.round(MAX_BONUS*pw),rubF:RUB_FLOOR/pw,t:0,start,dest,next:start,from:pl.feet,to:-dest*FH,launched:false,peak:false};kHud.hits=0;kHud.mash=0;kHud.g=0;kHud.maxT=0;
-  mode='super';if(cutinShown)sup.t=.45;else if(pre)sup.t=.3;else sfx.superCharge(); // after the slow beat: launch at oncevibe(40);if(!cutinShown)showCutin();
+  mode='super';if(cutinShown)sup.t=.45;else if(pre)sup.t=.3;else sfx.superCharge(); // after the slow beat: launch at once
+  vibe(40);if(!cutinShown)showCutin();
   lavaY=Math.max(lavaY,pl.feet+40);lavaY+=30;
 }
 // big on-screen counter for the KING PUNCH climb (HUD layer, never behind sparks)
@@ -1075,7 +1076,8 @@ function update(dt){
   tapFX[0]=Math.max(0,tapFX[0]-dt*6);tapFX[1]=Math.max(0,tapFX[1]-dt*6);
   shake=Math.max(0,shake-dt*22);impact=Math.max(0,impact-dt);zoom=Math.max(0,zoom-dt*.6);
   pl.weakT=Math.max(0,pl.weakT-dt);burnT=Math.max(0,burnT-dt);
-  if(burns>0&&mode==='play'&&Math.random()<.08*burns)parts.push({x:pl.x+(Math.random()-.5)*6,y:pl.feet-3,vx:(Math.random()-.5)*6,vy:-14-Math.random()*10,life:.6,col:'rgba(120,110,110,.55)',s:1,g:-10}); // smouldering trousersshieldHit=Math.max(0,shieldHit-real*3);flashO=Math.max(0,flashO-dt*3);
+  if(burns>0&&mode==='play'&&Math.random()<.08*burns)parts.push({x:pl.x+(Math.random()-.5)*6,y:pl.feet-3,vx:(Math.random()-.5)*6,vy:-14-Math.random()*10,life:.6,col:'rgba(120,110,110,.55)',s:1,g:-10}); // smouldering trousers
+  shieldHit=Math.max(0,shieldHit-real*3);flashO=Math.max(0,flashO-dt*3);
   dashCD=Math.max(0,dashCD-dt);
   for(const g of ghosts)g.life-=dt;ghosts=ghosts.filter(g=>g.life>0);
   if(dashT>0){dashT-=dt;ghosts.push({x:pl.x,life:.16});}
@@ -1084,7 +1086,8 @@ function update(dt){
   if(mode==='play'){
     for(const h of holds.values()){if(h.used)continue;h.t+=real;if(h.side){hasR=true;bornR=Math.max(bornR,h.born||0);}else{hasL=true;bornL=Math.max(bornL,h.born||0);}
       if(h.t<HOLD_T||h.drag)continue; // dragging thumbs don't walk or charge
-      if(ctrlMode==='classic'&&(h.born||0)>=newest){newest=h.born||0;dir=h.side?1:-1;} // the thumb pressed last decides the wayconst pc=h.c;h.c=Math.min(1,(h.t-HOLD_T)/CHARGE_T);maxC=Math.max(maxC,h.c);
+      if(ctrlMode==='classic'&&(h.born||0)>=newest){newest=h.born||0;dir=h.side?1:-1;} // the thumb pressed last decides the way
+      const pc=h.c;h.c=Math.min(1,(h.t-HOLD_T)/CHARGE_T);maxC=Math.max(maxC,h.c);
       const g=guardPos(h.side);
       if(h.c>=1&&pc<1){sfx.kimax();
         for(let i=0;i<10;i++){const a=i/10*Math.PI*2;parts.push({x:g.x,y:g.y,vx:Math.cos(a)*45,vy:Math.sin(a)*45,life:.25,max:.25,s:1,g:0,ki:true});}}
