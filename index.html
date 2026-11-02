@@ -977,7 +977,7 @@ function die(){mode='dead';endT=0;bgmStop();sfx.die();playDieVoice();vibe([60,40
 // two thumbs only: left half of the screen = left hand, right half = right hand.
 // tap = punch · hold = walk that way + charge ki · release = ki punch
 // KING FIST: when charged, hold both sides together for a moment.
-const STRIP=H-34,BTN_L=44,BTN_R=W-44,BOTH_HOLD=1.2; // hold both sides this long to fire the KING PUNCH (long enough to feel the build-up)
+const STRIP=H-34,BTN_L=44,BTN_R=W-44,BOTH_HOLD=1.2,KING_SYNC=.3; // hold both sides this long to fire the KING PUNCH (long enough to feel the build-up)
 // dash: while walking (holding one side), tap the other side to burst forward in the walking direction
 const NUDGE=2.5; // px per punch toward the punching hand (alternate to stay put)
 const DASH=16,DASH_CD=.22,DASH_T=.12;
@@ -992,7 +992,7 @@ function press(id,side){if(holds.has(id))return;
   if(mode==='play'&&ctrlMode==='classic')for(const h of holds.values()){if(!h.used&&h.side!==side&&h.t>=HOLD_T){
     holds.set(id,{side,t:0,c:0,used:true});dash(h.side);return;}}
   if(mode==='super'){holds.set(id,{side,t:0,c:0,used:true,rub:true});return;} // KING PUNCH: rub up and down
-  holds.set(id,{side,t:0,c:0,used:false});
+  holds.set(id,{side,t:0,c:0,used:false,born:now()});
   if(ctrlMode==='pad')hit(side); // pad buttons punch on press; classic waits to see tap vs hold
 }
 function release(id){const h=holds.get(id);holds.delete(id);
@@ -1063,11 +1063,11 @@ function update(dt){
   for(const g of ghosts)g.life-=dt;ghosts=ghosts.filter(g=>g.life>0);
   if(dashT>0){dashT-=dt;ghosts.push({x:pl.x,life:.16});}
   // holds: walk toward the held side while ki gathers in that fist
-  let dir=0,maxC=-1,hasL=false,hasR=false;
+  let dir=0,maxC=-1,hasL=false,hasR=false,bornL=-1,bornR=-1,newest=-1;
   if(mode==='play'){
-    for(const h of holds.values()){if(h.used)continue;h.t+=real;if(h.side)hasR=true;else hasL=true;
+    for(const h of holds.values()){if(h.used)continue;h.t+=real;if(h.side){hasR=true;bornR=Math.max(bornR,h.born||0);}else{hasL=true;bornL=Math.max(bornL,h.born||0);}
       if(h.t<HOLD_T||h.drag)continue; // dragging thumbs don't walk or charge
-      if(ctrlMode==='classic')dir+=h.side?1:-1;const pc=h.c;h.c=Math.min(1,(h.t-HOLD_T)/CHARGE_T);maxC=Math.max(maxC,h.c);
+      if(ctrlMode==='classic'&&(h.born||0)>=newest){newest=h.born||0;dir=h.side?1:-1;} // the thumb pressed last decides the wayconst pc=h.c;h.c=Math.min(1,(h.t-HOLD_T)/CHARGE_T);maxC=Math.max(maxC,h.c);
       const g=guardPos(h.side);
       if(h.c>=1&&pc<1){sfx.kimax();
         for(let i=0;i<10;i++){const a=i/10*Math.PI*2;parts.push({x:g.x,y:g.y,vx:Math.cos(a)*45,vy:Math.sin(a)*45,life:.25,max:.25,s:1,g:0,ki:true});}}
@@ -1078,7 +1078,8 @@ function update(dt){
   }
   hum(maxC);
   // both thumbs held -> KING FIST
-  if(superReady&&mode==='play'&&hasL&&hasR){
+  const together=hasL&&hasR&&(bothT>0||Math.abs(bornL-bornR)<=KING_SYNC); // both thumbs pressed (almost) at once
+  if(superReady&&mode==='play'&&together){
     if(bothT===0)kingGrowl(true);
     bothT+=real;const k=Math.min(1,bothT/BOTH_HOLD);
     shake=Math.max(shake,.6+(2.4+kingLevel*.4)*k);
@@ -1087,8 +1088,8 @@ function update(dt){
       parts.push({x:pl.x+Math.cos(a)*r,y:pl.feet-8+Math.sin(a)*r*.8,vx:-Math.cos(a)*r/l,vy:-Math.sin(a)*r*.8/l,life:l,max:l,s:Math.random()<.4?2:1,g:0,fire:true});}
     if(bothT>=BOTH_HOLD)fireKing();}
   else{if(bothT>0)kingGrowl(false);bothT=0;}
-  if(dir&&mode==='play'&&!(hasL&&hasR))pl.tx+=Math.sign(dir)*MOVE_SPD*dt;
-  if(tiltOn&&tiltG!=null&&mode==='play'&&!(hasL&&hasR)){const d=tiltG-tiltZero,a=Math.abs(d);
+  if(dir&&mode==='play'&&!(superReady&&together))pl.tx+=Math.sign(dir)*MOVE_SPD*dt;
+  if(tiltOn&&tiltG!=null&&mode==='play'&&!(superReady&&together)){const d=tiltG-tiltZero,a=Math.abs(d);
     if(a>TILT_DEAD)pl.tx+=Math.sign(d)*Math.min(1,(a-TILT_DEAD)/TILT_FULL)*MOVE_SPD*1.4*dt;}
   pl.tx=clamp(pl.tx,XMIN,XMAX);
   if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,dt*(dashT>0?36:16));
