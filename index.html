@@ -1730,6 +1730,25 @@ function drawKingCharge(){
 let mashShown=false;const mashEl=document.getElementById('mash');
 function syncMash(){const on=mashOpen();if(on!==mashShown){mashShown=on;mashEl.hidden=!on;}}
 // KING fire: burns along the whole bottom of the screen, behind the fist buttons; its size is the level
+// BACKGROUND FIRE: the KING level burns behind the tower, rising from the bottom of the screen.
+// Lv1 a low glow on the floor ... Lv6 a blaze two floors tall (blue). You can read your charge without looking down.
+const BGF_H=[10,20,32,44,58,76];
+function drawBgFire(){
+  if(!(superReady&&kingLevel>0)||mode==='title')return;
+  const lv=Math.min(6,kingLevel),blue=lv>=6,full=BGF_H[lv-1]+24; // +24: starts behind the fist buttons, so the visible part is BGF_H
+  const PAL=blue?(k=>k>.82?'#ffffff':k>.64?'#cff6ff':k>.44?'#7af0ff':k>.24?'#3a8aff':'#2436a8'):FIREPAL;
+  // a soft glow first, so it reads as a big fire far away
+  const g=ctx.createLinearGradient(0,H-full*1.6,0,H);g.addColorStop(0,blue?'rgba(80,160,255,0)':'rgba(255,120,30,0)');g.addColorStop(1,blue?'rgba(80,160,255,.45)':'rgba(255,120,30,.45)');
+  ctx.fillStyle=g;ctx.fillRect(0,H-full*1.6,W,full*1.6);
+  ctx.globalAlpha=.62;
+  for(let x=0;x<W;x+=2){ // licking flame columns, 2px wide, each with its own flicker
+    const n1=Math.sin(x*.09+gt*3.1)*.5+.5,n2=Math.sin(x*.23-gt*5.3)*.5+.5,fl=.55+.3*n1+.15*n2+.1*hash(x>>1,(gt*12)|0);
+    const hgt=Math.max(2,Math.round(full*fl)),base=H;
+    const a=Math.round(hgt*.4),b2=Math.round(hgt*.3);
+    R(x,base-hgt,2,a,PAL(.28));R(x,base-hgt+a,2,b2,PAL(.5));R(x,base-hgt+a+b2,2,hgt-a-b2,PAL(.78));}
+  ctx.globalAlpha=1;
+  if(Math.random()<.2+lv*.12)parts.push({x:Math.random()*W,y:camY+H-full*.8,vx:(Math.random()-.5)*10,vy:-25-Math.random()*25-lv*4,life:.8,col:blue?'#7af0ff':'#ffd04a',s:1,g:-5}); // embers
+}
 function drawKingFire(){
   if(!(superReady&&mode==='play'))return;
   const y0=STRIP,h=H-y0-3,x0=0,w=W;
@@ -1748,7 +1767,6 @@ function drawStrip(){
   drawSlowMo();
   drawKingCharge();
   if(mode!=='play'&&mode!=='super'&&mode!=='count')return;
-  drawKingFire();
   if(ctrlMode==='pad')drawPad();else drawClassicFists();
   const y0=STRIP,h=H-y0-3;
   // KING FIST slot: gauge until 20 alternating hits, then a burning button
@@ -1798,6 +1816,7 @@ function render(){
       for(let i=0;i<18;i++){const x=(hash(i,5)*W)|0,len=10+((hash(i,8)*22)|0);const y=((gt*520+i*53)%(H+40))-40;
         R(x,y,1,len,i%3?'rgba(255,240,210,.35)':'rgba(255,170,60,.5)');}}
   }
+  drawBgFire(); // in front of the tower and lava, behind the boxer: always visible
   drawOrbs();
   drawPlayer();
   drawShield();
