@@ -1758,6 +1758,12 @@ function drawKingAura(){
   ctx.globalAlpha=1;
   if(Math.random()<.2+lv*.1)parts.push({x:cx+(Math.random()-.5)*aw,y:feet-ah+2,vx:(Math.random()-.5)*6,vy:-18-Math.random()*14,life:.25,col:blue?'#bff6ff':'#fff1a0',s:1,g:0}); // sparks off the tip
 }
+// KING slot, one row: "LV n" on the left, 10 tall cells filling left to right toward the next level on the right
+function kingRow(x0,y0,w,h,label,labelCol,frac,cellCol){
+  R(x0,y0+1,w,h,'rgba(10,6,16,.72)');
+  const tx=x0+2,ty=y0+1+Math.round((h-10)/2);text(label,tx,ty,2,labelCol,'l','#0d0a08');
+  const n=10,gx=x0+2+tw(label,2)+3,cw=Math.max(2,Math.floor((x0+w-2-gx+1)/n)-1),cy=y0+4,ch=h-6,fill=Math.floor(frac*n+1e-6);
+  for(let i=0;i<n;i++){const sx=gx+i*(cw+1);R(sx,cy,cw,ch,i<fill?cellCol(i,n):'#2a1d38');if(i<fill)R(sx,cy,cw,2,'rgba(255,255,255,.4)');}}
 function drawKingFire(){
   if(!(superReady&&mode==='play'))return;
   const y0=STRIP,h=H-y0-3,x0=0,w=W;
@@ -1782,25 +1788,15 @@ function drawStrip(){
   const x0=BTN_L+1,w=ctrlMode==='pad'?44:BTN_R-BTN_L-2; // pad mode leaves room for the fist buttons
   if(superReady){
     R(x0,y0+1,w,1,kingLevel>=6?'#7af0ff':'#ffe27a');
-    // big "LV n" on top (pops white for a moment when it goes up) ...
-    {kHud.lvPop=Math.max(0,(kHud.lvPop||0)-1/60);const pop6=kHud.lvPop>0,six=kingLevel>=KL_NEED.length;
-     R(x0+6,y0+2,w-12,13,'rgba(13,10,8,.55)');
-     text('LV'+kingLevel,x0+w/2,y0+3,2,pop6?'#ffffff':six?'#7af0ff':'#ffd400','c','#4a1408');}
-    // ... and the same 20-cell gauge as before KING, still filling toward the next level
-    {const six=kingLevel>=KL_NEED.length,need=kingNeed(),n=six?need:Math.min(need,altStreak),segs=20,fill=Math.floor(n/need*segs);
-     R(x0+2,y0+16,w-4,12,'rgba(13,10,8,.7)');
-     for(let i=0;i<segs;i++){const sx=x0+3+i*((w-6)/segs);
-       R(sx,y0+17,Math.max(1,(w-6)/segs-1),10,i<fill?(six?['#3a8aff','#7af0ff','#cff6ff'][(i+((gt*12)|0))%3]:FIREPAL(.3+.6*i/segs)):'#2a1d38');}}
+    {kHud.lvPop=Math.max(0,(kHud.lvPop||0)-1/60);const pop6=kHud.lvPop>0,six=kingLevel>=KL_NEED.length,need=kingNeed(),n=six?need:Math.min(need,altStreak);
+     kingRow(x0,y0,w,h,'LV'+kingLevel,pop6?'#ffffff':six?'#7af0ff':'#ffd400',n/need,
+       (i,nn)=>six?['#3a8aff','#7af0ff','#cff6ff'][(i+((gt*12)|0))%3]:FIREPAL(.3+.6*i/nn));}
     // fill shows how long both thumbs have been held
     if(bothT>0)R(x0,y0+h-2,w*Math.min(1,bothT/BOTH_HOLD),3,'#ffffff');
   }else if(mode==='play'){
     // same layout as after KING: "LV1" waiting (unlit) on top, the 20-cell gauge filling toward it below
-    R(x0,y0+1,w,h,'rgba(10,6,16,.6)');
-    const need=kingNeed(),n=Math.min(need,altStreak),segs=20,fill=Math.floor(n/need*segs),close=n>=need*.75;
-    R(x0+6,y0+2,w-12,13,'rgba(13,10,8,.55)');
-    text('LV1',x0+w/2,y0+3,2,close&&((gt*6)|0)%2?'#ff8a1a':'#5a4a6a','c','#0d0a08');
-    R(x0+2,y0+16,w-4,12,'rgba(13,10,8,.7)');
-    for(let i=0;i<segs;i++){const sx=x0+3+i*((w-6)/segs);R(sx,y0+17,Math.max(1,(w-6)/segs-1),10,i<fill?FIREPAL(.3+.6*i/segs):'#2a1d38');}
+    const need=kingNeed(),n=Math.min(need,altStreak),close=n>=need*.75;
+    kingRow(x0,y0,w,h,'LV1',close&&((gt*6)|0)%2?'#ff8a1a':'#5a4a6a',n/need,(i,nn)=>FIREPAL(.3+.6*i/nn));
   }
 }
 function render(){
