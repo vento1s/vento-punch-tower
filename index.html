@@ -1647,10 +1647,22 @@ function drawPad(){
   if(mashOpen()){ctx.globalAlpha=1;hudFlames(105,H-24,26,18);hudFlames(130,H-43,26,18);}
   ctx.globalAlpha=1;
 }
+// leaf path: sways side to side on the way down and comes to rest just beside the boxer
+const leafX=k=>{const end=clamp(pl.x+14,WALL+6,W-WALL-6);return (W/2+(end-W/2)*k)+Math.sin(k*Math.PI*3.2)*22*(1-k*.85);};
+function drawLeaf(x,y,frame,mirror){const rows=frame,w=rows[0].length,sc=2; // drawn 2x so it reads at phone size
+  for(let r=0;r<rows.length;r++){const row=rows[r];for(let c=0;c<w;c++){const ch=row[mirror?w-1-c:c];if(ch!=='.')R(Math.round(x)-7+c*sc,Math.round(y)-12+r*sc,sc,sc,LEAF_PAL[ch]);}}}
 function drawCountdown(){
-  if(mode==='count'){const k=1-countT/LETS_T;const sc=k<.2?5:4; // pops in, then settles
-    text("LET'S",W/2,70-(sc-4)*3,sc,'#ff8a00','c','#0d0a08');}
-  else if(mode==='play'&&started&&tNow<.7){const sc=tNow<.1?5:4;
+  if(mode==='count'){const k=clamp(1-countT/LEAF_T,0,1),ground=pl.feet-camY-3,y=-6+(ground+6)*(k*k*.35+k*.65);
+    const x=leafX(k),sway=Math.cos(k*Math.PI*3.2);
+    // its shadow on the floor grows as it gets close
+    ctx.globalAlpha=.15+.35*k;R(Math.round(x)-2-Math.round(k*2),Math.round(ground)+3,4+Math.round(k*4),1,'#0d0a08');ctx.globalAlpha=1;
+    if(Math.abs(sway)<.35)drawLeaf(x,y,LEAF_FLAT,false);else drawLeaf(x,y,LEAF_TILT,sway<0);
+    // quiet "READY" while it falls; each beep flashes it
+    const since=LEAF_BEEPS.reduce((m,b)=>(LEAF_T-countT)>=b?(LEAF_T-countT)-b:m,9),hot=since<.15;
+    text('READY',W/2,66,2,hot?'#ffffff':'#a597b8','c','#0d0a08');}
+  else if(mode==='play'&&started&&tNow<1.2&&leafLand){ // the leaf lies where it landed for a moment
+    ctx.globalAlpha=Math.max(0,1-tNow/1.2);drawLeaf(leafLand.x,leafLand.y-camY-3,LEAF_FLAT,false);ctx.globalAlpha=1;}
+  if(mode==='play'&&started&&tNow<.7){const sc=tNow<.1?5:4;
     ctx.globalAlpha=tNow<.45?1:Math.max(0,1-(tNow-.45)/.25);
     text('START!',W/2,70-(sc-4)*3,sc,'#ffd400','c','#0d0a08');ctx.globalAlpha=1;}
 }
@@ -1908,11 +1920,21 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&ov.hidden&
 // every run opens with 3-2-1-GO; the clock and the lava start on GO
 // quick arcade call: "LET'S" (0.55s) -> "START!" and you're playing
 let countT=0,countShown=0;
-const LETS_T=.55;
-function beginCountdown(){newGame();mode='count';countT=LETS_T;countShown=0;bgmStop();holds.clear();sfx.count(false);vibe(10);}
+// START ritual: a single autumn leaf drifts down from the sky while it beeps "ti... ti... ti..." and the instant it
+// touches the floor: "TIII!" + START. LEAF_T is the whole fall; BEEPS are when the short beeps land.
+const LEAF_T=2.4,LEAF_BEEPS=[.6,1.2,1.8];
+const LETS_T=LEAF_T;
+const LEAF_FLAT=["...o...",".o.O.o.",".oOOOo.","ooOrOoo",".oOOOo.","...s...","...s..."];
+const LEAF_TILT=["....oo.","..oOOo.",".oOrOo.","oOrOo..","oOOo...",".s.....","s......"];
+const LEAF_PAL={o:'#e8541a',O:'#ff8a2a',r:'#b8360c',s:'#6a3a18'};
+let leafBeeps=0,leafLand=null;
+function beginCountdown(){newGame();mode='count';countT=LETS_T;countShown=0;leafBeeps=0;bgmStop();holds.clear();}
 function updateCountdown(dt){
-  countT-=dt;
-  if(countT<=0){sfx.count(true);vibe(25);mode='play';started=true;tStart=now();lastTap=-9;bgmStart();}
+  countT-=dt;const el=LEAF_T-countT;
+  while(leafBeeps<LEAF_BEEPS.length&&el>=LEAF_BEEPS[leafBeeps]){leafBeeps++;sfx.count(false);vibe(8);} // ti... ti... ti...
+  if(countT<=0){leafLand={x:leafX(1),y:pl.feet};sfx.count(true);vibe(25);mode='play';started=true;tStart=now();lastTap=-9;bgmStart();     // TIII! the leaf lands
+    if(AC){const t=AC.currentTime;noise(t,.08,3000,1,.12);}
+    for(let i=0;i<8;i++)parts.push({x:leafLand.x+(Math.random()-.5)*6,y:pl.feet-1,vx:(Math.random()-.5)*40,vy:-10-Math.random()*20,life:.4,col:'rgba(230,220,200,.6)',s:1,g:60});}
 }
 // guest: a throwaway name like GUEST417, never saved as this device's nickname
 let isGuest=false;
