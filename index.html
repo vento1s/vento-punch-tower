@@ -564,7 +564,7 @@ function drawOrbs(){
     const x=Math.round(o.x),y=Math.round(o.y-camY+Math.sin(gt*5+i*1.3)*1.2);
     // FIREBALL (same size as the old orb): flame tongues licking upward in the level's colour, a hot core inside.
     // Lv6 burns blue like the fire at the bottom.
-    const outer='#ff5a1a',mid='#ffd04a',core='#fff6c8'; // every pet is plain fire; only the size tells the level
+    const six6=kingLevel>=6,outer=six6?'#2a6aff':'#ff5a1a',mid=six6?'#7af0ff':'#ffd04a',core=six6?'#e8fbff':'#fff6c8'; // plain fire, size = level; all turn blue at Lv6
     ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(x,y,0,x,y,r*2.6);
     g.addColorStop(0,outer+'99');g.addColorStop(1,outer+'00');ctx.fillStyle=g;ctx.fillRect(x-r*2.6,y-r*2.6,r*5.2,r*5.2);ctx.globalCompositeOperation='source-over';
     const tongues=Math.max(2,r);
@@ -575,7 +575,7 @@ function drawOrbs(){
     pxDisc(x,y,r,outer);
     pxDisc(x,y+Math.round(r*.15),Math.max(1,Math.round(r*.7)),mid);
     pxDisc(x,y+Math.round(r*.25),Math.max(1,Math.round(r*.38)),core);
-    if(Math.random()<.18+r*.04)parts.push({x:o.x+(Math.random()-.5)*r*1.6,y:o.y-r,vx:(Math.random()-.5)*8,vy:-18-Math.random()*20,life:.35,max:.35,s:1,g:0,fire:true});}
+    if(Math.random()<.18+r*.04)parts.push({x:o.x+(Math.random()-.5)*r*1.6,y:o.y-r,vx:(Math.random()-.5)*8,vy:-18-Math.random()*20,life:.35,max:.35,s:1,g:0,fire:!six6,ki:six6});}
 }
 function startKingSlow(){
   kingSlowT=KING_SLOW;for(const h of holds.values())h.used=true;hum(-1);
@@ -1739,6 +1739,24 @@ function syncMash(){const on=mashOpen();if(on!==mashShown){mashShown=on;mashEl.h
 // closes to a flickering point above his head. It grows each level but always stays under the ceiling
 // (the floor above is 26px over his feet), so bricks never cut it off. Lv1-5 gold, Lv6 blue.
 const AURA_H=[16,17,18,19,20,22],AURA_W=[6,7,8,9,10,11];
+// LV6: blue fire burning across the bottom third of the screen (world still visible through it) and a blue vignette
+function drawLv6Blaze(){
+  if(!(superReady&&kingLevel>=6)||mode==='title'||mode==='dead')return;
+  const top=H*2/3,full=H-top;
+  const g=ctx.createLinearGradient(0,top-20,0,H);g.addColorStop(0,'rgba(60,140,255,0)');g.addColorStop(1,'rgba(60,140,255,.35)');
+  ctx.fillStyle=g;ctx.fillRect(0,top-20,W,full+20);
+  const PAL=k=>k>.82?'#ffffff':k>.64?'#cff6ff':k>.44?'#7af0ff':k>.24?'#3a8aff':'#2436a8';
+  ctx.globalAlpha=.42;
+  for(let x=0;x<W;x+=2){const n1=Math.sin(x*.07+gt*2.7)*.5+.5,n2=Math.sin(x*.19-gt*4.9)*.5+.5,fl=.45+.35*n1+.2*n2+.1*hash(x>>1,(gt*12)|0);
+    const hgt=Math.round(full*Math.min(1.15,fl)),a=Math.round(hgt*.4),b2=Math.round(hgt*.3);
+    R(x,H-hgt,2,a,PAL(.28));R(x,H-hgt+a,2,b2,PAL(.5));R(x,H-hgt+a+b2,2,hgt-a-b2,PAL(.75));}
+  ctx.globalAlpha=1;
+  if(Math.random()<.6)parts.push({x:Math.random()*W,y:camY+top+Math.random()*full*.5,vx:(Math.random()-.5)*8,vy:-30-Math.random()*30,life:.7,col:'#bff6ff',s:1,g:-5});}
+function drawLv6Vignette(){
+  if(!(superReady&&kingLevel>=6)||mode==='title'||mode==='dead')return;
+  const pul=.5+.12*Math.sin(gt*4);
+  const vg=ctx.createRadialGradient(W/2,H*.55,H*.28,W/2,H*.55,H*.75);
+  vg.addColorStop(0,'rgba(10,30,90,0)');vg.addColorStop(1,`rgba(10,30,90,${pul})`);ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);}
 function drawKingAura(){
   if(!(superReady&&kingLevel>0)||mode==='title'||mode==='dead'||mode==='super')return;
   const lv=Math.min(6,kingLevel),blue=lv>=6,ah=AURA_H[lv-1],aw=AURA_W[lv-1];
@@ -1797,8 +1815,8 @@ function drawStrip(){
   const x0=BTN_L+1,w=ctrlMode==='pad'?44:BTN_R-BTN_L-2; // pad mode leaves room for the fist buttons
   if(superReady){
     {kHud.lvPop=Math.max(0,(kHud.lvPop||0)-1/60);const pop6=kHud.lvPop>0,six=kingLevel>=KL_NEED.length,need=kingNeed(),n=six?need:Math.min(need,altStreak);
-     kingRow(x0,y0,w,h,'LV'+kingLevel,pop6?'#ffffff':six?'#7af0ff':'#ffd400',n/need,
-       (i,nn)=>six?['#3a8aff','#7af0ff','#cff6ff'][(i+((gt*12)|0))%3]:FIREPAL(.3+.6*i/nn));}
+     if(six)text('LV6',x0+w/2,y0+1+Math.round((h-10)/2),2,pop6?'#ffffff':((gt*6)|0)%2?'#7af0ff':'#cff6ff','c','#0d0a08'); // maxed: the screen says it, no gauge
+     else kingRow(x0,y0,w,h,'LV'+kingLevel,pop6?'#ffffff':'#ffd400',n/need,(i,nn)=>FIREPAL(.3+.6*i/nn));}
     // fill shows how long both thumbs have been held
     if(bothT>0)R(x0,y0+h-2,w*Math.min(1,bothT/BOTH_HOLD),3,'#ffffff');
   }else if(mode==='play'){
@@ -1829,6 +1847,7 @@ function render(){
       for(let i=0;i<18;i++){const x=(hash(i,5)*W)|0,len=10+((hash(i,8)*22)|0);const y=((gt*520+i*53)%(H+40))-40;
         R(x,y,1,len,i%3?'rgba(255,240,210,.35)':'rgba(255,170,60,.5)');}}
   }
+  drawLv6Blaze();
   drawKingAura(); // the KING level as an aura: in front of the floors, behind the boxer
   drawOrbs();
   drawPlayer();
@@ -1837,6 +1856,7 @@ function render(){
     if(p.fire){const k=p.life/p.max;ctx.globalAlpha=1;R(p.x,p.y-camY,k>.5?p.s+1:p.s,k>.5?p.s+1:p.s,FIREPAL(k));continue;}
     if(p.ki){const k=p.life/p.max;ctx.globalAlpha=.4+.6*(1-k);R(p.x,p.y-camY,1,1,k<.4?'#e6fdff':'#7af0ff');continue;}
     ctx.globalAlpha=Math.min(1,p.life*3);R(p.x,p.y-camY,p.s,p.s,p.col);}ctx.globalAlpha=1;
+  drawLv6Vignette();
   drawRings();
   drawLava();
   drawComboFX();
