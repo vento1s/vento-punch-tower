@@ -1582,10 +1582,27 @@ const ARM_HOT={s:'#ffb8a2',L:'#b4584a',H:'#ffe2d8',D:'#dc8c76',w:'#ffffff',G:'#d
 const mashOpen=()=>mode==='super'&&sup&&sup.launched&&rubLeft()>0;
 function hudFlames(cx,topY,w,n){for(let i=0;i<n;i++){const x=cx+(Math.random()-.5)*w,h=2+Math.random()*16,k=Math.random();
   R(x,topY-h,2+(k>.6?1:0),2+(k>.6?1:0),FIREPAL(k));}}
+// sneaker (side view, toe to the right): while one fist is held to walk, the other button turns into this,
+// because tapping it then dashes that way
+const SHOE=["...kkkkkk.............","..kwwwwwwk............","..kwkkkkwwk...........","..kwwwwwwwwkk.........",
+ "..kwwrwrwrwwwkk.......",".kwwwwwwwwwwwwwkkk....",".kwwwwwwwwwwwwwwwwkk..","kwrrrrwwwwwwwwwwwwwwk.",
+ "kwwwwwwwwwwwwwwwwwwwwk","kGGGGGGGGGGGGGGGGGGGGk",".kssssssssssssssssssk.","..kkkkkkkkkkkkkkkkkk.."];
+const SHOE_PAL={k:'#1a0a06',w:'#f4efe8',r:'#e8344a',G:'#c4bccd',s:'#7a6a8a'};
+function drawShoe(cx,cy,faceRight,hot){
+  const sc=2,w=SHOE[0].length,h=SHOE.length,x0=Math.round(cx-w*sc/2),y0=Math.round(cy-h*sc/2)+Math.round(Math.sin(gt*14)*1.5);
+  ctx.globalAlpha=.55;for(let r=0;r<h;r++){const row=SHOE[r];for(let c=0;c<w;c++){const ch=row[faceRight?c:w-1-c];if(ch!=='.')R(x0+c*sc+2,y0+r*sc+2,sc,sc,'#1a0a06');}}
+  ctx.globalAlpha=1;for(let r=0;r<h;r++){const row=SHOE[r];for(let c=0;c<w;c++){const ch=row[faceRight?c:w-1-c];if(ch!=='.')R(x0+c*sc,y0+r*sc,sc,sc,hot&&ch==='w'?'#fff3a0':SHOE_PAL[ch]);}}
+  // speed lines streaming off the heel
+  const back=faceRight?x0-4:x0+w*sc+4,dir=faceRight?-1:1;
+  for(let i=0;i<3;i++){const len=6+((gt*30+i*5)%8);ctx.globalAlpha=.7;R(faceRight?back-len:back,y0+6+i*7,len,2,i===1?'#ffd400':'#ffffff');}
+  ctx.globalAlpha=1;}
 function drawClassicFists(){
+  // which side (if any) is walking: then the other button becomes a dash shoe pointing that way
+  let walkSide=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T&&mode==='play')walkSide=h.side;
   const sc=2,w=BIG_ARM[0].length;
   for(const sd of [0,1]){
     let held=false,charge=0;for(const h of holds.values())if(h.side===sd&&!h.used){held=true;charge=Math.max(charge,h.c);}
+    if(walkSide>=0&&sd!==walkSide&&!held){drawShoe(sd?W-22:22,H-26,walkSide===1,dashT>0);continue;}
     const hit=tapFX[sd]>.45, up=hit?7:held?3:0;          // a punch jabs the arm upward
     const x0=Math.round((sd?W-22:22)-w*sc/2), y0=H-46-up;   // sleeve runs off the bottom edge
     const pal=hit||held?ARM_HOT:ARM_PAL;
