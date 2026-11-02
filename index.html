@@ -1654,9 +1654,9 @@ function drawClassicFists(){
   const sc=2,w=BIG_ARM[0].length;
   for(const sd of [0,1]){
     let held=false,charge=0;for(const h of holds.values())if(h.side===sd&&!h.used){held=true;charge=Math.max(charge,h.c);}
-    if(walkSide>=0&&sd!==walkSide&&!held){drawShoe(sd?W-22:22,H-26,walkSide===1,dashT>0);continue;}
+    if(walkSide>=0&&sd!==walkSide&&!held){drawShoe(sd?W-22:22,H-26-GAUGE_ROW,walkSide===1,dashT>0);continue;}
     const hit=tapFX[sd]>.45, up=hit?7:held?3:0;          // a punch jabs the arm upward
-    const x0=Math.round((sd?W-22:22)-w*sc/2), y0=H-46-up;   // sleeve runs off the bottom edge
+    const x0=Math.round((sd?W-22:22)-w*sc/2), y0=H-46-GAUGE_ROW-up;   // raised one layer: the big KING gauge runs along the bottom
     const pal=hit||held?ARM_HOT:ARM_PAL;
     ctx.globalAlpha=hit||held?1:.88;
     if(charge>0){ctx.globalAlpha=.2+.35*charge;pxDisc(x0+w*sc/2,y0+16,15+charge*3,'#7af0ff');ctx.globalAlpha=1;}
@@ -1792,6 +1792,22 @@ function drawKingAura(){
   if(Math.random()<.2+lv*.1)parts.push({x:cx+(Math.random()-.5)*aw,y:feet-ah+2,vx:(Math.random()-.5)*6,vy:-18-Math.random()*14,life:.25,col:blue?'#bff6ff':'#fff1a0',s:1,g:0}); // sparks off the tip
 }
 // KING slot, one row: "LV n" on the left, 10 tall cells filling left to right toward the next level on the right
+// BIG KING GAUGE along the bottom edge: LV1..LV5 stack up in ONE row (nothing resets on level-up), 9 cells per level,
+// cells rising from 2px on the left to 9px on the right. LV5 -> MAX paints the same cells blue, left to right.
+const GAUGE_ROW=11,GAUGE_PER=9,KL_GCOL=['#ff5a1a','#ff8a1a','#ffb000','#ffd400','#fff06a'];
+function drawBigGauge(){
+  if(!(mode==='play'||mode==='super'||mode==='count'))return;
+  const n=GAUGE_PER*5,cw=2,gap=1,lvGap=1,tot=n*(cw+gap)-gap+4*lvGap,x0=Math.round((W-tot)/2),base=H-2,h0=2,h1=9;
+  R(0,H-GAUGE_ROW,W,GAUGE_ROW,'rgba(10,6,16,.78)');
+  const lvDone=Math.min(5,kingLevel),cur=kingLevel<5?Math.min(1,altStreak/kingNeed()):0;
+  const filled=lvDone*GAUGE_PER+Math.floor(cur*GAUGE_PER+1e-6);                 // pass 1: LV1..LV5, warm colours
+  const blue=kingLevel>=6?n:kingLevel===5?Math.floor(Math.min(1,altStreak/KL_NEED[5])*n+1e-6):0; // pass 2: toward MAX, blue
+  for(let i=0;i<n;i++){const lv=Math.floor(i/GAUGE_PER),ch=Math.round(h0+(h1-h0)*i/(n-1)),sx=x0+i*(cw+gap)+lv*lvGap,sy=base-ch;
+    let col='#2a1d38';
+    if(i<blue)col=kingLevel>=6?['#3a8aff','#7af0ff','#cff6ff'][(i+((gt*12)|0))%3]:'#3a8aff';
+    else if(i<filled)col=KL_GCOL[lv];
+    else if(i===filled&&kingLevel<5&&((gt*6)|0)%2)col='#5a4a6a';                 // the next cell blinks
+    R(sx,sy,cw,ch,col);if(col!=='#2a1d38'&&col!=='#5a4a6a')R(sx,sy,cw,1,'rgba(255,255,255,.45)');}}
 function kingRow(x0,y0,w,h,label,labelCol,frac,cellCol){
   // no box; cells rise left to right like signal bars (5px -> 14px), all standing on one baseline.
   // The label is the same height as the first (smallest) cell and sits on that baseline too.
@@ -1820,19 +1836,20 @@ function drawStrip(){
   drawKingCharge();
   if(mode!=='play'&&mode!=='super'&&mode!=='count')return;
   if(ctrlMode==='pad')drawPad();else drawClassicFists();
+  drawBigGauge();
   const y0=STRIP,h=H-y0-3;
   // KING FIST slot: gauge until 20 alternating hits, then a burning button
   const x0=BTN_L+1,w=ctrlMode==='pad'?44:BTN_R-BTN_L-2; // pad mode leaves room for the fist buttons
   if(superReady){
     {kHud.lvPop=Math.max(0,(kHud.lvPop||0)-1/60);const pop6=kHud.lvPop>0,six=kingLevel>=KL_NEED.length,need=kingNeed(),n=six?need:Math.min(need,altStreak);
-     if(six)text('MAX!',x0+w/2,y0+1+Math.round((h-10)/2),2,pop6?'#ffffff':((gt*6)|0)%2?'#7af0ff':'#cff6ff','c','#0d0a08'); // maxed: the screen says it, no gauge
-     else kingRow(x0,y0,w,h,'LV'+kingLevel,pop6?'#ffffff':'#ffd400',n/need,(i,nn)=>FIREPAL(.3+.6*i/nn));}
+     const ly=y0+1+Math.round((h-GAUGE_ROW-10)/2);
+     if(six)text('MAX!',x0+w/2,ly,2,pop6?'#ffffff':((gt*6)|0)%2?'#7af0ff':'#cff6ff','c','#0d0a08');
+     else text('LV'+kingLevel,x0+w/2,ly,2,pop6?'#ffffff':KL_GCOL[kingLevel-1],'c','#0d0a08');}
     // fill shows how long both thumbs have been held
-    if(bothT>0)R(x0,y0+h-2,w*Math.min(1,bothT/BOTH_HOLD),3,'#ffffff');
+    if(bothT>0)R(x0,y0+h-2-GAUGE_ROW,w*Math.min(1,bothT/BOTH_HOLD),3,'#ffffff');
   }else if(mode==='play'){
-    // same layout as after KING: "LV1" waiting (unlit) on top, the 20-cell gauge filling toward it below
     const need=kingNeed(),n=Math.min(need,altStreak),close=n>=need*.75;
-    kingRow(x0,y0,w,h,'LV1',close&&((gt*6)|0)%2?'#ff8a1a':'#5a4a6a',n/need,(i,nn)=>FIREPAL(.3+.6*i/nn));
+    text('LV1',x0+w/2,y0+1+Math.round((h-GAUGE_ROW-10)/2),2,close&&((gt*6)|0)%2?'#ff8a1a':'#5a4a6a','c','#0d0a08');
   }
 }
 function render(){
