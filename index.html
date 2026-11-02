@@ -663,9 +663,11 @@ let burns=0,burnT=0; // lava bounces taken this run, and the immunity left after
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
 function addTime(v,label){if(timeUp)return;timeLeft=Math.min(TIME_MAX,timeLeft+v);timeFlash=.35;
   if(label)pop(popX(30),pl.feet-44,label,'#7af0ff',1);}
-const WEAK_WIDEN=1.3; const VIB_WEAK=1.15; // vibranium (weak point only) gets a 15% wider weak point // weak points are 30% wider than each difficulty's base width
+const WEAK_WIDEN=1.3;
+// every KING level you're carrying widens ALL weak points by 8% (Lv6 = +48%): a clear payoff for saving up
+const WEAK_PER_LV=.08;const wkW=s=>s.ww*(1+WEAK_PER_LV*(typeof kingLevel==='number'?kingLevel:0)); // weak points are 30% wider than each difficulty's base width
 // a new weak point keeps clear of the ones right below it, so stacked floors never line up in one column
-function newWeakX(prev,prev2){const lo=WALL+4+D.weakW*WEAK_WIDEN/2,hi=W-WALL-4-D.weakW*WEAK_WIDEN/2;let x;
+function newWeakX(prev,prev2){const mw=D.weakW*WEAK_WIDEN*(1+WEAK_PER_LV*6),lo=WALL+4+mw/2,hi=W-WALL-4-mw/2;let x;
   for(let i=0;i<40;i++){x=lo+Math.random()*(hi-lo);
     if((prev==null||Math.abs(x-prev)>26)&&(prev2==null||Math.abs(x-prev2)>14))break;}return Math.round(x);}
 // floors are generated on demand: the tower never ends, the lava just keeps getting faster
@@ -680,7 +682,7 @@ function makeSlab(n){
   const base=10+Math.floor(Math.min(n,70)*.8);
   const raw=type==='stone'?base*1.6:type==='vibranium'?base*.9:type==='tnt'?6:type==='boss'?40+Math.min(n,70)*2:base;
   const hp=Math.max(3,Math.round(raw*(type==='tnt'?1:D.hp)));
-  return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:newWeakX(null),ww:D.weakW*WEAK_WIDEN*(type==='vibranium'?VIB_WEAK:1),weakHits:0,wflash:0,wFrom:null,wT:1};
+  return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:newWeakX(null),ww:D.weakW*WEAK_WIDEN,weakHits:0,wflash:0,wFrom:null,wT:1};
 }
 function ensureSlabs(upTo){while(slabs.length<=upTo)slabs.push(makeSlab(slabs.length));}
 function newGame(){
@@ -706,7 +708,7 @@ const fistX=side=>pl.x+(side?4:-4);
 // and his arm stretches up to punch that floor too (bababa!), up to REACH_MAX floors; then he hops up all at once.
 const REACH_MAX=3;
 const tgtN=()=>pl.level+1+(pl.reach||0),tgt=()=>slabs[tgtN()];
-const alignedUnder=s=>s&&!s.broken&&s.wT>=1&&Math.abs(pl.x-s.wx)<=s.ww/2+1;
+const alignedUnder=s=>s&&!s.broken&&s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
 function hopTo(dest){pl.from=pl.feet;pl.to=-dest*FH;pl.jt=0;pl.jd=.13+.07*Math.max(0,dest-pl.level-1);pl.level=dest;pl.reach=0;sfx.jump();}
 
 function relocateWeak(s){s.wFrom=s.wx;s.wx=newWeakX(s.wx);s.wT=0;s.weakHits=0;sfx.shift();}
@@ -741,7 +743,7 @@ function hit(side,power){
   if(!charged)pl.tx=clamp(pl.tx+(side?NUDGE:-NUDGE),XMIN,XMAX);
   const fx=fistX(side),fy=-tgtN()*FH+10;
   // weak point = the boxer's body lined up under it, hit with alternating hands
-  const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=s.ww/2+1;
+  const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
   // weak bonus: alternating hands, or a ki punch with at least a little charge
   const weak=onWeak&&(alt||(charged&&power>=.3));
   // balance: off the weak point every punch does 1. On it (alternating hands) 3, then 4 from the
@@ -1355,7 +1357,7 @@ function drawTorch(n){
 function drawWeak(s,sy){
   const e=s.wT<1?(1-Math.pow(1-s.wT,3)):1;
   const cx=s.wFrom!=null&&s.wT<1?s.wFrom+(s.wx-s.wFrom)*e:s.wx;
-  const hw=s.ww/2,x0=Math.round(cx-hw),w=Math.round(s.ww);
+  const ww=wkW(s),hw=ww/2,x0=Math.round(cx-hw),w=Math.round(ww);
   const pulse=.5+.5*Math.sin(gt*10+s.n);
   // glowing core under the slab
   ctx.globalCompositeOperation='lighter';
@@ -1477,7 +1479,7 @@ function drawPlayer(){
     for(const g of ghosts){ctx.globalAlpha=g.life/.16*.4;sprite(bodyRows(),Math.round(g.x)-4,top,gp,false);}ctx.globalAlpha=1;}
   // aim line from fist reach to target slab (faint)
   if(mode==='play'&&pl.jt<0){const s=tgt();if(s&&!s.broken){
-    const cx=Math.round(pl.x);const on=s.wT>=1&&Math.abs(pl.x-s.wx)<=s.ww/2+1;
+    const cx=Math.round(pl.x);const on=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
     ctx.globalAlpha=on?.6+.3*Math.sin(gt*20):.16;
     const aimTop=Math.round(-tgtN()*FH-camY+12);for(let y=top-4;y>Math.min(top-26,aimTop);y-=3)R(cx,y,1,1,on?'#ff3a5a':'#f4efe8');
     if(on){text('L',cx-9,top-3,1,lastSide===0?'#ff3a5a':'#ffe27a',false);text('R',cx+7,top-3,1,lastSide===1?'#ff3a5a':'#ffe27a',false);}
@@ -2155,7 +2157,7 @@ function showHowto(){menuMusic();showOverlay(`
     <li><b>TIME</b>이 0이 되면 용암이 몰려와요. 블록을 부수면 +1.5초, 약점을 4번 넘게 연속으로 때려서 부수면 <b>CLEAN</b> +3초, 보스 블록은 +5.5초.</li>
     <li>약점을 때릴수록 용암이 식어서 <b>LAVA SLOW</b>(최대 절반 속도). 손을 놓으면 다시 빨라져요.</li>
     <li><b>기울기</b>를 켜면 폰을 왼쪽/오른쪽으로 기울이는 쪽으로 걸어가요. 게임 시작할 때 들고 있던 각도가 기준이에요.</li>
-    <li><b>왕주먹 단계</b>: 약점을 <b>30번</b> 때릴 때마다 LV이 하나씩 올라가요(LV1~LV5). LV5에서 <b>150번</b> 더 때리면 극악의 <b>LV6</b>. 단계마다 <b>불꽃 펫</b>이 하나씩 따라다녀요. 펫 1마리당 펀치 공격력 <b>+5%</b>(LV6이면 +30%). 아래 불꽃도 커져요(LV6은 파란 불).</li>
+    <li><b>왕주먹 단계</b>: 약점을 <b>30번</b> 때릴 때마다 LV이 하나씩 올라가요(LV1~LV5). LV5에서 <b>150번</b> 더 때리면 극악의 <b>LV6</b>. 단계마다 <b>불꽃 펫</b>이 하나씩 따라다녀요. 펫 1마리당 펀치 공격력 <b>+5%</b>(LV6이면 +30%), 레벨마다 <b>약점이 8%씩 넓어져요</b>(LV6이면 +48%). 아래 불꽃도 커져요(LV6은 파란 불).</li>
     <li>양쪽을 같이 꾹 누르면 모은 단계 그대로 발사! 위력은 LV1 0.6배 · LV2 1배 · LV3 1.6배 · LV4 2.2배 · LV5 3배 · LV6 4.5배.</li>
     <li>올라가는 동안 화면을 <b>위아래로 크고 빠르게</b> 쓱싹! 양옆 노란 가이드 끝에서 끝까지(화면 높이의 60%) 쓸 때마다 땅! 땅! 뚫고 올라가요. 짧게 비비면 거의 안 쳐줘요.</li>
     <li>문지를 시간: LV1 2초 · LV2 3초 · LV3 3.5초 · LV4 4초 · LV5 5초 · LV6 5.5초. 빠르게 계속 쓸어 게이지가 차면 <b>MAX</b>: 그때부터 1.5배. 안 비비면 헛방!</li>
