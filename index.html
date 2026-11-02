@@ -863,12 +863,22 @@ function drawKingHud(dt){
       const rem=left,fr=sup.rubDur?rem/sup.rubDur:0,low=sup.rubOn&&rem<1,tc=low?(((gt*10)|0)%2?'#ffffff':'#ff3a5a'):'#7af0ff';
       R(gx-1,gy+11,gw+2,5,'#0d0a08');R(gx,gy+12,Math.round(gw*fr),3,tc);
       text(rem.toFixed(1)+'s',W/2,gy+18,2,tc,'c','#0d0a08');}
-    if(left>0){ // sweep guide on both walls: rub from cap to cap
-      const mid=H/2,y0=Math.round(mid-STROKE_FULL/2),y1=Math.round(mid+STROKE_FULL/2);
+    if(left>0){ // SLOT-MACHINE LEVERS on both walls: a red ball on a rod in a slot, showing "grab it and pull down"
+      const mid=H/2,y0=Math.round(mid-STROKE_FULL/2),y1=Math.round(mid+STROKE_FULL/2),span=y1-y0;
       sup.wFlash=Math.max(0,(sup.wFlash||0)-dt);const hot=sup.wFlash>0;
-      for(const x of [6,W-8]){R(x,y0,2,y1-y0,'rgba(255,212,0,.35)');
-        for(let i=0;i<4;i++){R(x-3+i,y0-4+i,8-2*i,1,hot?'#ffffff':'#ffd400');R(x-3+i,y1+3-i,8-2*i,1,hot?'#ffffff':'#ffd400');}
-        if(sup.fy!=null){const fy=Math.round(sup.fy);R(x-2,fy-1,6,3,'#7af0ff');}}}
+      // knob: follows the finger while you rub; otherwise a demo pull -- yank down fast, spring back up with a bounce
+      const live=sup.fy!=null&&now()-(sup.fyT||0)<.25;
+      let ky;if(live)ky=clamp(sup.fy,y0,y1);
+      else{const ph=(gt*1.25)%1;ky=ph<.35?y0+span*Math.pow(ph/.35,2):y1-span*Math.min(1,(ph-.35)/.25)+(ph>.6?Math.sin((ph-.6)*30)*Math.max(0,1-(ph-.6)*4)*4:0);ky=clamp(ky,y0-3,y1);}
+      for(const x of [7,W-8]){
+        R(x-2,y0-6,5,span+12,'#2a1d38');R(x-1,y0-5,3,span+10,'#0d0a08');                 // the slot
+        R(x-3,y1+6,7,3,'#6a5a7a');R(x-3,y0-8,7,3,'#6a5a7a');                              // end plates
+        const k=Math.round(ky);R(x,y0-2,1,k-y0+2,'#c4bccd');                              // the rod down to the ball
+        pxDisc(x,k,5,hot?'#ffffff':'#e8344a');pxDisc(x-2,k-2,2,'#ff9aa8');R(x-1,k-3,1,1,'#ffffff'); // red ball knob
+        if(!live){ctx.globalAlpha=.6+.4*Math.sin(gt*10);                                   // "pull me down" chevrons
+          for(let c=0;c<3;c++){const cy=y0+14+c*12+((gt*30)|0)%12;if(cy<y1-4)for(let i=0;i<3;i++)R(x-2+i,cy+i,5-2*i,1,'#ffd400');}
+          ctx.globalAlpha=1;}}
+      if(!live&&((gt*3)|0)%2){text('PULL',7,y0-17,1,'#ffd400','c',false);text('PULL',W-8,y0-17,1,'#ffd400','c',false);}}
     if(sup.maxed){kHud.maxT=Math.max(0,kHud.maxT-dt);const big=kHud.maxT>0;
       text('MAX! x1.5',W/2,gy+(big?32:33),big?3:2,((gt*12)|0)%2?'#ffffff':'#ffd400','c','#c24e00');}}
 }
@@ -930,7 +940,7 @@ function creditStroke(L){
 function superRub(dy,side,y){
   if(!sup||!sup.launched||!dy||sup.mashT===undefined)return;
   if(sup.mashEnd&&rubLeft()<=0){sup.mashT=0;return;} // time's up: no more floors, even mid hit-stop
-  const d=Math.abs(dy),dir=Math.sign(dy);tapFX[side]=1;if(y!=null)sup.fy=y;
+  const d=Math.abs(dy),dir=Math.sign(dy);tapFX[side]=1;if(y!=null){sup.fy=y;sup.fyT=now();}
   if(dir!==sup.rubDir){if(sup.rubDir)creditStroke(sup.strokeLen||0);sup.strokeLen=0;
     sup.rubDir=dir;sup.strokes=(sup.strokes||0)+1; // each change of direction: a swish
     if(AC){const t=AC.currentTime;noise(t,.06,1800+Math.min(2400,sup.strokes*60),1,.28);tone(t,.04,dir<0?520:380,dir<0?700:300,'square',.05);}}
