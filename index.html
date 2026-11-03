@@ -226,7 +226,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .studio.lit{color:#fff;text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408,0 0 14px rgba(255,208,74,.9)}
 @keyframes popin{from{opacity:0;transform:scale(1.7)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.board li.me,.blinky,.studio span,.splash .w3,.namebox.bad{animation:none}}
-.mash{position:absolute;left:0;right:0;bottom:26%;text-align:center;pointer-events:none;z-index:2;
+.mash{position:absolute;left:0;right:0;bottom:41%;text-align:center;pointer-events:none;z-index:2;
   font-family:var(--f-display);font-size:clamp(34px,13cqw,52px);color:var(--gold);
   text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px -3px 0 var(--ink),6px 6px 0 #c24e00;
   animation:mashShake .16s steps(2) infinite}
@@ -273,7 +273,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   <div id="stage">
     <canvas id="c" width="144" height="256" aria-label="상남자 김주먹 게임 화면"></canvas>
     <button id="pausebtn" class="pausebtn" type="button" aria-label="일시정지" hidden></button>
-    <div id="mash" class="mash" hidden>갈겨!!<small>끝에서 끝까지 크게 쓱싹!</small></div>
+    <div id="mash" class="mash" hidden>갈겨!!<small></small></div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
     <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>KING PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
@@ -863,22 +863,7 @@ function drawKingHud(dt){
       const rem=left,fr=sup.rubDur?rem/sup.rubDur:0,low=sup.rubOn&&rem<1,tc=low?(((gt*10)|0)%2?'#ffffff':'#ff3a5a'):'#7af0ff';
       R(gx-1,gy+11,gw+2,5,'#0d0a08');R(gx,gy+12,Math.round(gw*fr),3,tc);
       text(rem.toFixed(1)+'s',W/2,gy+18,2,tc,'c','#0d0a08');}
-    if(left>0){ // SLOT-MACHINE LEVERS on both walls: a red ball on a rod in a slot, showing "grab it and pull down"
-      const mid=H/2,y0=Math.round(mid-STROKE_FULL/2),y1=Math.round(mid+STROKE_FULL/2),span=y1-y0;
-      sup.wFlash=Math.max(0,(sup.wFlash||0)-dt);const hot=sup.wFlash>0;
-      // knob: follows the finger while you rub; otherwise a demo pull -- yank down fast, spring back up with a bounce
-      const live=sup.fy!=null&&now()-(sup.fyT||0)<.25;
-      let ky;if(live)ky=clamp(sup.fy,y0,y1);
-      else{const ph=(gt*1.25)%1;ky=ph<.35?y0+span*Math.pow(ph/.35,2):y1-span*Math.min(1,(ph-.35)/.25)+(ph>.6?Math.sin((ph-.6)*30)*Math.max(0,1-(ph-.6)*4)*4:0);ky=clamp(ky,y0-3,y1);}
-      for(const x of [7,W-8]){
-        R(x-2,y0-6,5,span+12,'#2a1d38');R(x-1,y0-5,3,span+10,'#0d0a08');                 // the slot
-        R(x-3,y1+6,7,3,'#6a5a7a');R(x-3,y0-8,7,3,'#6a5a7a');                              // end plates
-        const k=Math.round(ky);R(x,y0-2,1,k-y0+2,'#c4bccd');                              // the rod down to the ball
-        pxDisc(x,k,5,hot?'#ffffff':'#e8344a');pxDisc(x-2,k-2,2,'#ff9aa8');R(x-1,k-3,1,1,'#ffffff'); // red ball knob
-        if(!live){ctx.globalAlpha=.6+.4*Math.sin(gt*10);                                   // "pull me down" chevrons
-          for(let c=0;c<3;c++){const cy=y0+14+c*12+((gt*30)|0)%12;if(cy<y1-4)for(let i=0;i<3;i++)R(x-2+i,cy+i,5-2*i,1,'#ffd400');}
-          ctx.globalAlpha=1;}}
-      if(!live&&((gt*3)|0)%2){text('PULL',7,y0-17,1,'#ffd400','c',false);text('PULL',W-8,y0-17,1,'#ffd400','c',false);}}
+    if(left>0)drawRubStick(dt);
     if(sup.maxed){kHud.maxT=Math.max(0,kHud.maxT-dt);const big=kHud.maxT>0;
       text('MAX! x1.5',W/2,gy+(big?32:33),big?3:2,((gt*12)|0)%2?'#ffffff':'#ffd400','c','#c24e00');}}
 }
@@ -1759,7 +1744,7 @@ function drawKingCharge(){
 }
 let mashShown=false;const mashEl=document.getElementById('mash');
 function syncMash(){const on=mashOpen();if(on!==mashShown){mashShown=on;mashEl.hidden=!on;
-  if(on){const sm=mashEl.querySelector('small');if(sm)sm.textContent=keyMode?'위 아래 키 번갈아 연타!':'끝에서 끝까지 크게 쓱싹!';}}}
+  if(on){const sm=mashEl.querySelector('small');if(sm)sm.textContent=keyMode?'위 아래 키 번갈아 연타!':'';}}}
 // KING fire: burns along the whole bottom of the screen, behind the fist buttons; its size is the level
 // KING AURA (Super-Saiyan style): an egg-shaped flame shell that starts at his soles, swells out to the sides and
 // closes to a flickering point above his head. It grows each level but always stays under the ceiling
@@ -1824,6 +1809,30 @@ function drawBigGauge(){
     else if(i<filled)col=KL_GCOL[lv];
     else if(i===filled&&kingLevel<5&&((gt*6)|0)%2)col='#5a4a6a';                 // the next cell blinks
     R(sx,sy,cw,ch,col);if(col!=='#2a1d38'&&col!=='#5a4a6a')R(sx,sy,cw,1,'rgba(255,255,255,.45)');}}
+// BIG ARCADE JOYSTICK (same pixel style as the PUSH button), centre screen while you rub after a KING PUNCH:
+// a red ball on a chrome shaft over a dark bezel. On its own it keeps pulling itself down and easing back up;
+// while you rub, the ball follows your finger, so it reads as "grab this and keep yanking it down".
+function drawRubStick(dt){
+  const cx=Math.round(W/2),by=H-58,top=by-46,low=by-22;          // base on the floor between the fists; ball travels top..low
+  sup.wFlash=Math.max(0,(sup.wFlash||0)-dt);const hot=sup.wFlash>0;
+  const live=sup.fy!=null&&now()-(sup.fyT||0)<.25,mid=H/2,y0=mid-STROKE_FULL/2,y1=mid+STROKE_FULL/2;
+  let ky;if(live)ky=top+(low-top)*clamp((sup.fy-y0)/(y1-y0),0,1);
+  else{const ph=(gt*1.15)%1;ky=ph<.45?top+(low-top)*Math.sin(ph/.45*Math.PI/2):low-(low-top)*Math.min(1,(ph-.45)/.35);}
+  ky=Math.round(ky);
+  const ell=(x,y,rx,ry,col)=>{for(let yy=-ry;yy<=ry;yy++){const w=Math.round(rx*Math.sqrt(1-(yy*yy)/(ry*ry)));if(w>0)R(x-w,y+yy,w*2+1,1,col);}};
+  // base: dark bezel, inner well, rim light
+  ell(cx,by+3,25,8,'#0d0a08');ell(cx,by,24,8,'#3a3048');ell(cx,by-1,22,6,'#5a4a6a');ell(cx,by,15,4,'#1a1424');R(cx-20,by-6,40,1,'#8a7a9a');
+  // shaft (shorter when pulled down), with a dark side
+  R(cx-2,ky,5,by-ky,'#c4bccd');R(cx+1,ky,2,by-ky,'#8a8098');R(cx-2,ky,1,by-ky,'#f4efe8');
+  ell(cx,by,5,2,'#0d0a08'); // the shaft's hole
+  // the red ball
+  pxDisc(cx+1,ky+1,11,'#0d0a08');pxDisc(cx,ky,11,hot?'#ffffff':'#e8344a');pxDisc(cx+2,ky+3,8,hot?'#ffffff':'#c4223a');
+  pxDisc(cx-1,ky-1,8,hot?'#ffffff':'#e8344a');pxDisc(cx-4,ky-4,3,'#ff9aa8');R(cx-5,ky-6,2,2,'#ffffff');
+  if(!live){ // "pull it down" chevrons either side, flowing downward
+    ctx.globalAlpha=.65+.35*Math.sin(gt*10);
+    for(const sx of [cx-22,cx+22])for(let c=0;c<3;c++){const yy=top-6+c*9+((gt*24)|0)%9;for(let i=0;i<4;i++)R(sx-3+i,yy+i,7-2*i,1,'#ffd400');}
+    ctx.globalAlpha=1;}
+}
 function kingRow(x0,y0,w,h,label,labelCol,frac,cellCol){
   // no box; cells rise left to right like signal bars (5px -> 14px), all standing on one baseline.
   // The label is the same height as the first (smallest) cell and sits on that baseline too.
