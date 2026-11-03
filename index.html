@@ -2044,7 +2044,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&ov.hidden&
 let countT=0,countShown=0;
 // START ritual: a single autumn leaf drifts down from the sky while it beeps "ti... ti... ti..." and the instant it
 // touches the floor: "TIII!" + START. LEAF_T is the whole fall; BEEPS are when the short beeps land.
-const LEAF_T=2.4,LEAF_BEEPS=[.6,1.2,1.8];
+const LEAF_FAST=1.3,LEAF_T=2.4/LEAF_FAST,LEAF_BEEPS=[.6,1.2,1.8].map(t=>t/LEAF_FAST); // 30% quicker fall, beeps keep the same rhythm
 const LETS_T=LEAF_T;
 const LEAF_FLAT=["...o...",".o.O.o.",".oOOOo.","ooOrOoo",".oOOOo.","...s...","...s..."];
 const LEAF_TILT=["....oo.","..oOOo.",".oOrOo.","oOrOo..","oOOo...",".s.....","s......"];
@@ -2055,7 +2055,9 @@ function updateCountdown(dt){
   countT-=dt;const el=LEAF_T-countT;
   while(leafBeeps<LEAF_BEEPS.length&&el>=LEAF_BEEPS[leafBeeps]){leafBeeps++;sfx.count(false);vibe(8);} // ti... ti... ti...
   if(countT<=0){leafLand={x:leafX(1),y:pl.feet};sfx.count(true);vibe(25);mode='play';started=true;tStart=now();lastTap=-9;bgmStart();     // TIII! the leaf lands
-    if(AC){const t=AC.currentTime;noise(t,.08,3000,1,.12);}
+    if(AC){const t=AC.currentTime; // 'pasak': a dry leaf crunching -- a cluster of tiny bright crackles
+      [0,.018,.034,.055,.08,.11].forEach((d,i)=>noise(t+d,.035+Math.random()*.02,2600+Math.random()*2800,1.4,.32-i*.035,'bandpass'));
+      noise(t,.12,1400,.7,.12,'highpass');}
     for(let i=0;i<8;i++)parts.push({x:leafLand.x+(Math.random()-.5)*6,y:pl.feet-1,vx:(Math.random()-.5)*40,vy:-10-Math.random()*20,life:.4,col:'rgba(230,220,200,.6)',s:1,g:60});}
 }
 // guest: a throwaway name like GUEST417, never saved as this device's nickname
