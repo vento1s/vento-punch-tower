@@ -246,7 +246,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 @keyframes mashShake{50%{transform:translate(3px,-2px) scale(1.06);color:#fff}}
 @media (prefers-reduced-motion:reduce){.mash{animation:none}}
 /* pause: small pixel 'II' button in the HUD gap between the difficulty tag and the clock */
-.pausebtn{position:absolute;left:calc(72 / 144 * 100%);top:calc(2 / 256 * 100%);width:calc(16 / 144 * 100%);height:calc(15 / 256 * 100%);
+.pausebtn{position:absolute;left:calc(129 / 144 * 100%);top:calc(2 / 256 * 100%);width:calc(14 / 144 * 100%);height:calc(14 / 256 * 100%);
   z-index:4;border:0;border-radius:0;padding:0;cursor:pointer;background:rgba(13,10,8,.7);
   box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge)}
 .pausebtn[hidden]{display:none}
@@ -692,11 +692,13 @@ const KING_FREEZE=1.5;let lavaHold=0;
 const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let burns=0,burnT=0; // lava bounces taken this run, and the immunity left after the last one
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
+let dispT=0,tGains=[],gainSum=0,gainT=0,hudT=0; // TIME counter that rolls up, and the '+0.2' pops that feed it
 // TIME drives the lava: 60s banked -> x0.6, 30s (start) -> about x1, 10s -> x1.35, 0s -> TIME UP surge
 // TIME is now the honest truth: seconds until the lava reaches your feet at its current speed.
 // bonuses ('+1.5s') push the lava down by exactly that many seconds of its climb.
 let lavaV=10;const LAVA_CAP_S=4,lavaCap=()=>Math.max(110,LAVA_CAP_S*lavaV); // how far below you it can be pushed
-function addTime(v,label){if(timeUp)return;lavaY=Math.min(lavaY+v*lavaV,pl.feet+lavaCap());timeFlash=.35;
+function addTime(v,label){if(timeUp)return;const was=lavaY;lavaY=Math.min(lavaY+v*lavaV,pl.feet+lavaCap());timeFlash=.35;
+  const g=(lavaY-was)/lavaV;if(g>.01){tGains.push({v:g,a:0,x:(Math.random()-.5)*10});if(tGains.length>8)tGains.shift();gainSum=(gainT>0?gainSum:0)+g;gainT=1.1;}
   if(label)pop(popX(30),pl.feet-44,label,'#7af0ff',1);}
 const WEAK_WIDEN=1.3;
 // every KING level you're carrying widens ALL weak points by 8% (Lv6 = +48%): a clear payoff for saving up
@@ -728,7 +730,7 @@ function newGame(){
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -1601,15 +1603,28 @@ function drawHUD(){
   const t=now();
   if(!started)timeLeft=Math.max(0,(lavaY-pl.feet)/D.lava); // before the go: how far the lava starts
   R(0,0,W,18,'rgba(10,6,16,.78)');R(0,18,W,1,'#3b2a52'); // slim bar: the brick's own HP bar is enough, so the top one is gone
-  const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');const tagX=4+tw(fl,2)+5;
-  text('ENDLESS',tagX,4,1,'#a597b8',false);
-  text(D.tag,tagX,11,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
-  { // TIME countdown, top right (elapsed time is still kept for the ranking)
-    const low=timeLeft<=2,blink=low&&((gt*(timeLeft<=1?8:4))|0)%2;
-    const col=timeFlash>0?'#ffffff':low?(blink?'#ffffff':'#ff3a5a'):timeLeft>=8?'#7af0ff':timeLeft>=5?'#ffd04a':'#ff8a1a'; // cool = lava far, hot = lava close
-    const ts=timeLeft>=10?String(Math.ceil(timeLeft)):timeLeft.toFixed(1);
-    text(ts,W-4,3,2,col,'r');text('TIME',W-7-tw(ts,2),4,1,low?'#ff3a5a':'#a597b8','r',false);
-    const bw=40,fr=clamp((lavaY-pl.feet)/lavaCap(),0,1);R(W-4-bw,14,bw,2,'#2a1d38');R(W-4-bw,14,Math.round(bw*fr),2,col);}
+  const hdt=Math.min(.1,Math.max(0,t-hudT));hudT=t;
+  const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');
+  text(D.tag,4+tw(fl,2)+4,8,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
+  { // SCORE, top centre: the same number the ranking uses (height x difficulty)
+    const sc=scoreOf({floor:pl.level,diff:D.key});
+    text('SCORE',W/2-4,2,1,'#a597b8','c',false);text(num(sc),W/2-4,10,1,'#ffd04a','c');}
+  { // TIME = seconds until the lava reaches you. gains roll the number up so you can see your punches buying time
+    if(timeLeft>dispT&&started)dispT=Math.min(timeLeft,dispT+Math.max(2.5,(timeLeft-dispT)*10)*hdt);else dispT=timeLeft;
+    const T=dispT,low=T<=2,blink=low&&((gt*(T<=1?8:4))|0)%2,rx=W-17; // the right corner is the pause button's
+    const gaining=gainT>0&&timeFlash>0;
+    const col=gaining?'#9aff7a':low?(blink?'#ffffff':'#ff3a5a'):T>=8?'#7af0ff':T>=5?'#ffd04a':'#ff8a1a'; // green = buying time
+    const ts=T>=10?String(Math.ceil(T)):T.toFixed(1);
+    const bump=timeFlash>.25?-1:0;
+    text(ts,rx,3+bump,2,col,'r');text('TIME',rx-3-tw(ts,2),4,1,low?'#ff3a5a':'#a597b8','r',false);
+    const bw=32,fr=clamp((lavaY-pl.feet)/lavaCap(),0,1);R(rx-bw,14,bw,2,'#2a1d38');R(rx-bw,14,Math.round(bw*fr),2,col);
+    // '+0.2' pops float up into the counter, and a running total sits just under it
+    gainT=Math.max(0,gainT-hdt);
+    for(const g of tGains){g.a+=hdt;const k=g.a/.55;if(k>=1)continue;
+      ctx.globalAlpha=1-k*k;text('+'+g.v.toFixed(1),rx-12+g.x,Math.round(34-k*14),1,'#9aff7a','c');}
+    ctx.globalAlpha=1;tGains=tGains.filter(g=>g.a<.55);
+    if(gainT>0&&gainSum>=.05){ctx.globalAlpha=Math.min(1,gainT*3);
+      const tx='+'+gainSum.toFixed(1)+'S';R(rx-tw(tx,1)-3,20,tw(tx,1)+4,8,'rgba(10,6,16,.7)');text(tx,rx-1,21,1,'#9aff7a','r');ctx.globalAlpha=1;}}
   if(tiltOn&&(mode==='play'||mode==='count')){ // tilt meter: a bubble that slides the way you lean
     const cx=W/2,y=21,tw2=36;R(cx-tw2/2-1,y-1,tw2+2,4,'rgba(10,6,16,.75)');R(cx,y-2,1,6,'#5a4a6a');
     if(tiltG==null){if(((gt*3)|0)%2)text('NO TILT',cx,y+5,1,'#ff3a5a','c',false);}
