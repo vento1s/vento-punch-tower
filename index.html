@@ -422,9 +422,20 @@ const sfx={
     noise(t,1,1500,.4,.9,'lowpass',60);tone(t,.8,80,22,'sine',1.2);
     [[523,659,784],[659,784,1046],[784,1046,1318]].forEach((ch,i)=>ch.forEach(f=>tone(t+.05+i*.09,.35,f,f,'square',.06)));},
   shift(){if(!AC)return;const t=AC.currentTime;tone(t,.1,1200,2400,'triangle',.07);tone(t+.06,.1,1800,3000,'triangle',.05);},
-  brk(type){if(!AC)return;const t=AC.currentTime;
-    noise(t,.38,3000,.8,.9,'lowpass',180);tone(t,.32,130,30,'sine',1);
-    [523,659,784,1046].forEach((f,i)=>tone(t+.03+i*.035,.06,f,f,'square',.09));},
+  // the floor gives way: one fat 'PPANG!' (kick + crack + blast) then a rubble tail that suits the block
+  brk(type){if(!AC)return;const t=AC.currentTime+.035; // a hair after the punch so the two don't smear together
+    const clatter=(n,f0,f1,spread,v)=>{for(let i=0;i<n;i++){const d=.05+Math.random()*spread;noise(t+d,.03+Math.random()*.04,f0+Math.random()*(f1-f0),3,v*(1-d/(spread+.1)));}};
+    tone(t,.26,190,34,'sine',1.5);                 // body kick: the 'PPANG'
+    tone(t,.1,420,90,'square',.22);                // punchy mid knock
+    noise(t,.025,5200,1.2,1);                      // sharp crack at the front
+    noise(t,.45,2400,.6,1,'lowpass',120);          // blast that falls away
+    if(type==='stone'){tone(t,.34,110,26,'sine',1.1);noise(t+.02,.5,900,.7,.6,'lowpass',70);clatter(9,500,1300,.32,.45);}
+    else if(type==='gold'){clatter(6,1500,3200,.22,.35);[1568,2093,2637,3136].forEach((f,i)=>tone(t+.05+i*.04,.22,f,f,'triangle',.07));}
+    else if(type==='vibranium'||type==='boss'||type==='final'){const b=type==='vibranium'?1:.6; // metal: clang with off-key partials that ring on
+      [1,1.93,2.81,3.97].forEach((m,i)=>{tone(t,.9-i*.15,520*b*m,505*b*m,i%2?'triangle':'square',.07-i*.012);});
+      tone(t,.5,95,40,'sawtooth',.35);noise(t,.6,3600*b,4,.25,'bandpass',2600*b);clatter(5,1800,4000,.3,.25);}
+    else if(type==='tnt'){clatter(5,700,1800,.25,.35);}
+    else{clatter(8,1100,2600,.26,.45);}},          // brick: crumbly chunks raining down
   boom(){if(!AC)return;const t=AC.currentTime;noise(t,.9,1200,.5,1,'lowpass',60);tone(t,.7,90,20,'sawtooth',.6);tone(t,.5,60,25,'sine',1);},
   jump(){if(!AC)return;const t=AC.currentTime;tone(t,.12,260,980,'square',.08);},
   coin(){if(!AC)return;const t=AC.currentTime;tone(t,.07,988,988,'square',.12);tone(t+.07,.3,1319,1319,'square',.12);},
@@ -1007,7 +1018,7 @@ function lavaBurn(){
   for(let i=0;i<26;i++){const a=-Math.PI*Math.random(),sp=60+Math.random()*120,l=.4+Math.random()*.4;
     parts.push({x:pl.x+(Math.random()-.5)*8,y:pl.feet-2,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:200,fire:true});}
   // fling up through the floor above
-  const n=tgtN(),s0=slabs[n];if(s0&&!s0.broken){s0.broken=true;s0.hp=0;debris(s0);}
+  const n=tgtN(),s0=slabs[n];if(s0&&!s0.broken){s0.broken=true;s0.hp=0;debris(s0);sfx.brk(s0.type);}
   hopTo(n);pl.jd=.22;
   lavaY=Math.max(lavaY,pl.to+70);lavaHold=Math.max(lavaHold,.6);}
 function die(){mode='dead';endT=0;bgmStop();sfx.die();playDieVoice();vibe([60,40,120]);shake=6;
