@@ -912,13 +912,13 @@ function superBreak(s,k){
 const MASH_T=1.8,MASH_MAX=15,MAX_BONUS=5,RISE_FLOORS_PER_S=11;
 // KING PUNCH rub: scrub the screen up and down. Distance rubbed (canvas px) breaks floors and kicks the gauge up;
 // the gauge drains all the time: ~300px/s only holds it, you need a wild ~450px/s+ scrub to reach the very top
-const RUB_GAIN=.0028,GAUGE_DOWN=.67,GAUGE_SWEEP=.167,RUB_FLOOR=70,MASH_CAP=3.5,MASH_GRACE=.35;
+const RUB_GAIN=.0028,GAUGE_DOWN=.67,GAUGE_SWEEP=.11,RUB_FLOOR=70,MASH_CAP=3.5,MASH_GRACE=.35;
 const RUB_START=20,RUB_WAIT=2.5;
 // floors per second = RUB_RATE x level power x how hard you rub: nothing below RUB_V0 px/s, full speed at RUB_V1 px/s
 // (a lazy rub gets a floor or two, a wild one gets a lot; no cap, so a great rub at Lv6 really flies)
 const RUB_V0=150,RUB_V1=900,RUB_RATE=2.2;
 // floors per full-size sweep, x level power: more sweeps in the time = more floors, each sweep smashes right away
-const STROKE_FLOORS=.32,MAX_MUL=1.5;
+const STROKE_FLOORS=.24,MAX_MUL=1.5; // short strokes are quicker, so each one earns a bit less
 function rubEarn(){}
 function kingAward(){
   const want=Math.floor(sup.earn),got=sup.dest-sup.base-(sup.maxed?sup.mBonus:0);
@@ -930,7 +930,7 @@ const rubLeft=()=>!sup?0:sup.mashEnd?Math.max(0,sup.mashEnd-now()):(sup.rubDur||
 function startRubClock(){if(sup&&!sup.mashEnd){sup.rubOn=true;sup.mashEnd=now()+sup.rubDur;}}
 // a stroke = one sweep up or down. Only BIG sweeps count: full credit at STROKE_FULL of the screen height
 // (about 3cm above and below the middle on a 10cm phone), nothing under STROKE_MIN. Credit lands when the sweep turns.
-const STROKE_MIN=.2*H,STROKE_FULL=.6*H;
+const STROKE_MIN=.1*H,STROKE_FULL=.28*H; // short, joystick-sized flicks count now (was 60% of the screen)
 function creditStroke(L){
   const w=clamp01((L-STROKE_MIN)/(STROKE_FULL-STROKE_MIN));sup.lastW=w;sup.wFlash=w>=1?.25:0;
   if(sup.mashEnd&&rubLeft()>0&&w>0){sup.earn=(sup.earn||0)+STROKE_FLOORS*sup.pw*w*(sup.maxed?MAX_MUL:1);kingAward();}
@@ -2276,7 +2276,7 @@ function showHowto(){menuMusic();showOverlay(`
     <li><b>기울기</b>를 켜면 폰을 왼쪽/오른쪽으로 기울이는 쪽으로 걸어가요. 게임 시작할 때 들고 있던 각도가 기준이에요.</li>
     <li><b>왕주먹 단계</b>: 약점을 <b>30번</b> 때릴 때마다 LV이 하나씩 올라가요(LV1~LV5). LV5에서 <b>150번</b> 더 때리면 극악의 <b>MAX</b>. 단계마다 <b>불꽃 펫</b>이 하나씩 따라다녀요. 펫 1마리당 펀치 공격력 <b>+5%</b>(MAX면 +30%), 레벨마다 <b>약점이 8%씩 넓어져요</b>(MAX면 +48%). MAX가 되면 온 화면이 파랗게 타올라요.</li>
     <li>양쪽을 같이 꾹 누르면 모은 단계 그대로 발사! 위력은 LV1 0.6배 · LV2 1배 · LV3 1.6배 · LV4 2.2배 · LV5 3배 · MAX 4.5배.</li>
-    <li>올라가는 동안 화면을 <b>위아래로 크고 빠르게</b> 쓱싹! 양옆 노란 가이드 끝에서 끝까지(화면 높이의 60%) 쓸 때마다 땅! 땅! 뚫고 올라가요. 짧게 비비면 거의 안 쳐줘요.</li>
+    <li>올라가는 동안 화면을 <b>위아래로 크고 빠르게</b> 쓱싹! 가운데 조이스틱처럼 아래위로 빠르게 쓱쓱(화면 높이의 4분의 1쯤)! 쓸 때마다 땅! 땅! 뚫고 올라가요.</li>
     <li>문지를 시간: LV1 2초 · LV2 3초 · LV3 3.5초 · LV4 4초 · LV5 5초 · MAX 5.5초. 빠르게 계속 쓸어 게이지가 차면 <b>MAX</b>: 그때부터 1.5배. 안 비비면 헛방!</li>
     <li>뚫은 층마다 시간 +1초, 착지하면 용암이 1.5초 얼었다가 반 속도로 기어와요.</li>
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
