@@ -246,7 +246,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 @keyframes mashShake{50%{transform:translate(3px,-2px) scale(1.06);color:#fff}}
 @media (prefers-reduced-motion:reduce){.mash{animation:none}}
 /* pause: small pixel 'II' button in the HUD gap between the difficulty tag and the clock */
-.pausebtn{position:absolute;left:calc(91 / 144 * 100%);top:calc(5 / 256 * 100%);width:calc(17 / 144 * 100%);height:calc(17 / 256 * 100%);
+.pausebtn{position:absolute;left:calc(91 / 144 * 100%);top:calc(2 / 256 * 100%);width:calc(16 / 144 * 100%);height:calc(15 / 256 * 100%);
   z-index:4;border:0;border-radius:0;padding:0;cursor:pointer;background:rgba(13,10,8,.7);
   box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge)}
 .pausebtn[hidden]{display:none}
@@ -1587,7 +1587,7 @@ function drawImpactFrame(){
 }
 function drawHUD(){
   const t=now();
-  R(0,0,W,28,'rgba(10,6,16,.78)');R(0,28,W,1,'#3b2a52');
+  R(0,0,W,18,'rgba(10,6,16,.78)');R(0,18,W,1,'#3b2a52'); // slim bar: the brick's own HP bar is enough, so the top one is gone
   const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');const tagX=4+tw(fl,2)+5;
   text('ENDLESS',tagX,4,1,'#a597b8',false);
   text(D.tag,tagX,11,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
@@ -1597,23 +1597,19 @@ function drawHUD(){
     const ts=timeLeft>=10?String(Math.ceil(timeLeft)):timeLeft.toFixed(1);
     text(ts,W-4,3,2,col,'r');text('TIME',W-7-tw(ts,2),4,1,low?'#ff3a5a':'#a597b8','r',false);
     const bw=40,fr=clamp(timeLeft/TIME_MAX,0,1);R(W-4-bw,14,bw,2,'#2a1d38');R(W-4-bw,14,Math.round(bw*fr),2,col);}
-  const s=tgt();
-  if(s&&!s.broken){const bw=W-8,ratio=Math.max(0,s.hp/s.max);
-    R(4,18,bw,7,'#2a1d38');R(4,18,Math.ceil(bw*ratio),7,SLABC[s.type][0]);R(4,18,Math.ceil(bw*ratio),1,SLABC[s.type][2]);
-    text(TNAME[s.type],6,19,1,'#ffffff');text(String(Math.max(0,s.hp)),W-6,19,1,'#ffffff','r');}
   if(tiltOn&&(mode==='play'||mode==='count')){ // tilt meter: a bubble that slides the way you lean
-    const cx=W/2,y=31,tw2=36;R(cx-tw2/2-1,y-1,tw2+2,4,'rgba(10,6,16,.75)');R(cx,y-2,1,6,'#5a4a6a');
+    const cx=W/2,y=21,tw2=36;R(cx-tw2/2-1,y-1,tw2+2,4,'rgba(10,6,16,.75)');R(cx,y-2,1,6,'#5a4a6a');
     if(tiltG==null){if(((gt*3)|0)%2)text('NO TILT',cx,y+5,1,'#ff3a5a','c',false);}
     else{const d=tiltG-tiltZero,k=clamp(d/(TILT_DEAD+TILT_FULL),-1,1),on=Math.abs(d)>TILT_DEAD;
       R(Math.round(cx+k*tw2/2)-1,y-1,3,4,on?'#7af0ff':'#a597b8');}}
   // progress meter
   // lava gauge: how much room is left below you (full = safe, empty = lava at your feet)
-  {const room=clamp((lavaY-pl.feet)/(4*FH),0,1);R(3,36,3,150,'rgba(10,6,16,.7)');
-   R(3,36+150*(1-room),3,150*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,chill>.05?'#7af0ff':'#ff7a1a');
+  {const room=clamp((lavaY-pl.feet)/(4*FH),0,1);R(3,24,3,162,'rgba(10,6,16,.7)');
+   R(3,24+162*(1-room),3,162*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,chill>.05?'#7af0ff':'#ff7a1a');
    if(chill>.05)R(7,186-Math.round(40*chill),2,Math.round(40*chill),'#7af0ff');}
   if(mode==='play'&&chill>.45){ctx.globalAlpha=.6+.4*Math.sin(gt*10);text('LAVA SLOW',W/2,H-68,1,'#7af0ff','c');ctx.globalAlpha=1;}
   if(fever>0){text('FEVER x2',W/2,62,1,`hsl(${(gt*720+120)%360},95%,70%)`,'c');
-    ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle=`hsl(${(gt*720)%360},95%,60%)`;ctx.lineWidth=2;ctx.strokeRect(1,30,W-2,H-31);ctx.globalAlpha=1;}
+    ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle=`hsl(${(gt*720)%360},95%,60%)`;ctx.lineWidth=2;ctx.strokeRect(1,20,W-2,H-21);ctx.globalAlpha=1;}
   const dist=lavaY-pl.feet;
   if(mode==='play'&&started){
     const sy=lavaY-camY;
