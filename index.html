@@ -1568,8 +1568,20 @@ function drawJudge(){ // big aim grade where WEAK! used to be; each punch replac
   const col=pop?'#ffffff':judge.g===0?['#ffd400','#ffffff','#ff7af0','#7af0ff'][((gt*20)|0)%4]:col0;
   ctx.globalAlpha=age>.4?1-(age-.4)/.15:1;
   const half=tw(txt,sc)/2,x=clamp(judge.x,WALL+half+1,W-WALL-half-1),y=Math.round(judge.y-camY-Math.min(1,age/.4)*8)-(pop?3:0);
-  for(const [ox,oy] of [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,1],[1,-1],[-1,1],[0,2],[1,2],[-1,2],[0,3]])text(txt,x+ox,y+oy,sc,'#120a18','c',false); // thick outline + drop
-  text(txt,x,y,sc,col,'c',false);ctx.globalAlpha=1;}
+  crunchText(txt,x,y,sc,col,judge.at*997|0);ctx.globalAlpha=1;}
+// a blown-up, slightly busted bitmap: chunky pixels with a few bits chipped off, scanlines, and a
+// red/cyan misregistration ghost, like a low-res sprite stretched on an old screen
+function crunchText(s,x,y,sc,col,seed){
+  x=Math.round(x-tw(s,sc)/2);y=Math.round(y);const a0=ctx.globalAlpha;
+  const cells=[];for(let i=0;i<s.length;i++){const g=F[s[i]]||F[' '];for(let p=0;p<15;p++)if(g[p]==='1')cells.push([x+(i*4+p%3)*sc,y+((p/3)|0)*sc,i*15+p]);}
+  ctx.fillStyle='#120a18';for(const [cx,cy] of cells){ctx.fillRect(cx-1,cy-1,sc+2,sc+2);ctx.fillRect(cx+1,cy+2,sc,sc);} // thin outline + drop so it still reads
+  ctx.globalAlpha=a0*.4;ctx.fillStyle='#ff3a5a';for(const [cx,cy] of cells)ctx.fillRect(cx-1,cy,sc,sc); // colour misregistration
+  ctx.fillStyle='#3ad8ff';for(const [cx,cy] of cells)ctx.fillRect(cx+1,cy,sc,sc);ctx.globalAlpha=a0;
+  for(const [cx,cy,k] of cells)for(let j=0;j<sc;j++)for(let i=0;i<sc;i++){
+    const h=hash(k*9+j*sc+i,seed);if(h<.08)continue;                                     // chipped-off bits
+    ctx.fillStyle=j===sc-1?'rgba(18,10,24,.35)':col;ctx.fillRect(cx+i,cy+j,1,1);
+    if(j===sc-1){ctx.fillStyle=col;ctx.globalAlpha=a0*.6;ctx.fillRect(cx+i,cy+j,1,1);ctx.globalAlpha=a0;}} // scanline row
+}
 function drawComboFX(){
   if(mode!=='play'||combo<2)return;
   const t=now(),age=t-comboFX.at;if(age>D.win+.2)return;
