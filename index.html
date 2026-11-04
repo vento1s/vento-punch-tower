@@ -1814,26 +1814,33 @@ function blueFlames(cx,baseY,w,n,hMax){for(let i=0;i<n;i++){const x=Math.round(c
 const mashOpen=()=>mode==='super'&&sup&&sup.launched&&rubLeft()>0;
 function hudFlames(cx,topY,w,n){for(let i=0;i<n;i++){const x=cx+(Math.random()-.5)*w,h=2+Math.random()*16,k=Math.random();
   R(x,topY-h,2+(k>.6?1:0),2+(k>.6?1:0),FIREPAL(k));}}
-// sneaker (side view, toe to the right): while one fist is held to walk, the other button turns into this,
-// because tapping it then dashes that way
-// bare foot with a little wing on the ankle (faces right: toes right, wing trailing behind)
-const FOOT=["...........kkkkkk.......","kkk........ksssHk.......","kWWkkk.....ksssHk.......",".kWWWWkk...ksssHk.......",
- "kkkWWWWWk..ksssHk.......","kWWWWWWggk.kssssk.......",".kkkWWWWgkkksssssk......","kWWWWWWWggkWksssssk.....",
- ".kkkkWWggWWksssssssk....",".....kkkkkkssssssssskkk.","....ksssssssssssssssHkHk","....kssssssssssssssssssk",
- "....kSSssskkkkkssSsSsSsk",".....kkkkk.....kkkkkkkk."];
-const FOOT_PAL={k:'#2a120c',s:'#f4a48c',H:'#ffd0bd',S:'#c8735c',W:'#ffffff',g:'#9ec8f0'};
-const FOOT_HOT={k:'#2a120c',s:'#ffbe9e',H:'#fff0e6',S:'#e08a6a',W:'#fff3a0',g:'#ffd400'};
+// dash button: while one fist is held to walk, the other button turns into the hero mid-dash (leaning forward,
+// headband streaming) with cyan afterimages flowing off behind him - the same ghosts you see when you really dash
+const DASH_HERO=["......kkkk..",".....kkkkkk.","rrrrrrrrrrr.",".....ssssss.",".....sssses.",".....ssssss.","......ssss..",
+ "..gggggggg..",".ggggGGgggss","gggggggggggs",".ggbbbbbbg..","gg.gggggg...","g...gg..gg..","d...dd...dd."];
+const DASH_PAL={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:'#f4efe8',G:'#c4bccd',b:'#1e1a24',d:'#3a2a24'};
+const DASH_GHOST={};for(const k in DASH_PAL)DASH_GHOST[k]='#7af0ff';
 function drawShoe(cx,cy,faceRight,hot){ // (kept the name: it's the 'dash' button)
-  const sc=2,w=FOOT[0].length,h=FOOT.length,x0=Math.round(cx-w*sc/2),y0=Math.round(cy-h*sc/2)+Math.round(Math.sin(gt*14)*1.5);
-  const flap=((gt*(hot?18:6))|0)%2?-sc:0; // the wing flutters, faster while dashing
-  const at=(r,c)=>{const sc0=faceRight?c:w-1-c,ch=FOOT[r][sc0];return [ch,sc0<11&&r<9?flap:0];};
-  ctx.globalAlpha=.55;for(let r=0;r<h;r++)for(let c=0;c<w;c++){const [ch,dy]=at(r,c);if(ch!=='.')R(x0+c*sc+2,y0+r*sc+2+dy,sc,sc,'#1a0a06');}
-  ctx.globalAlpha=1;const pal=hot?FOOT_HOT:FOOT_PAL;
-  for(let r=0;r<h;r++)for(let c=0;c<w;c++){const [ch,dy]=at(r,c);if(ch!=='.')R(x0+c*sc,y0+r*sc+dy,sc,sc,pal[ch]);}
-  // speed lines streaming off the heel, under the wing
-  const back=faceRight?x0-4:x0+w*sc+4;
-  for(let i=0;i<3;i++){const len=6+((gt*30+i*5)%8);ctx.globalAlpha=.7;R(faceRight?back-len:back,y0+19+i*3,len,2,i===1?'#ffd400':'#ffffff');}
+  const sc=2,w=DASH_HERO[0].length,h=DASH_HERO.length,dir=faceRight?1:-1,top=Math.round(cy-h*sc/2)+Math.round(Math.sin(gt*14)*1.5);
+  const put=(x0,al,pal)=>{ctx.globalAlpha=al;for(let r=0;r<h;r++){const row=DASH_HERO[r];for(let c=0;c<w;c++){const ch=row[faceRight?c:w-1-c];if(ch!=='.')R(x0+c*sc,top+r*sc,sc,sc,pal[ch]);}}};
+  const hx=Math.round(cx+dir*8-w*sc/2);                    // the hero leads, toward the walking direction
+  const step=hot?9:6,ph=(gt*(hot?14:6))%1;                 // afterimages stream backward and fade, faster while dashing
+  for(let i=3;i>=0;i--){const d=(i+ph)*step,al=.5*(1-d/(step*4));if(al>.03)put(Math.round(hx-dir*d),al,DASH_GHOST);}
+  put(hx+2,.55,{k:'#1a0a06',r:'#1a0a06',s:'#1a0a06',S:'#1a0a06',e:'#1a0a06',g:'#1a0a06',G:'#1a0a06',b:'#1a0a06',d:'#1a0a06'}); // dark drop shadow so it reads over lava
+  put(hx,1,DASH_PAL);
+  // speed lines streaming off behind him
+  const back=faceRight?hx-2:hx+w*sc+2;
+  for(let i=0;i<3;i++){const len=5+((gt*30+i*5)%8);ctx.globalAlpha=.7;R(faceRight?back-len:back,top+8+i*6,len,1,i===1?'#ffd400':'#ffffff');}
   ctx.globalAlpha=1;}
+// KING gauge full: both fists catch fire, and the blaze grows with the level (MAX has its own blue flames)
+function fistFire(cx,baseY,lv){
+  const w=20+lv*4,hMax=12+lv*4,n=Math.max(3,Math.round(w/3));
+  for(let i=0;i<n;i++){const t=n>1?i/(n-1)*2-1:0,x=Math.round(cx+t*w/2-1),ph=gt*13+i*1.9;
+    const hh=Math.max(3,Math.round(hMax*(.5+.5*Math.abs(Math.sin(ph)))*(1-Math.abs(t)*.45)));
+    R(x,baseY-hh,3,hh,'#ff7a1a');R(x,baseY-hh,3,1,'#c8341a');
+    R(x+1,baseY-Math.round(hh*.72),1,Math.round(hh*.72),'#ffd04a');R(x+1,baseY-Math.round(hh*.4),1,Math.round(hh*.4),'#fff1a0');}
+  for(let i=0;i<2+lv;i++)R(Math.round(cx+(Math.random()-.5)*w),Math.round(baseY-hMax-Math.random()*(4+lv*2)),1+(Math.random()>.6?1:0),1+(Math.random()>.6?1:0),FIREPAL(Math.random())); // embers
+}
 function drawClassicFists(){
   // which side (if any) is walking: then the other button becomes a dash shoe pointing that way
   let walkSide=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T&&mode==='play')walkSide=h.side;
@@ -1844,8 +1851,10 @@ function drawClassicFists(){
     const hit=tapFX[sd]>.45, up=hit?7:held?3:0;          // a punch jabs the arm upward
     const x0=Math.round((sd?W-22:22)-w*sc/2), y0=H-46-GAUGE_ROW-up;   // raised one layer: the big KING gauge runs along the bottom
     const maxed=kingLevel>=6&&mode==='play';
-    const pal=maxed?(hit||held?ARM_BLUE_HOT:ARM_BLUE):hit||held?ARM_HOT:ARM_PAL;
+    const pal=maxed?(hit||held?ARM_BLUE_HOT:ARM_BLUE):hit||held||(superReady&&kingLevel>=1&&mode==='play')?ARM_HOT:ARM_PAL;
     if(maxed){ctx.globalAlpha=1;blueFlames(x0+w*sc/2,y0+10,w*sc*.95,22,18);} // flames licking up behind the fist
+    const lit=superReady&&kingLevel>=1&&kingLevel<6&&mode==='play'&&kingT<=0;
+    if(lit){ctx.globalAlpha=1;fistFire(x0+w*sc/2,y0+5,kingLevel);} // KING ready: the fist burns, bigger every level
     ctx.globalAlpha=hit||held?1:.88;
     if(charge>0){ctx.globalAlpha=.2+.35*charge;pxDisc(x0+w*sc/2,y0+16,15+charge*3,'#7af0ff');ctx.globalAlpha=1;}
     // dark silhouette behind so the fist reads over bright lava
@@ -2071,9 +2080,9 @@ function drawHint(){
   else if(hint.id==='walk'){const s=tgt();const d=s&&s.wx>pl.x?1:0,x=d?W-22:22;
     arrowSide(x+(d?8:-8),fy-4+bob,d?1:-1,blink?'#7af0ff':'#ffffff');text('HOLD',x,fy-18+bob,1,'#7af0ff','c');banner('HOLD A FIST TO WALK','#7af0ff');}
   else if(hint.id==='dash'){let ws=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T)ws=h.side;if(ws<0){hint=null;return;}
-    const x=ws?22:W-22;arrowDown(x,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP!',x,fy-18+bob,1,'#ffd400','c');banner('TAP THE FOOT TO DASH','#ffd400');}
-  else if(hint.id==='king'){for(const x of [22,W-22]){arrowDown(x,fy-6+bob,blink?'#ff8a1a':'#ffffff');text('HOLD',x,fy-18+bob,1,'#ff8a1a','c');}
-    banner('HOLD BOTH FOR SHOW!','#ff8a1a');}
+    const x=ws?22:W-22;arrowDown(x,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP!',x,fy-18+bob,1,'#ffd400','c');banner('TAP TO DASH','#ffd400');}
+  else if(hint.id==='king'){const up=16+Math.min(kingLevel,5)*4,flow=Math.floor(((gt*2.2)%1)*8); // above the blaze; the arrow keeps sliding down
+    for(const x of [22,W-22]){arrowDown(x,fy-6-up+flow,blink?'#ff8a1a':'#ffffff');text('HOLD',x,fy-18-up,1,'#ff8a1a','c');}}
 }
 function kingRow(x0,y0,w,h,label,labelCol,frac,cellCol){
   // no box; cells rise left to right like signal bars (5px -> 14px), all standing on one baseline.
