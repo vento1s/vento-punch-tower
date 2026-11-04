@@ -692,7 +692,7 @@ const KING_FREEZE=1.5;let lavaHold=0;
 const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let burns=0,burnT=0; // lava bounces taken this run, and the immunity left after the last one
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
-let judge=null;const JUDGE=[['PERFECT!','#ffd400',2],['GOOD','#9aff7a',1],['CLOSE..','#ff9a3a',1],['BAD','#8a7a9a',1]];
+let judge=null;const JUDGE=[['PERFECT!','#ffd400'],['GOOD','#5aff6a'],['CLOSE','#ff9a3a'],['BAD','#a597b8']];
 let dispT=0,tGains=[],gainSum=0,gainT=0,hudT=0; // TIME counter that rolls up, and the '+0.2' pops that feed it
 // TIME drives the lava: 60s banked -> x0.6, 30s (start) -> about x1, 10s -> x1.35, 0s -> TIME UP surge
 // TIME is now the honest truth: seconds until the lava reaches your feet at its current speed.
@@ -760,8 +760,7 @@ function weakFX(x,y,dmg){
   for(let i=0;i<16;i++){const a=-Math.PI*Math.random();const sp=90+Math.random()*120;
     parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.35+Math.random()*.3,col:i%3?'#ffe27a':'#ffffff',s:i%4?1:2,g:300});}
   for(let i=0;i<8;i++)parts.push({x,y,vx:(Math.random()-.5)*60,vy:20+Math.random()*60,life:.6,col:'#ff3a5a',s:1,g:200});
-  pop(popX(38),y-10,'WEAK!',weakStreak>=3?'#ffe27a':'#ff3a5a',2);
-  pop(popX(38),y+2,String(dmg),'#ffffff',1);
+  pop(popX(38),y+8,String(dmg),'#ffffff',1); // the big aim grade (PERFECT/GOOD...) now takes WEAK!'s place
   shake=Math.max(shake,5.5);hitstop=Math.max(hitstop,.12);pl.weakT=.14;
   vibe(45);
 }
@@ -787,7 +786,7 @@ function hit(side,power){
   // aim judgement (4 grades) from how far the boxer is from the weak point's centre
   {const d=Math.abs(pl.x-s.wx),half=wkW(s)/2;
    const g=s.wT<1?null:d<=half*.4?0:d<=half+1?1:d<=half+12?2:3;
-   if(g!==null&&!(onWeak&&!alt&&!charged))judge={g,at:t,x:pl.x,y:fy+14};}
+   if(g!==null&&!(onWeak&&!alt&&!charged))judge={g,at:t,x:pl.x,y:fy-12};}
   // hints: same hand over and over on the weak point -> "alternate"; punching far from the weak point -> "hold to walk"
   if(!charged){if(onWeak){offHits=0;if(alt){sameSide=0;learn('alt');}else if(++sameSide>=3)showHint('alt');}
     else if(Math.abs(pl.x-s.wx)>wkW(s)/2+10&&++offHits>=4)showHint('walk');}
@@ -1563,12 +1562,14 @@ function drawPlayer(){
     // tiny charge pips under the boxer: 3 steps
     const n=c>=1?3:c>=.5?2:c>=.15?1:0;for(let i=0;i<3;i++)R(Math.round(pl.x)-4+i*3,top+16,2,1,i<n?'#7af0ff':'rgba(122,240,255,.2)');}
 }
-function drawJudge(){ // one slot under the ceiling you just punched; each punch replaces it
-  if(!judge||mode!=='play')return;const age=now()-judge.at;if(age>.5)return;
-  const [txt,col0,sc]=JUDGE[judge.g],pop=age<.06,col=judge.g===0&&((gt*16)|0)%2?'#ffffff':col0;
-  ctx.globalAlpha=age>.35?1-(age-.35)/.15:1;
-  const x=clamp(judge.x,WALL+tw(txt,sc)/2+2,W-WALL-tw(txt,sc)/2-2),y=Math.round(judge.y-camY-age*14);
-  text(txt,x,pop?y-1:y,pop&&sc===1?2:sc,col,'c');ctx.globalAlpha=1;}
+function drawJudge(){ // big aim grade where WEAK! used to be; each punch replaces it (one slot, never piles up)
+  if(!judge||mode!=='play')return;const age=now()-judge.at;if(age>.55)return;
+  const [txt,col0]=JUDGE[judge.g],sc=3,pop=age<.07;
+  const col=pop?'#ffffff':judge.g===0?['#ffd400','#ffffff','#ff7af0','#7af0ff'][((gt*20)|0)%4]:col0;
+  ctx.globalAlpha=age>.4?1-(age-.4)/.15:1;
+  const half=tw(txt,sc)/2,x=clamp(judge.x,WALL+half+1,W-WALL-half-1),y=Math.round(judge.y-camY-Math.min(1,age/.4)*8)-(pop?3:0);
+  for(const [ox,oy] of [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,1],[1,-1],[-1,1],[0,2],[1,2],[-1,2],[0,3]])text(txt,x+ox,y+oy,sc,'#120a18','c',false); // thick outline + drop
+  text(txt,x,y,sc,col,'c',false);ctx.globalAlpha=1;}
 function drawComboFX(){
   if(mode!=='play'||combo<2)return;
   const t=now(),age=t-comboFX.at;if(age>D.win+.2)return;
