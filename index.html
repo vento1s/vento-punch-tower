@@ -179,7 +179,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .result .who{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gi)}
 .result .who b{font-weight:400;color:var(--gold);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .result .cells{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.result .judges{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;padding:8px 8px 6px;background:#1b1426;margin-top:6px}
+.result .judges{display:grid;grid-template-columns:1fr;gap:4px;padding:8px 8px 6px;background:#1b1426;margin-top:6px}
 .result .jrow{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-pixel);font-size:10px;letter-spacing:.04em}
 .result .jrow b{font-weight:normal;text-shadow:1px 1px 0 #4a1408}.result .jrow span{color:#f4efe8}
 .result .jp b{color:#ffd400}.result .jc b{color:#5aff6a}.result .j9 b{color:#ff9a3a}.result .jm b{color:#ff5a6a}
@@ -560,7 +560,7 @@ const KL_RUB=[2,3,3.5,4,5,5.5]; // seconds of rubbing (갈겨!!) you get after f
 const KING_STYLE=(()=>{try{const q=new URLSearchParams(location.search).get('king');if(q==='rub'||q==='weak'){localStorage.setItem('punchtower.king',q);return q;}
   return localStorage.getItem('punchtower.king')==='rub'?'rub':'weak';}catch(e){return 'weak';}})();
 const KL_KT=[3,4,5,6,7,8]; // KING TIME seconds by level
-let KT_DMG0=.6,KT_DMG=.5; // KING TIME punch power: x(0.6 + 0.5 x level power) -> LV1 x0.9 ... MAX x2.85
+let KT_DMG0=1.2,KT_DMG=1; // SHOW TIME punch power: x(1.2 + level power) -> LV1 x1.8 ... MAX x5.7 (doubled)
 let kingT=0,kingTmax=1,kingPw=1,showFrom=0,showIntro=0,showLv=1,confs=[],crowdK=0,cheerT=0; // (KING TIME is called SHOW TIME on screen)
 const KL_COL=['#ff7a1a','#ff7a1a','#ff8a1a','#ff8a1a','#ff9a2a','#ffb03a'], // plain fire: the pets only grow, no colours
      KL_R=[1,1.5,2,2.5,3.5,4.5]; // half the old size
@@ -820,7 +820,7 @@ function hit(side,power){
       sfx.ready();kingLevelUp(kingLevel);fire(W/2,H+camY-20,14+kingLevel*4,50,-40);}}
   // minimum punches per block, so it never goes down in one or two: 6 plain hits, 5 on the weak point,
   // 3 with a ki punch or during KING TIME (big blocks higher up take more anyway)
-  {const minHits=kingT>0?3:charged?3:weak?5:6;dmg=Math.min(dmg,Math.max(1,Math.floor(s.max/minHits)));}
+  {const minHits=kingT>0?2:charged?3:weak?5:6; /* SHOW TIME hits twice as hard, so 2 punches a block */dmg=Math.min(dmg,Math.max(1,Math.floor(s.max/minHits)));}
   s.hp-=dmg;s.flash=weak||charged?1:.6;s.bump=weak?4:charged?2+2*power:crit?3:1;
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;
   const c=SLABC[s.type];
