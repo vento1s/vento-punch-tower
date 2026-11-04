@@ -1719,10 +1719,9 @@ function drawHUD(){
     if(vis)perfectText('SHOW TIME',x,cy,e<SHOW_IN?0:1,3,true);}
   if(kingT>0&&mode==='play'){const fr=kingT/kingTmax,bw=W-40;
     const ky=H-46-GAUGE_ROW-14; // just above the fist buttons, clear of the grades up top
-    R(16,ky-2,W-32,14,'rgba(13,10,8,.7)');text('SHOW TIME '+kingT.toFixed(1),W/2,ky,1,'#ffd400','c','#0d0a08');
-    {const intro=Math.min(1,(kingTmax-kingT)/.2),y=Math.round(70-(1-intro)*30); // headline: SHOW TIME + floors smashed, steady in one place
-     ctx.globalAlpha=intro*.8;R(0,y-8,W,42,'#0d0a08');R(0,y-8,W,1,'#ff8a1a');R(0,y+33,W,1,'#ff8a1a'); // dark band so it reads over the busy blocks
-     ctx.globalAlpha=intro;perfectText('SHOW TIME',W/2,y,1);logoText('+'+(pl.level-showFrom)+'F',W/2,y+20,2,'#e8a400','#5a3000',false);ctx.globalAlpha=1;}
+    R(16,ky-2,W-32,14,'rgba(13,10,8,.7)');text(kingT.toFixed(1)+'S   +'+(pl.level-showFrom)+'F',W/2,ky,1,'#ffd400','c','#0d0a08'); // time left + floors smashed
+    {const y=24,cyc=(gt%1.4); // small headline just under the top bar, no backing: a shine sweeps it and the stars twinkle
+     perfectText('SHOW TIME',W/2,y,cyc<.5?cyc:1,2,cyc>=.45);}
     R(20,ky+7,bw,3,'#2a1d38');R(20,ky+7,Math.round(bw*fr),3,'#ff8a1a');R(20,ky+7,Math.round(bw*fr),1,'#ffd400');
     ctx.globalAlpha=.35+.2*Math.sin(gt*16);ctx.strokeStyle='#ff8a1a';ctx.lineWidth=3;ctx.strokeRect(1.5,20.5,W-3,H-22);ctx.globalAlpha=1;}
   if(fever>0&&kingT<=0){text('FEVER x2',W/2,62,1,'#ff7af0','c');
