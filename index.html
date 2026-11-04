@@ -2260,6 +2260,57 @@ function smashStart(btn,stopBtn,next){
   },IMPACT);}
 // leaving the studio logo: the letters punch forward, a white flash bursts open behind them,
 // and the title fades in out of the glare
+// leaving the studio logo: a barrage of fists flies at the camera from behind the letters (front view,
+// knuckles first), each one cracking the logo a bit more, then one giant fist smashes it to pieces and
+// the title shows through. Drawn on a 144x256 canvas at the game's own pixel size.
+function logoPunch(next){
+  const stage=ov.parentNode,st=document.getElementById('studio'),hint=ov.querySelector('.w3');
+  const LW=144,LH=256,cv=document.createElement('canvas');cv.width=LW;cv.height=LH;
+  Object.assign(cv.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'40',imageRendering:'pixelated'});
+  stage.appendChild(cv);const c=cv.getContext('2d');
+  if(st)st.style.visibility='hidden';if(hint)hint.style.visibility='hidden';
+  // the logo, redrawn in canvas pixels so it can crack and shatter
+  const LINES=[['VENTO',2],['AI STUDIO',2]],cells=[];
+  LINES.forEach(([str,sc],li)=>{const x0=Math.round(LW/2-tw(str,sc)/2),y0=112+li*16;
+    for(let i=0;i<str.length;i++){const g=F[str[i]]||F[' '];for(let p=0;p<15;p++)if(g[p]==='1')cells.push({x:x0+(i*4+p%3)*sc,y:y0+((p/3)|0)*sc,sc,vx:0,vy:0,cr:0});}});
+  const drawLogo=(shatter)=>{for(const k of cells){const x=Math.round(k.x),y=Math.round(k.y);
+      c.fillStyle='#4a1408';c.fillRect(x+2,y+2,k.sc,k.sc);c.fillStyle='#c8341a';c.fillRect(x+1,y+1,k.sc,k.sc);
+      c.fillStyle=k.cr?'#8a7a7a':'#f4efe8';c.fillRect(x,y,k.sc,k.sc);if(!shatter){c.fillStyle='#bdb4ae';c.fillRect(x,y+1,k.sc,1);}}};
+  const fist=(cx,cy,sc,a)=>{const w=BIG_FIST[0].length,h=BIG_FIST.length,x0=cx-w*sc/2,y0=cy-h*sc/2;c.globalAlpha=a;
+    for(let r=0;r<h;r++)for(let q=0;q<w;q++){const ch=BIG_FIST[r][q];if(ch==='.')continue;c.fillStyle=BIG_FIST_PAL[ch];
+      c.fillRect(Math.floor(x0+q*sc),Math.floor(y0+r*sc),Math.ceil(sc),Math.ceil(sc));}c.globalAlpha=1;};
+  const star=(x,y,r)=>{c.fillStyle='#ffffff';c.fillRect(x-r,y,r*2+1,1);c.fillRect(x,y-r,1,r*2+1);c.fillStyle='#ffe27a';c.fillRect(x-1,y-1,3,3);};
+  const thump=big=>{if(!AC||!soundOn)return;const t=AC.currentTime;
+    tone(t,big?.4:.12,big?150:200,big?30:60,'sine',big?1.4:.8);noise(t,big?.5:.06,big?1800:2600,.8,big?1:.6,'lowpass',big?100:400);if(big)noise(t,.03,6000,1.2,1);};
+  // the barrage: 13 fists, one every 46ms, each flying out of the dark behind the logo straight at you
+  const BAR=13,GAP=46,LIFE=150,BIG_AT=BAR*GAP+60,BIG_LIFE=230;
+  const fists=[...Array(BAR)].map((_,i)=>({at:i*GAP,x:LW/2+(hash(i,3)-.5)*86,y:122+(hash(i,9)-.5)*46,hit:false}));
+  let shake=0,cracked=0,swapped=false,shattered=false;const t0=performance.now();
+  const frame=now=>{const e=now-t0;c.clearRect(0,0,LW,LH);
+    const sx=shake>0?Math.round((Math.random()-.5)*shake):0,sy=shake>0?Math.round((Math.random()-.5)*shake):0;shake=Math.max(0,shake-1);
+    c.save();c.translate(sx,sy);
+    if(!swapped){c.fillStyle='#000';c.fillRect(-4,-4,LW+8,LH+8);}
+    if(!shattered)drawLogo(false);
+    for(const f of fists){const k=(e-f.at)/LIFE;if(k<0||k>1.15)continue;
+      if(k>=.75&&!f.hit){f.hit=true;shake=4;thump(false);
+        for(let n=0;n<10;n++){const q=cells[(hash(f.at,n)*cells.length)|0];if(q)q.cr=1;}cracked++;} // each hit cracks a few pixels
+      const sc=.3+Math.min(1,k)*2.6,a=k>1?1-(k-1)/.15:1;
+      for(let n=0;n<8;n++){const ang=n/8*Math.PI*2+f.at,r0=8*sc,r1=r0+6+k*14;c.fillStyle='rgba(255,255,255,.5)'; // speed lines bursting outward
+        for(let rr=r0;rr<r1;rr+=2)c.fillRect(Math.round(f.x+Math.cos(ang)*rr),Math.round(f.y+Math.sin(ang)*rr),1,1);}
+      fist(f.x,f.y,sc,a);if(f.hit&&k<1)star(Math.round(f.x),Math.round(f.y),5);}
+    // the finisher: one huge fist from dead centre, the logo bursts into pixels
+    const kb=(e-BIG_AT)/BIG_LIFE;
+    if(kb>=0){
+      if(!shattered){shattered=true;shake=10;thump(true);
+        for(const q of cells){const dx=q.x-LW/2,dy=q.y-124,d=Math.hypot(dx,dy)||1;q.vx=dx/d*(60+Math.random()*120);q.vy=dy/d*(60+Math.random()*120)-60;}}
+      const dt=1/60;for(const q of cells){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=260*dt;}
+      if(kb<1.6){const sc=1+Math.min(1,kb)**2*13;fist(LW/2,124,sc,kb>1?Math.max(0,1-(kb-1)/.6):1);
+        if(kb<.25){c.fillStyle='rgba(255,255,255,'+(1-kb/.25)+')';c.fillRect(-4,-4,LW+8,LH+8);}} // impact frame
+      drawLogo(true);
+      if(!swapped&&kb>=.55){swapped=true;if(st)st.style.visibility='';next();}}  // the giant fist covers the screen: swap to the title
+    c.restore();
+    if(kb<2.2)requestAnimationFrame(frame);else cv.remove();};
+  requestAnimationFrame(frame);}
 function logoFlash(next){
   // a pixel-art flash: drawn on a tiny 72x128 canvas and blown up, so the burst comes out in chunky
   // stepped rings with ordered dithering at the edges and scanlines, then dissolves pixel by pixel
@@ -2299,7 +2350,7 @@ function showSplash(){
   const toTitle=()=>{ov.classList.remove('black');showTitle();};
   const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);
     if(!stage2||matchMedia('(prefers-reduced-motion: reduce)').matches){toTitle();return;}
-    logoFlash(toTitle);};
+    logoPunch(toTitle);};
   const play=()=>{
     if(stage2){finish();return;} // a second touch skips the logo
     stage2=true;initAudio();sfx.logo();
