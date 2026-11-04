@@ -2269,16 +2269,33 @@ function smashStart(btn,stopBtn,next){
 // leaving the studio logo: the letters punch forward, a white flash bursts open behind them,
 // and the title fades in out of the glare
 function logoFlash(next){
+  // a pixel-art flash: drawn on a tiny 72x128 canvas and blown up, so the burst comes out in chunky
+  // stepped rings with ordered dithering at the edges and scanlines, then dissolves pixel by pixel
   const stage=ov.parentNode,st=document.getElementById('studio');
   if(AC&&soundOn){const t=AC.currentTime;noise(t,.35,6000,.6,.5,'highpass',2500);tone(t,.25,1800,3600,'triangle',.06);tone(t,.3,120,40,'sine',.5);}
-  const burst=document.createElement('div');
-  Object.assign(burst.style,{position:'absolute',inset:'0',pointerEvents:'none',zIndex:'40',
-    background:'radial-gradient(circle at 50% 46%,#fff 0,#fff 18%,rgba(255,244,210,.95) 30%,rgba(255,208,74,.55) 46%,rgba(255,160,60,0) 66%)'});
-  stage.appendChild(burst);
-  burst.animate([{transform:'scale(.05)',opacity:0},{transform:'scale(.6)',opacity:1,offset:.35},{transform:'scale(2.6)',opacity:1}],{duration:260,easing:'cubic-bezier(.2,.7,.3,1)',fill:'forwards'});
-  if(st)st.animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.35)',filter:'brightness(3)'}],{duration:240,easing:'ease-in',fill:'forwards'});
-  setTimeout(()=>{next();burst.style.background='#fff';
-    burst.animate([{opacity:1},{opacity:0}],{duration:520,easing:'ease-out',fill:'forwards'}).onfinish=()=>burst.remove();},250);}
+  const LW=72,LH=128,cv=document.createElement('canvas');cv.width=LW;cv.height=LH;
+  Object.assign(cv.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'40',imageRendering:'pixelated'});
+  stage.appendChild(cv);const c=cv.getContext('2d');
+  const BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5]; // 4x4 Bayer matrix
+  const BANDS=['#ffffff','#fff6c8','#ffe27a','#ffb03a','#e8582a'];
+  const sparks=[...Array(14)].map((_,i)=>{const a=i/14*Math.PI*2+Math.random()*.3;return {a,v:.55+Math.random()*.5};});
+  const cx=LW/2,cy=LH*.46,t0=performance.now(),GROW=260,FADE=560;let swapped=false;
+  if(st)st.animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.35)',filter:'brightness(3)'}],{duration:240,easing:'steps(4)',fill:'forwards'});
+  const frame=now=>{const e=now-t0;c.clearRect(0,0,LW,LH);
+    const g=Math.min(1,e/GROW),R=4+g*g*150;                               // ring radius grows with an ease-in
+    const fade=e<GROW?0:Math.min(1,(e-GROW)/FADE);                          // after the burst: dissolve
+    for(let y=0;y<LH;y++)for(let x=0;x<LW;x++){
+      const d=Math.hypot((x-cx)*1.05,(y-cy)*.82)/R;                        // stepped distance from the centre
+      const th=BAY[(y&3)*4+(x&3)]/16;
+      let band=Math.floor(d*4+th*.9);if(band>=BANDS.length)continue;        // dithered steps between bands
+      if(fade>0&&th<fade*1.05)continue;                                     // pixel-by-pixel dissolve
+      c.fillStyle=BANDS[Math.max(0,band)];c.fillRect(x,y,1,1);}
+    c.fillStyle='rgba(20,8,30,.22)';for(let y=1;y<LH;y+=2)c.fillRect(0,y,LW,1); // scanlines
+    if(e<GROW+200)for(const sp of sparks){const r=6+e/GROW*sp.v*60,x=Math.round(cx+Math.cos(sp.a)*r),y=Math.round(cy+Math.sin(sp.a)*r*1.2);
+      c.fillStyle='#ffffff';c.fillRect(x,y-1,1,3);c.fillRect(x-1,y,3,1);}  // little 4-point star sparks
+    if(!swapped&&e>=GROW-10){swapped=true;next();}
+    if(fade<1)requestAnimationFrame(frame);else cv.remove();};
+  requestAnimationFrame(frame);}
 function showSplash(){
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
