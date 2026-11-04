@@ -561,7 +561,7 @@ const KING_STYLE=(()=>{try{const q=new URLSearchParams(location.search).get('kin
   return localStorage.getItem('punchtower.king')==='rub'?'rub':'weak';}catch(e){return 'weak';}})();
 const KL_KT=[3,4,5,6,7,8]; // KING TIME seconds by level
 let KT_DMG0=.6,KT_DMG=.5; // KING TIME punch power: x(0.6 + 0.5 x level power) -> LV1 x0.9 ... MAX x2.85
-let kingT=0,kingTmax=1,kingPw=1,showFrom=0; // (KING TIME is called SHOW TIME on screen)
+let kingT=0,kingTmax=1,kingPw=1,showFrom=0,showIntro=0,showLv=1; // (KING TIME is called SHOW TIME on screen)
 const KL_COL=['#ff7a1a','#ff7a1a','#ff8a1a','#ff8a1a','#ff9a2a','#ffb03a'], // plain fire: the pets only grow, no colours
      KL_R=[1,1.5,2,2.5,3.5,4.5]; // half the old size
 const PET_ATK=.05; // every fire pet trailing you adds 5% punch power
@@ -744,7 +744,7 @@ function newGame(){
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;judge=null;jCount=[0,0,0,0];kingT=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -781,7 +781,7 @@ function weakFX(x,y,dmg){
 }
 
 function hit(side,power){
-  if(mode!=='play'||kingSlowT>0)return;
+  if(mode!=='play'||kingSlowT>0||showIntro>0)return; // (also waits out the SHOW TIME title card)
   power=power||0;const charged=power>0;
   const t=now();
   if(!started){started=true;tStart=t;}
@@ -892,12 +892,16 @@ function doSuper(pre,cutinShown){
   vibe(40);if(!cutinShown)showCutin();
   lavaY=Math.max(lavaY,pl.feet+40);lavaY+=30;
 }
+// SHOW TIME opens with a title card: 'SHOW TIME' slides in from the left, blinks in the middle, shoots off
+// to the right - and only then does the clock start (punches wait for it)
+const SHOW_IN=.25,SHOW_BLINK=.55,SHOW_OUT=.2,SHOW_INTRO=SHOW_IN+SHOW_BLINK+SHOW_OUT;
 function startKingTime(lv,pw,cutinShown){
-  kingT=kingTmax=KL_KT[lv-1];kingPw=pw;lavaHold=Math.max(lavaHold,kingT+.6);
-  if(!cutinShown)showCutin();sfx.superLaunch();vibe([40,30,80]);flashO=Math.max(flashO,.5);flashCol='#ffe9a8';shake=Math.max(shake,8);
+  showIntro=SHOW_INTRO;showLv=lv;kingTmax=KL_KT[lv-1];kingPw=pw;lavaHold=Math.max(lavaHold,SHOW_INTRO+kingTmax+.6);
+  sfx.superLaunch();vibe([40,30,80]); // (no cut-in here: the SHOW TIME title card is the announcement)flashO=Math.max(flashO,.5);flashCol='#ffe9a8';shake=Math.max(shake,8);
   for(let i=0;i<40;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*140,l=.5+Math.random()*.4;
     parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:i%3?'#ff8a1a':'#ffd400'});}
-  showFrom=pl.level;pop(W/2,pl.feet-60,'SHOW TIME!','#ffd400',2,true);}
+  showFrom=pl.level;}
+function beginShow(){kingT=kingTmax;showFrom=pl.level;if(AC){const t=AC.currentTime;[784,1046,1568].forEach((f,i)=>tone(t+i*.05,.12,f,f,'square',.08));}vibe(30);}
 // big on-screen counter for the KING PUNCH climb (HUD layer, never behind sparks)
 const kHud={hits:0,mash:0,hitPop:0,mashPop:0,g:0,maxT:0};
 function drawKingHud(dt){
@@ -1190,8 +1194,9 @@ function update(dt){
   // on the floor below while the floors above him get smashed
   if(pl.jt>=0){pl.jt+=dt/pl.jd;if(pl.jt>=1){pl.jt=-1;pl.feet=pl.to;chip(pl.x-4,pl.feet,'rgba(220,210,230,.6)',3,40);chip(pl.x+4,pl.feet,'rgba(220,210,230,.6)',3,40);}
     else pl.feet=pl.from+(pl.to-pl.from)*pl.jt;}
+  if(showIntro>0&&mode==='play'){showIntro=Math.max(0,showIntro-dt);if(showIntro===0)beginShow();}
   if(kingT>0&&mode==='play'){kingT=Math.max(0,kingT-dt); // ticks even through hit-stop, so KING TIME is real seconds
-    if(kingT===0){pop(W/2,pl.feet-50,'+'+(pl.level-showFrom)+'F!  SHOW END','#ffd400',1,true);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
+    if(kingT===0){pop(W/2,pl.feet-50,'SHOW END','#ffd400',2,true);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
   if(hitstop>0){hitstop-=dt;return;}
   ensureSlabs(pl.level+30);
   for(let n=Math.max(1,pl.level-2);n<=pl.level+6;n++){const s=slabs[n];
@@ -1706,6 +1711,12 @@ function drawHUD(){
   // lava gauge: how much room is left below you (full = safe, empty = lava at your feet)
   {const room=clamp((lavaY-pl.feet)/(4*FH),0,1);R(3,24,3,162,'rgba(10,6,16,.7)');
    R(3,24+162*(1-room),3,162*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,'#ff7a1a');}
+  if(showIntro>0&&mode==='play'){const e=SHOW_INTRO-showIntro,cy=H/2-26;let x=W/2,vis=true;
+    if(e<SHOW_IN){const k=e/SHOW_IN;x=-70+(W/2+70)*(1-(1-k)*(1-k));}                       // slide in, easing out
+    else if(e<SHOW_IN+SHOW_BLINK)vis=(((e-SHOW_IN)/(SHOW_BLINK/6))|0)%2===0;                 // blink-blink-blink
+    else{const k=(e-SHOW_IN-SHOW_BLINK)/SHOW_OUT;x=W/2+(W/2+90)*k*k;}                          // shoot off to the right
+    ctx.globalAlpha=.8;R(0,cy-10,W,36,'#0d0a08');R(0,cy-10,W,1,'#ff8a1a');R(0,cy+25,W,1,'#ff8a1a');ctx.globalAlpha=1;
+    if(vis)perfectText('SHOW TIME',x,cy,e<SHOW_IN?0:1,3,true);}
   if(kingT>0&&mode==='play'){const fr=kingT/kingTmax,bw=W-40;
     const ky=H-46-GAUGE_ROW-14; // just above the fist buttons, clear of the grades up top
     R(16,ky-2,W-32,14,'rgba(13,10,8,.7)');text('SHOW TIME '+kingT.toFixed(1),W/2,ky,1,'#ffd400','c','#0d0a08');
