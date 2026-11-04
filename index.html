@@ -768,15 +768,13 @@ function fire(x,y,n,spread,vy,vx){for(let i=0;i<n;i++){const l=.22+Math.random()
   parts.push({x:x+(Math.random()-.5)*spread,y:y+(Math.random()-.5)*4,vx:(vx||0)+(Math.random()-.5)*36,vy:vy+(Math.random()-.5)*24,life:l,max:l,s:Math.random()<.45?2:1,g:-70,fire:true});}}
 function weakFX(x,y,dmg){
   pl.weakX=x;
-  if(kingT>0){for(let i=0;i<5;i++){const a=-Math.PI*Math.random(),sp=80+Math.random()*80;parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.3,col:'#ffe27a',s:1,g:300});}
-    shake=Math.max(shake,2);hitstop=Math.max(hitstop,.02);pl.weakT=.1;vibe(15);return;} // SHOW TIME: a light tap of sparks, not a full flash per punch
   impact=RM?0:.1;impactX=x;impactY=y;zoom=RM?0:.09;
   rings.push({x,y,life:.28,max:.28,big:true});rings.push({x,y,life:.18,max:.18,big:false});
   for(let i=0;i<16;i++){const a=-Math.PI*Math.random();const sp=90+Math.random()*120;
     parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.35+Math.random()*.3,col:i%3?'#ffe27a':'#ffffff',s:i%4?1:2,g:300});}
   for(let i=0;i<8;i++)parts.push({x,y,vx:(Math.random()-.5)*60,vy:20+Math.random()*60,life:.6,col:'#ff3a5a',s:1,g:200});
   pop(popX(38),y+8,String(dmg),'#ffffff',1); // the big aim grade (PERFECT/GOOD...) now takes WEAK!'s place
-  shake=Math.max(shake,kingT>0?3:5.5);hitstop=Math.max(hitstop,kingT>0?.03:.12);pl.weakT=.14;
+  shake=Math.max(shake,kingT>0?4.5:5.5);hitstop=Math.max(hitstop,kingT>0?.05:.12);pl.weakT=.14;
   vibe(45);
 }
 
