@@ -1567,7 +1567,21 @@ function drawJudge(){ // aim grade in the VENTO logo style, floating on the floo
   const [txt,e1,e2,sc]=JUDGE[judge.g],pop=age<.07;
   ctx.globalAlpha=age>.4?1-(age-.4)/.15:1;
   const y=Math.round(-(judge.n+1)*FH+FH/2-camY-sc*2.5-Math.min(1,age/.4)*4)-(pop?2:0);
-  logoText(txt,W/2,y,sc,e1,e2,pop);ctx.globalAlpha=1;}
+  if(judge.g===0)perfectText(txt,W/2,y-2,age);else logoText(txt,W/2,y,sc,e1,e2,pop);ctx.globalAlpha=1;}
+// PERFECT gets the deluxe version of the logo style: bigger, a gold face with fine stripes and a bright top
+// edge, a deep three-step extrusion, one white shine sweeping across, and pixel stars popping at the corners
+function perfectText(s,cx,y,age){
+  const sc=age<.06?4:3,x=Math.round(cx-tw(s,sc)/2),cells=[];y=Math.round(y-(sc-3)*3);
+  const BOLD={P:'111101111100100',R:'111101110101101'}; // squarer P/R so they don't read as F at this size
+  for(let i=0;i<s.length;i++){const g=BOLD[s[i]]||F[s[i]]||F[' '];for(let p=0;p<15;p++)if(g[p]==='1')cells.push([x+(i*4+p%3)*sc,y+((p/3)|0)*sc,p<3||g[p-3]!=='1']);}
+  [['#5a2000',3],['#a83a0a',2],['#e07a10',1]].forEach(([c,o])=>{ctx.fillStyle=c;for(const [px,py] of cells)ctx.fillRect(px+o,py+o,sc,sc);});
+  const shine=age>.04&&age<.34?x-10+(tw(s,sc)+20)*((age-.04)/.3):-999;          // one white glint sweeping left to right
+  for(const [px,py,top] of cells)for(let j=0;j<sc;j++){
+    let c=j%2?'#f0b000':'#ffd400';if(top&&j===0)c='#fff6b0';
+    for(let i=0;i<sc;i++){const d=px+i-(shine-(py+j-y)*.6);ctx.fillStyle=Math.abs(d)<2.5?'#ffffff':c;ctx.fillRect(px+i,py+j,1,1);}}
+  if(age<.45){const k=Math.min(1,age/.12),w=tw(s,sc);                              // corner stars: pop out, then shrink away
+    [[x-5,y-3],[x+w+4,y-3],[x-3,y+18],[x+w+2,y+18]].forEach(([sx,sy],n)=>{const r=Math.round((n%2?3:2)*(age<.25?k:1-(age-.25)/.2));
+      if(r<=0)return;ctx.fillStyle='#fff6b0';ctx.fillRect(sx-r,sy,r*2+1,1);ctx.fillRect(sx,sy-r,1,r*2+1);ctx.fillStyle='#ffffff';ctx.fillRect(sx,sy,1,1);});}}
 // the studio logo's look in canvas pixels: a cream face with thin scanline stripes, then a two-step
 // extrusion down-right (bright, then deep) and a dark outline so it holds up over bricks
 function logoText(s,cx,y,sc,e1,e2,white){
