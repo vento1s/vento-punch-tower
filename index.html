@@ -487,11 +487,7 @@ function bgmStep(i,t,len){
   if(b8===0||b8===4)bKick(t);
   if(b8===2||b8===6)bNoise(t,.09,1800,'bandpass',.22);
   bNoise(t+len/2,.03,7000,'highpass',.05);
-  if(typeof kingLevel==='number'&&kingLevel>=6&&bgm&&bgm.kind==='game'){ // MAX: the emperor walks in - brass, timpani, a deeper melody
-    if(b8===0){[root+12,root+19,root+24].forEach((n,j)=>bNote(t,len*7.6,mtof(n),'sawtooth',j?.014:.02));bNote(t,len*7.8,mtof(root),'triangle',.1);}
-    if(b8%2===0){bKick(t);bNoise(t,.18,180,'lowpass',.2);}                       // timpani
-    if(m)bNote(t,len*.9,mtof(m-12),'sawtooth',.016);                              // brass doubling an octave down
-    if(b8===7)bNoise(t,.25,5200,'highpass',.06);}                                 // cymbal swell into the next bar
+                                 // cymbal swell into the next bar
 }
 /* menu loop: an upbeat 'get ready to fight' tune for the title, how-to, ranking and result screens.
    Major key, four-on-the-floor kick, backbeat snare, bouncing octave bass, off-beat chord stabs and a punchy hook.
@@ -518,7 +514,24 @@ function menuStep(i,t,len){
   // hook on 8ths
   if(s16%2===0){const m=MENU_HOOK[bar*8+s16/2];if(m)bNote(t,len*1.7,mtof(m),'square',.04);}
 }
-// kind: 'game' (fast, climbs with height) or 'menu' (calm loop)
+/* MAX: 'the emperor arrives' - the casual chiptune gives way to a slow, heavy C-minor march:
+   brass power chords, timpani on 1 and 3, a deep bass and a proud brass melody. Cm Ab Bb G | Cm Ab Fm G */
+const EMP_ROOT=[36,32,34,31,36,32,29,31];
+const EMP_MEL=[72,0,72,74,75,0,74,72, 75,0,75,77,79,0,77,75, 74,0,74,75,77,0,79,77, 79,0,0,0,74,0,71,0,
+               84,0,84,82,80,0,79,80, 82,0,80,79,77,0,75,77, 79,0,77,75,74,0,72,74, 71,0,74,0,79,0,0,0];
+const EMP_THIRD=[3,4,4,4,3,4,3,4]; // minor/major third over each root (G is major: the march keeps pulling home)
+function maxStep(i,t,len){
+  const k=i%64,bar=(k/8)|0,b8=k%8,root=EMP_ROOT[bar],m=EMP_MEL[k];
+  if(b8===0){[root+12,root+19,root+24].forEach((n,j)=>bNote(t,len*7.7,mtof(n),'sawtooth',j?.016:.022));  // brass chord, whole bar
+    bNote(t,len*7.7,mtof(root+12+EMP_THIRD[bar]),'triangle',.05);}                                       // choir-ish third
+  if(b8%2===0){bNote(t,len*1.8,mtof(root),'triangle',.16);bNote(t,len*1.2,mtof(root-12),'sawtooth',.03);} // deep marching bass
+  if(b8===0||b8===4){bKick(t);bNoise(t,.3,160,'lowpass',.32);}                                           // timpani
+  if(b8===2||b8===6)bNoise(t,.12,1500,'bandpass',.18);                                                   // snare
+  if(bar%4===3&&b8>=6){bNoise(t,.06,1600,'bandpass',.16);bNoise(t+len/2,.06,1600,'bandpass',.2);}       // snare roll into the next phrase
+  if(k%32===0)bNoise(t,.9,6000,'highpass',.12);                                                         // crash
+  if(m){bNote(t,len*1.6,mtof(m),'square',.035);bNote(t,len*1.6,mtof(m-12),'sawtooth',.022);}             // brass melody, doubled low
+}
+// kind: 'game' (fast, climbs with height), 'max' (the emperor's march) or 'menu' (calm loop)
 function bgmStart(kind){
   kind=kind||'game';
   if(!AC||!bgmOn||!soundOn)return;
@@ -526,13 +539,14 @@ function bgmStart(kind){
   const g=AC.createGain();g.gain.value=.5;g.connect(master);
   bgm={g,step:0,next:AC.currentTime+.06,kind};
   bgm.timer=setInterval(()=>{if(!bgm)return;
-    const menu=bgm.kind==='menu';
-    const bpm=menu?136:148+Math.min(40,(pl?pl.level:0)*.5),len=menu?60/bpm/4:60/bpm/2; // game speeds up as you climb
+    const menu=bgm.kind==='menu',emp=bgm.kind==='max';
+    const bpm=menu?136:emp?118:148+Math.min(40,(pl?pl.level:0)*.5),len=menu?60/bpm/4:60/bpm/2; // game speeds up as you climb
     if(bgm.next<AC.currentTime-.05)bgm.next=AC.currentTime+.02;     // came back from a background tab
-    while(bgm.next<AC.currentTime+.15){(menu?menuStep:bgmStep)(bgm.step,bgm.next,len);bgm.next+=len;bgm.step++;}},30);
+    while(bgm.next<AC.currentTime+.15){(menu?menuStep:emp?maxStep:bgmStep)(bgm.step,bgm.next,len);bgm.next+=len;bgm.step++;}},30);
 }
 const menuMusic=()=>bgmStart('menu');
-const wantedTrack=()=>(mode==='play'||mode==='super')&&ov.hidden?'game':(!ov.hidden&&!ov.classList.contains('black')?'menu':null);
+const gameTrack=()=>typeof kingLevel==='number'&&kingLevel>=6?'max':'game';
+const wantedTrack=()=>(mode==='play'||mode==='super')&&ov.hidden?gameTrack():(!ov.hidden&&!ov.classList.contains('black')?'menu':null);
 function bgmStop(){if(!bgm)return;clearInterval(bgm.timer);const g=bgm.g;bgm=null;
   try{g.gain.setTargetAtTime(0,AC.currentTime,.04);}catch(e){}setTimeout(()=>{try{g.disconnect();}catch(e){}},500);}
 function bgmLabel(){return bgmOn?'음악 끄기':'음악 켜기';}
@@ -1221,6 +1235,7 @@ function update(dt){
   // on the floor below while the floors above him get smashed
   if(pl.jt>=0){pl.jt+=dt/pl.jd;if(pl.jt>=1){pl.jt=-1;pl.feet=pl.to;chip(pl.x-4,pl.feet,'rgba(220,210,230,.6)',3,40);chip(pl.x+4,pl.feet,'rgba(220,210,230,.6)',3,40);}
     else pl.feet=pl.from+(pl.to-pl.from)*pl.jt;}
+  if(bgm&&(bgm.kind==='game'||bgm.kind==='max')&&bgm.kind!==gameTrack())bgmStart(gameTrack()); // MAX reached / spent: swap the music
   if(showIntro>0&&mode==='play')showIntro=Math.max(0,showIntro-dt);
   if(kingT>0&&mode==='play'){kingT=Math.max(0,kingT-dt); // ticks even through hit-stop, so KING TIME is real seconds
     if(kingT===0){pop(W/2,pl.feet-50,'SHOW END','#ffd400',2,true);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
@@ -1605,8 +1620,10 @@ function drawPlayer(){
   for(let y=0;y<PB.length;y++){const row=PB[y];for(let x=0;x<8;x++){const ch=row[x];if(ch!=='.')R(px+x,top+y,1,1,pal[ch]);}}
   const tail=((gt*10)|0)%2;const lean=pl.tx-pl.x>1?-1:pl.tx-pl.x<-1?1:0;
   R(px+7,top+2,1,1,pal.r);R(px+8+lean,top+3-tail,1,1,pal.r);R(px+9+lean,top+3,1,1,pal.r);
-  const up=(side)=>{const ax=side?px+7:px-1;R(ax,top+4,2,4,pal.g);R(ax,top-6,2,10,pal.s);R(side?ax:ax-1,top-9,3,3,pal.s);R(side?ax+2:ax-1,top-9,1,1,pal.S);};
-  const guard=(side)=>{const ax=side?px+7:px-1;R(ax,top+7,2,3,pal.g);R(ax,top+10,2,2,pal.s);};
+  const bf=kingLevel>=6&&mode==='play',fs=bf?'#8ac8ff':pal.s,fS=bf?'#2a6ad8':pal.S; // MAX: blue burning fists
+  const flame=(x,y)=>{if(!bf)return;for(let i=0;i<4;i++){const k=Math.random();R(x+((Math.random()*4)|0)-1,y-1-((Math.random()*5)|0),1,1,BLUEPAL(k));}};
+  const up=(side)=>{const ax=side?px+7:px-1;R(ax,top+4,2,4,pal.g);R(ax,top-6,2,10,pal.s);R(side?ax:ax-1,top-9,3,3,fs);R(side?ax+2:ax-1,top-9,1,1,fS);flame(side?ax:ax-1,top-9);};
+  const guard=(side)=>{const ax=side?px+7:px-1;R(ax,top+7,2,3,pal.g);R(ax,top+10,2,2,fs);flame(ax,top+10);};
   const reachTop=Math.round(-tgtN()*FH-camY+10); // underside of the floor being punched
   const upLong=(side)=>{const ax=side?px+7:px-1,fy=reachTop+1; // rubbery arm all the way up, striped like a spring
     R(ax,top+4,2,4,pal.g);for(let y=fy+3;y<top-2;y+=2)R(ax,y,2,1,((y>>1)&1)?pal.s:pal.S);
@@ -1617,7 +1634,8 @@ function drawPlayer(){
   else if(pl.punchT>0){if(pl.reach>0)upLong(pl.side);else up(pl.side);guard(pl.side^1);
     if(pl.weakT>0){ // impact-frame big fist planted on the weak point
       const fx=Math.round(pl.weakX)-4,fy=pl.reach>0?reachTop-4:top-16;
-      for(let y=0;y<BIGFIST.length;y++)for(let x=0;x<9;x++){const ch=BIGFIST[y][x];if(ch!=='.')R(fx+x,fy+y,1,1,pal[ch]);}
+      for(let y=0;y<BIGFIST.length;y++)for(let x=0;x<9;x++){const ch=BIGFIST[y][x];if(ch!=='.')R(fx+x,fy+y,1,1,ch==='s'?fs:ch==='S'?fS:pal[ch]);}
+      if(bf)for(let i=0;i<3;i++)flame(fx+2+i*2,fy);
     }else{ctx.globalAlpha=.5;const sx=pl.side?px+8:px-1;R(sx-2,top-12,5,1,'#fff');R(sx-1,top-13,3,1,'#fff');ctx.globalAlpha=1;}}
   else{guard(0);guard(1);}
   // ki gathering in a held fist: soft cyan glow that grows with the charge
@@ -1787,6 +1805,12 @@ function drawBigFist(cx,cy,sc,mirror,pal){const w=BIG_FIST[0].length,h=BIG_FIST.
 const BIG_ARM=["......ssssssss........", "....ssssssssssss......", "...sHHssssssssssss....", "..sHsssLssssLsssssss..", "..sHssLLsssLLssssLsss.", ".sHsssLssssLsssssLssss", ".sHsssLsssLssssssLssss", ".sssssLLLLLLLLLLLLssss", "sHssssssssssssssLssss.", "sHssssssssssssssLsssD.", "sssssssssssssssLsssDD.", "sssssLLLLLLLLLLsssDDD.", "ssssssssssssssssssDD..", "sssssssssssssssssDD...", ".ssssssssssssssDDD....", ".sssssssssssDDD.......", "..sssssssssDD.........", "..sssssssssD..........", "..ssssssssDD..........", "..HsssssssDD..........", "..wwwwwwwwwwG.........", ".wwwwwwwwwwwGG........", ".wwwwwwwwwwwGG........", "wwwwwwwwwwwwGGG.......", "wwwwwwwwwwwwGGG......."];
 const ARM_PAL={s:'#f2a08c',L:'#9e4a3a',H:'#ffc4b2',D:'#c87864',w:'#f4efe8',G:'#c4bccd'};
 const ARM_HOT={s:'#ffb8a2',L:'#b4584a',H:'#ffe2d8',D:'#dc8c76',w:'#ffffff',G:'#d6cfe0'};
+// MAX: the fists burn blue
+const ARM_BLUE={s:'#5aa8ff',L:'#123a8a',H:'#d8f6ff',D:'#2a6ad8',w:'#f4efe8',G:'#c4bccd'};
+const ARM_BLUE_HOT={s:'#8ac8ff',L:'#1a4aa8',H:'#ffffff',D:'#4a8af0',w:'#ffffff',G:'#d6cfe0'};
+const BLUEPAL=k=>k<.25?'#ffffff':k<.5?'#bff6ff':k<.75?'#7af0ff':'#3a8aff';
+function blueFlames(cx,baseY,w,n,hMax){for(let i=0;i<n;i++){const x=Math.round(cx+(Math.random()-.5)*w),h=2+Math.random()*hMax,k=Math.random(),sz=k>.6?2:1;
+  R(x,Math.round(baseY-h),sz,sz,BLUEPAL(k));}}
 const mashOpen=()=>mode==='super'&&sup&&sup.launched&&rubLeft()>0;
 function hudFlames(cx,topY,w,n){for(let i=0;i<n;i++){const x=cx+(Math.random()-.5)*w,h=2+Math.random()*16,k=Math.random();
   R(x,topY-h,2+(k>.6?1:0),2+(k>.6?1:0),FIREPAL(k));}}
@@ -1819,7 +1843,9 @@ function drawClassicFists(){
     if(walkSide>=0&&sd!==walkSide&&!held){drawShoe(sd?W-25:25,H-26-GAUGE_ROW,walkSide===1,dashT>0);continue;}
     const hit=tapFX[sd]>.45, up=hit?7:held?3:0;          // a punch jabs the arm upward
     const x0=Math.round((sd?W-22:22)-w*sc/2), y0=H-46-GAUGE_ROW-up;   // raised one layer: the big KING gauge runs along the bottom
-    const pal=hit||held?ARM_HOT:ARM_PAL;
+    const maxed=kingLevel>=6&&mode==='play';
+    const pal=maxed?(hit||held?ARM_BLUE_HOT:ARM_BLUE):hit||held?ARM_HOT:ARM_PAL;
+    if(maxed){ctx.globalAlpha=1;blueFlames(x0+w*sc/2,y0+10,w*sc*.95,22,18);} // flames licking up behind the fist
     ctx.globalAlpha=hit||held?1:.88;
     if(charge>0){ctx.globalAlpha=.2+.35*charge;pxDisc(x0+w*sc/2,y0+16,15+charge*3,'#7af0ff');ctx.globalAlpha=1;}
     // dark silhouette behind so the fist reads over bright lava
@@ -1829,6 +1855,7 @@ function drawClassicFists(){
     for(let r=0;r<BIG_ARM.length;r++){const row=BIG_ARM[r];for(let c=0;c<w;c++){const ch=row[sd===1?w-1-c:c];if(ch!=='.')R(x0+c*sc,y0+r*sc,sc,sc,pal[ch]);}}
     if(hit){ctx.globalAlpha=.8;for(let k=0;k<3;k++)R(x0+6+k*10,y0-6-(k%2)*2,2,4,'#fff3a0');}  // little speed ticks above the fist
     if(mashOpen()){ctx.globalAlpha=1;hudFlames(x0+w*sc/2,y0+14,w*sc*.9,26);hudFlames(x0+w*sc/2,y0+4,w*sc*.6,12);}
+    if(maxed){ctx.globalAlpha=.85;blueFlames(x0+w*sc/2,y0+6,w*sc*.7,10,10);ctx.globalAlpha=1;}           // and a few in front
   }
   ctx.globalAlpha=1;
 }
@@ -2253,7 +2280,7 @@ function resumeGame(){
   if(mode!=='pause')return;
   if(started)tStart+=now()-pausedAt; // the clock doesn't count paused time
   mode=pausedFrom||'play';pausedFrom=null;ov.hidden=true;lastTap=now();
-  if(mode==='play'||mode==='super')bgmStart('game');
+  if(mode==='play'||mode==='super')bgmStart(gameTrack());
 }
 pauseBtn.addEventListener('pointerdown',e=>{e.stopPropagation();});
 pauseBtn.addEventListener('click',e=>{e.stopPropagation();initAudio();pauseGame();});
