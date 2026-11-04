@@ -577,7 +577,7 @@ function kingLevelUp(lv){ // a new orb pops out of the boxer and joins the tail
   // (the floating 'KING LVn!' / 'ATK +n%' pops are gone: the LV label down in the corner bounces instead)
   if(AC){const t=AC.currentTime,base=[262,294,330,392,523,659][lv-1];[1,1.25,1.5,2].slice(0,lv>=5?4:3).forEach((m,i)=>tone(t+i*.04,.22,base*m,base*m*1.02,'square',.07));
     if(lv>=6){noise(t,.6,2600,.8,.35,'bandpass',6000);tone(t+.16,.6,1318,2637,'triangle',.08);}}}
-function fireKing(){kingFireLv=kingLevel;bothT=0;kingGrowl(false);startKingSlow();}
+function fireKing(){kingFireLv=kingLevel;bothT=0;kingGrowl(false);if(KING_STYLE!=='rub'){for(const h of holds.values())h.used=true;hum(-1);doSuper(false,true);return;}startKingSlow();} // SHOW TIME starts at once, no slow-mo beat
 function absorbOrbs(){for(const o of orbs){const col=KL_COL[o.lv-1];
     for(let i=0;i<8+o.lv*3;i++){const l=.35;parts.push({x:o.x+(Math.random()-.5)*KL_R[o.lv-1]*2,y:o.y+(Math.random()-.5)*KL_R[o.lv-1]*2,
       vx:(pl.x-o.x)/l,vy:(pl.feet-10-o.y)/l,life:l,max:l,s:2,g:0,col});}}
@@ -779,7 +779,7 @@ function weakFX(x,y,dmg){
 }
 
 function hit(side,power){
-  if(mode!=='play'||kingSlowT>0||showIntro>0)return; // (also waits out the SHOW TIME title card)
+  if(mode!=='play'||kingSlowT>0)return;
   power=power||0;const charged=power>0;
   const t=now();
   if(!started){started=true;tStart=t;}
@@ -894,7 +894,7 @@ function doSuper(pre,cutinShown){
 // to the right - and only then does the clock start (punches wait for it)
 const SHOW_IN=.25,SHOW_BLINK=.55,SHOW_OUT=.2,SHOW_INTRO=SHOW_IN+SHOW_BLINK+SHOW_OUT;
 function startKingTime(lv,pw,cutinShown){
-  showIntro=SHOW_INTRO;showLv=lv;kingTmax=KL_KT[lv-1];kingPw=pw;lavaHold=Math.max(lavaHold,SHOW_INTRO+kingTmax+.6);
+  showIntro=SHOW_INTRO;showLv=lv;kingTmax=KL_KT[lv-1];kingPw=pw;lavaHold=Math.max(lavaHold,kingTmax+.6);beginShow(); // clock runs from the first frame; the title card flies over the action
   sfx.superLaunch();vibe([40,30,80]); // (no cut-in here: the SHOW TIME title card is the announcement)flashO=Math.max(flashO,.5);flashCol='#ffe9a8';shake=Math.max(shake,8);
   for(let i=0;i<40;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*140,l=.5+Math.random()*.4;
     parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:i%3?'#ff8a1a':'#ffd400'});}
@@ -1214,7 +1214,7 @@ function update(dt){
   // on the floor below while the floors above him get smashed
   if(pl.jt>=0){pl.jt+=dt/pl.jd;if(pl.jt>=1){pl.jt=-1;pl.feet=pl.to;chip(pl.x-4,pl.feet,'rgba(220,210,230,.6)',3,40);chip(pl.x+4,pl.feet,'rgba(220,210,230,.6)',3,40);}
     else pl.feet=pl.from+(pl.to-pl.from)*pl.jt;}
-  if(showIntro>0&&mode==='play'){showIntro=Math.max(0,showIntro-dt);if(showIntro===0)beginShow();}
+  if(showIntro>0&&mode==='play')showIntro=Math.max(0,showIntro-dt);
   if(kingT>0&&mode==='play'){kingT=Math.max(0,kingT-dt); // ticks even through hit-stop, so KING TIME is real seconds
     if(kingT===0){pop(W/2,pl.feet-50,'SHOW END','#ffd400',2,true);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
   if(hitstop>0){hitstop-=dt;return;}
