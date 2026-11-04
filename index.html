@@ -1493,7 +1493,18 @@ function drawSlab(s){
     R(x0,sy-4,cut,2,col);                            // remaining HP
     if(cut>0&&cut<IN){ctx.globalAlpha=.7;R(x0+cut-1,sy,1,10,'#ffffff');ctx.globalAlpha=1;}}
   if(s.n<=tgtN()+2)drawWeak(s,sy);
+  if(typeof kingT==='number'&&kingT>0)weakMarquee(s,sy);
 }
+// KING TIME: every block turns into one big weak point, so 'WEAK POINT' runs across each of them like
+// a scrolling sign (big 10px letters filling the block, alternate rows scroll opposite ways)
+function weakMarquee(s,sy){
+  const x0=WALL,msg='WEAK POINT ',sc=2,step=tw(msg,sc)+sc*4,dir=s.n%2?1:-1;
+  const intro=Math.min(1,(kingTmax-kingT)/.25);                                     // slides in as KING TIME starts
+  ctx.save();ctx.beginPath();ctx.rect(x0,sy,IN,10);ctx.clip();
+  ctx.globalAlpha=.78;R(x0,sy,IN,10,'#7a1020');ctx.globalAlpha=1;
+  const off=((gt*40*dir)%step+step)%step+(1-intro)*IN*dir;
+  for(let x=x0-step+off;x<x0+IN+step;x+=step)text(msg,x,sy,sc,'#ffe27a','l','#ff3a5a');
+  ctx.restore();R(x0,sy,IN,1,'#ff3a5a');R(x0,sy+9,IN,1,'#ff3a5a');}
 const BODY=["..kkkk..",".kkkkkk.",".rrrrrr.",".ssssss.",".sesses.",".ssssss.","..ssss..",".gggggg.",".ggGGgg.",".gggggg.",".bbbbbb.",".gggggg.",".gg..gg.",".dd..dd."];
 // after lava bounces the gi trousers burn away: knee-length shorts, then charred short shorts
 const BODY_B1=BODY.slice(0,11).concat([".gkgkgg.",".ss..ss.",".dd..dd."]);
