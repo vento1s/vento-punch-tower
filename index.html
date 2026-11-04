@@ -1119,15 +1119,25 @@ function dash(dirSide){
 }
 function press(id,side){if(holds.has(id))return;
   if(mode==='play'&&ctrlMode==='classic')for(const h of holds.values()){if(!h.used&&h.side!==side&&h.t>=HOLD_T){
-    holds.set(id,{side,t:0,c:0,used:true});dash(h.side);return;}}
+    holds.set(id,{side,t:0,c:0,used:true,pend:true,from:h.side,born:now()});return;}} // dash or punch? decided in a moment (see DASH_GRACE)
   if(mode==='super'){holds.set(id,{side,t:0,c:0,used:true,rub:true});return;} // KING PUNCH: rub up and down
   holds.set(id,{side,t:0,c:0,used:false,born:now()});
   if(ctrlMode==='pad')hit(side); // pad buttons punch on press; classic waits to see tap vs hold
 }
+// pressing the other side while one fist is held used to always mean DASH, so a thumb landing just as the charged fist
+// let go was eaten (and the dash shoved the boxer off the weak point before the ki punch landed). Now that press waits
+// DASH_GRACE: if the held fist lets go inside it, the press is an ordinary punch; otherwise (or on a quick tap) it dashes.
+const DASH_GRACE=.12;
+function resolvePend(id,h){h.pend=false;
+  const held=[...holds.values()].some(o=>o!==h&&!o.used&&o.side===h.from);
+  if(held)dash(h.from);
+  else{h.used=false;h.t=Math.max(0,now()-(h.born||now()));}}   // the held fist is gone: this press is a normal punch/hold
 function release(id){const h=holds.get(id);holds.delete(id);
+  if(h&&h.pend){if(mode==='play'){const held=[...holds.values()].some(o=>!o.used&&o.side===h.from);if(held)dash(h.from);else if(ctrlMode==='classic')hit(h.side);}return;} // quick tap while walking = dash right away
   if(!h||h.used||h.drag||mode!=='play')return;  // a drag was for positioning, so no punch on release
   if(h.t>=HOLD_T)hit(h.side,Math.max(.05,h.c)); // held: ki punch
   else if(ctrlMode==='classic')hit(h.side);      // classic quick tap: normal punch, on release
+  for(const [oid,o] of holds)if(o.pend&&o.from===h.side)resolvePend(oid,o); // the other thumb was waiting on this one
 }
 const toCanvas=e=>{const r=stage.getBoundingClientRect();return [(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H];};
 stage.addEventListener('pointerdown',e=>{if(!ov.hidden)return;e.preventDefault();
@@ -1211,6 +1221,7 @@ function update(dt){
         for(let i=0;i<10;i++){const a=i/10*Math.PI*2;parts.push({x:g.x,y:g.y,vx:Math.cos(a)*45,vy:Math.sin(a)*45,life:.25,max:.25,s:1,g:0,ki:true});}}
       if(Math.random()<.25+.45*h.c){const a=Math.random()*Math.PI*2,r=9+Math.random()*5,l=.22;
         parts.push({x:g.x+Math.cos(a)*r,y:g.y+Math.sin(a)*r,vx:-Math.cos(a)*r/l,vy:-Math.sin(a)*r/l,life:l,max:l,s:1,g:0,ki:true});}}
+    for(const [oid,o] of holds)if(o.pend&&now()-o.born>=DASH_GRACE)resolvePend(oid,o); // waited out the grace: it's a dash
     if(holds.size||stick.id!==null){lastTap=now();comboFX.at=lastTap;}
     if(ctrlMode==='pad'&&stick.id!==null&&Math.abs(stick.dx)>=2)pl.tx+=stick.dx/STICK_MAX*MOVE_SPD*1.2*dt;
   }
