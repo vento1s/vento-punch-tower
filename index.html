@@ -320,7 +320,7 @@ function saveBest(b){bests[D.key]=b;try{localStorage.setItem('punchtower.best2',
 /* ---------- pixel font 3x5 ---------- */
 const F={'0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'111001111001111','4':'101101111001001','5':'111100111001111','6':'111100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001111',
 A:'111101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',Z:'111001010100111',
-'!':'010010010000010',"'":'010010000000000','/':'001001010100100','+':'000010111010000',':':'000010000010000','.':'000000000000010','-':'000000111000000',' ':'000000000000000','x':'000101010101000'};
+'!':'010010010000010','%':'100001010100001',"'":'010010000000000','/':'001001010100100','+':'000010111010000',':':'000010000010000','.':'000000000000010','-':'000000111000000',' ':'000000000000000','x':'000101010101000'};
 function tw(s,sc){return s.length*4*sc-sc;}
 function text(s,x,y,sc,col,align,sh){
   s=String(s);if(align==='c')x-=tw(s,sc)/2;else if(align==='r')x-=tw(s,sc);
@@ -692,7 +692,7 @@ const KING_FREEZE=1.5;let lavaHold=0;
 const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let burns=0,burnT=0; // lava bounces taken this run, and the immunity left after the last one
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
-let judge=null;const JUDGE=[['PERFECT!','#e8a400','#5a3000',2],['GOOD','#2aa84a','#0c3a1a',2],['CLOSE','#e0641a','#4a1a06',2],['MOVE! MOVE!','#c8341a','#4a1408',2]]; // [text, extrusion, deep extrusion, size]: VENTO-logo style, the extrusion carries the grade colour
+let judge=null;const JUDGE=[['PERFECT!','#e8a400','#5a3000',2],['COOOOL!','#2aa84a','#0c3a1a',2],['90%','#e0641a','#4a1a06',2],['MOVE! MOVE!','#c8341a','#4a1408',2]]; // [text, extrusion, deep extrusion, size]: VENTO-logo style, the extrusion carries the grade colour
 let dispT=0,tGains=[],gainSum=0,gainT=0,hudT=0; // TIME counter that rolls up, and the '+0.2' pops that feed it
 // TIME drives the lava: 60s banked -> x0.6, 30s (start) -> about x1, 10s -> x1.35, 0s -> TIME UP surge
 // TIME is now the honest truth: seconds until the lava reaches your feet at its current speed.
@@ -785,7 +785,7 @@ function hit(side,power){
   const weak=onWeak&&(alt||(charged&&power>=.3));
   // aim judgement (4 grades) from how far the boxer is from the weak point's centre
   {const d=Math.abs(pl.x-s.wx),half=wkW(s)/2;
-   const g=s.wT<1?null:d<=half*.4?0:d<=half+1?1:d<=half+12?2:3;
+   const g=s.wT<1?null:d<=half*.55?0:d<=half+1?1:d<=half+12?2:3;
    if(g!==null&&!(onWeak&&!alt&&!charged))judge={g,at:t,n:tgtN()};}
   // hints: same hand over and over on the weak point -> "alternate"; punching far from the weak point -> "hold to walk"
   if(!charged){if(onWeak){offHits=0;if(alt){sameSide=0;learn('alt');}else if(++sameSide>=3)showHint('alt');}
