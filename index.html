@@ -1916,29 +1916,49 @@ function drawKingAura(){
 // KING slot, one row: "LV n" on the left, 10 tall cells filling left to right toward the next level on the right
 // BIG KING GAUGE along the bottom edge: LV1..LV5 stack up in ONE row (nothing resets on level-up), 9 cells per level,
 // cells rising from 2px on the left to 9px on the right. LV5 -> MAX paints the same cells blue, left to right.
-const GAUGE_ROW=11,GAUGE_PER=9,KL_GCOL=['#ff5a1a','#ff8a1a','#ffb000','#ffd400','#fff06a'];
+const GAUGE_ROW=11,GAUGE_PER=6,KL_GCOL=['#ff5a1a','#ff8a1a','#ffb000','#ffd400','#fff06a'];
 function drawBigGauge(){
   if(!(mode==='play'||mode==='super'||mode==='count'))return;
-  const n=GAUGE_PER*5,cw=2,gap=1,lvGap=1,tot=n*(cw+gap)-gap+4*lvGap,x0=Math.round((W-tot)/2),base=H-2,h0=2,h1=9;
+  // one strip along the bottom edge: [LV1]▮▮▮▮▮▮[2]▮▮▮▮▮▮[3]…[5]▮▮▮▮▮▮[MAX]. Each level label sits in the
+  // strip itself and fills up from the bottom in its level's colour as that stretch of cells fills.
+  const n=GAUGE_PER*5,cw=2,gap=1,base=H-2,h0=2,h1=9,LP=1;
+  const labs=['LV1','2','3','4','5','MAX'],lw=labs.map(t=>tw(t,1));
+  const tot=lw.reduce((a,b)=>a+b+LP*2,0)+5*(GAUGE_PER*(cw+gap)-gap);
+  let x=Math.round((W-tot)/2);const cellX=[],labX=[];
+  for(let g=0;g<6;g++){labX.push(x+LP);x+=lw[g]+LP*2;if(g<5)for(let k=0;k<GAUGE_PER;k++){cellX.push(x);x+=cw+(k<GAUGE_PER-1?gap:0);}}
   R(0,H-GAUGE_ROW,W,GAUGE_ROW,'rgba(10,6,16,.78)');
   const lvDone=Math.min(5,kingLevel),cur=kingLevel<5?Math.min(1,altStreak/kingNeed()):0;
   const filled=lvDone*GAUGE_PER+Math.floor(cur*GAUGE_PER+1e-6);                 // pass 1: LV1..LV5, warm colours
-  const blue=kingLevel>=6?n:kingLevel===5?Math.floor(Math.min(1,altStreak/KL_NEED[5])*n+1e-6):0; // pass 2: toward MAX, blue
-  for(let i=0;i<n;i++){const lv=Math.floor(i/GAUGE_PER),ch=Math.round(h0+(h1-h0)*i/(n-1)),sx=x0+i*(cw+gap)+lv*lvGap,sy=base-ch;
+  const maxFr=kingLevel>=6?1:kingLevel===5?Math.min(1,altStreak/KL_NEED[5]):0;
+  const blue=Math.floor(maxFr*n+1e-6);                                            // pass 2: toward MAX, blue
+  const chOf=i=>Math.round(h0+(h1-h0)*i/(n-1));
+  for(let i=0;i<n;i++){const lv=Math.floor(i/GAUGE_PER),ch=chOf(i),sx=cellX[i],sy=base-ch;
     let col='#2a1d38';
     if(i<blue)col=kingLevel>=6?(i%3===2?'#7af0ff':'#3a8aff'):'#3a8aff';
     else if(i<filled)col=KL_GCOL[lv];
     else if(i===filled&&kingLevel<5&&((gt*6)|0)%2)col='#5a4a6a';                 // the next cell blinks
     R(sx,sy,cw,ch,col);if(col!=='#2a1d38'&&col!=='#5a4a6a')R(sx,sy,cw,1,'rgba(255,255,255,.45)');}
+  // the labels: dim outline of the text, then the lit colour rising from the bottom as their stretch fills
+  kHud.lvPop=Math.max(0,(kHud.lvPop||0)-1/60);const pa=.4-kHud.lvPop;
+  for(let g=0;g<6;g++){
+    const fr=g<5?(blue>=(g+1)*GAUGE_PER?1:clamp((filled-g*GAUGE_PER)/GAUGE_PER,0,1)):maxFr;
+    const isBlue=g===5||blue>=(g+1)*GAUGE_PER,lit=isBlue?'#7af0ff':KL_GCOL[g];
+    const justNow=kHud.lvPop>0&&(g<5?kingLevel===g+1:kingLevel>=6);              // the level you just reached hops
+    const hop=!justNow?0:pa<.05?-2:pa<.13?-4:pa<.21?-2:pa<.27?1:0;
+    const ty=base-5+hop,tx=labX[g];
+    text(labs[g],tx,ty,1,'#3b2a52','l',false);
+    if(fr>0){const fh=Math.max(1,Math.round(5*fr));ctx.save();ctx.beginPath();ctx.rect(tx-1,ty+5-fh,lw[g]+2,fh);ctx.clip();
+      text(labs[g],tx,ty,1,justNow&&pa<.13?'#ffffff':lit,'l',false);ctx.restore();}
+    if(fr>=1&&((g<5&&kingLevel===g+1)||(g===5&&kingLevel>=6))){R(tx,base+1,lw[g],1,lit);}}   // underline the level you're on
   // glass glint: a slanted shine sweeps across the lit cells every few seconds, plus the odd twinkle
   const lit=Math.max(filled,blue);if(lit<=0)return;
-  const litEnd=x0+(lit-1)*(cw+gap)+Math.floor((lit-1)/GAUGE_PER)*lvGap+cw,PER=2.8,SW=.9,ph=gt%PER;
-  if(ph<SW){const gx=x0-12+(litEnd-x0+24)*(ph/SW);
-    for(let i=0;i<lit;i++){const lv=Math.floor(i/GAUGE_PER),chh=Math.round(h0+(h1-h0)*i/(n-1)),sx=x0+i*(cw+gap)+lv*lvGap;
+  const litEnd=cellX[lit-1]+cw,PER=2.8,SW=.9,ph=gt%PER;
+  if(ph<SW){const gx=cellX[0]-12+(litEnd-cellX[0]+24)*(ph/SW);
+    for(let i=0;i<lit;i++){const chh=chOf(i),sx=cellX[i];
       for(let y=base-chh;y<base;y++){const d=Math.abs(sx+1-(gx+(base-y)*.8));
         if(d<2)R(sx,y,cw,1,'rgba(255,255,255,.8)');else if(d<4.5)R(sx,y,cw,1,'rgba(255,255,255,.32)');}}}
   {const k=Math.floor(gt*2.2),i=Math.floor(hash(k,77)*lit),f=gt*2.2-k; // twinkle: a tiny 4-point star pops on one cell
-    if(f<.55){const lv=Math.floor(i/GAUGE_PER),chh=Math.round(h0+(h1-h0)*i/(n-1)),cx=x0+i*(cw+gap)+lv*lvGap+1,cy=base-chh+1,a=Math.sin(f/.55*Math.PI);
+    if(f<.55){const cx=cellX[i]+1,cy=base-chOf(i)+1,a=Math.sin(f/.55*Math.PI);
       ctx.globalAlpha=a;R(cx,cy-2,1,5,'#ffffff');R(cx-2,cy,5,1,'#ffffff');ctx.globalAlpha=1;}}}
 // BIG ARCADE JOYSTICK (same pixel style as the PUSH button), centre screen while you rub after a KING PUNCH:
 // a red ball on a chrome shaft over a dark bezel. On its own it keeps pulling itself down and easing back up;
@@ -2014,18 +2034,11 @@ function drawStrip(){
   // KING FIST slot: gauge until 20 alternating hits, then a burning button
   const x0=BTN_L+1,w=ctrlMode==='pad'?44:BTN_R-BTN_L-2; // pad mode leaves room for the fist buttons
   if(superReady){
-    {kHud.lvPop=Math.max(0,(kHud.lvPop||0)-1/60);const pop6=kHud.lvPop>0,six=kingLevel>=KL_NEED.length,need=kingNeed(),n=six?need:Math.min(need,altStreak);
-     const ly=y0+1+Math.round((h-GAUGE_ROW-10)/2);
-     // level up: the label pops like it was flicked - 2 -> 3 -> 4 -> 3 -> 2 (pixel sizes), hopping up at the peak
-     const pa=.4-kHud.lvPop,lsc=!pop6?2:pa<.05?3:pa<.13?4:pa<.21?3:2,hop=!pop6?0:pa<.05?-3:pa<.13?-5:pa<.21?-2:pa<.27?1:0;
-     const lyy=ly+hop-(lsc-2)*2.5,white=pop6&&pa<.13;
-     if(six)text('MAX!',x0+w/2,lyy,lsc,white?'#ffffff':'#7af0ff','c','#0d0a08');
-     else text('LV'+kingLevel,x0+w/2,lyy,lsc,white?'#ffffff':KL_GCOL[kingLevel-1],'c','#0d0a08');}
+    // (the LV label now lives inside the gauge strip below)
     // fill shows how long both thumbs have been held
     if(bothT>0)R(x0,y0+h-2-GAUGE_ROW,w*Math.min(1,bothT/BOTH_HOLD),3,'#ffffff');
   }else if(mode==='play'){
-    const need=kingNeed(),n=Math.min(need,altStreak),close=n>=need*.75;
-    text('LV1',x0+w/2,y0+1+Math.round((h-GAUGE_ROW-10)/2),2,close&&((gt*6)|0)%2?'#ff8a1a':'#5a4a6a','c','#0d0a08');
+    // (nothing here before LV1: the gauge strip shows the progress)
   }
 }
 function render(){
