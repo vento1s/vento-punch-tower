@@ -1853,7 +1853,17 @@ function drawBigGauge(){
     if(i<blue)col=kingLevel>=6?['#3a8aff','#7af0ff','#cff6ff'][(i+((gt*12)|0))%3]:'#3a8aff';
     else if(i<filled)col=KL_GCOL[lv];
     else if(i===filled&&kingLevel<5&&((gt*6)|0)%2)col='#5a4a6a';                 // the next cell blinks
-    R(sx,sy,cw,ch,col);if(col!=='#2a1d38'&&col!=='#5a4a6a')R(sx,sy,cw,1,'rgba(255,255,255,.45)');}}
+    R(sx,sy,cw,ch,col);if(col!=='#2a1d38'&&col!=='#5a4a6a')R(sx,sy,cw,1,'rgba(255,255,255,.45)');}
+  // glass glint: a slanted shine sweeps across the lit cells every few seconds, plus the odd twinkle
+  const lit=Math.max(filled,blue);if(lit<=0)return;
+  const litEnd=x0+(lit-1)*(cw+gap)+Math.floor((lit-1)/GAUGE_PER)*lvGap+cw,PER=2.8,SW=.9,ph=gt%PER;
+  if(ph<SW){const gx=x0-12+(litEnd-x0+24)*(ph/SW);
+    for(let i=0;i<lit;i++){const lv=Math.floor(i/GAUGE_PER),chh=Math.round(h0+(h1-h0)*i/(n-1)),sx=x0+i*(cw+gap)+lv*lvGap;
+      for(let y=base-chh;y<base;y++){const d=Math.abs(sx+1-(gx+(base-y)*.8));
+        if(d<2)R(sx,y,cw,1,'rgba(255,255,255,.8)');else if(d<4.5)R(sx,y,cw,1,'rgba(255,255,255,.32)');}}}
+  {const k=Math.floor(gt*2.2),i=Math.floor(hash(k,77)*lit),f=gt*2.2-k; // twinkle: a tiny 4-point star pops on one cell
+    if(f<.55){const lv=Math.floor(i/GAUGE_PER),chh=Math.round(h0+(h1-h0)*i/(n-1)),cx=x0+i*(cw+gap)+lv*lvGap+1,cy=base-chh+1,a=Math.sin(f/.55*Math.PI);
+      ctx.globalAlpha=a;R(cx,cy-2,1,5,'#ffffff');R(cx-2,cy,5,1,'#ffffff');ctx.globalAlpha=1;}}}
 // BIG ARCADE JOYSTICK (same pixel style as the PUSH button), centre screen while you rub after a KING PUNCH:
 // a red ball on a chrome shaft over a dark bezel. On its own it keeps pulling itself down and easing back up;
 // while you rub, the ball follows your finger, so it reads as "grab this and keep yanking it down".
