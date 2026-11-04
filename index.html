@@ -692,7 +692,7 @@ const KING_FREEZE=1.5;let lavaHold=0;
 const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let burns=0,burnT=0; // lava bounces taken this run, and the immunity left after the last one
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
-let judge=null;const JUDGE=[['PERFECT!','#ffd400'],['GOOD','#5aff6a'],['CLOSE','#ff9a3a'],['BAD','#a597b8']];
+let judge=null;const JUDGE=[['PERFECT!','#ffd400',-1,95],['GOOD','#5aff6a',125,95],['CLOSE','#ff9a3a',28,98],['BAD','#a597b8',262,28]]; // [text, base colour, prism hue (-1 = full rainbow), saturation]
 let dispT=0,tGains=[],gainSum=0,gainT=0,hudT=0; // TIME counter that rolls up, and the '+0.2' pops that feed it
 // TIME drives the lava: 60s banked -> x0.6, 30s (start) -> about x1, 10s -> x1.35, 0s -> TIME UP surge
 // TIME is now the honest truth: seconds until the lava reaches your feet at its current speed.
@@ -1564,8 +1564,11 @@ function drawPlayer(){
 }
 function drawJudge(){ // big aim grade where WEAK! used to be; each punch replaces it (one slot, never piles up)
   if(!judge||mode!=='play')return;const age=now()-judge.at;if(age>.55)return;
-  const [txt,col0]=JUDGE[judge.g],sc=3,pop=age<.07;
-  const col=pop?'#ffffff':judge.g===0?['#ffd400','#ffffff','#ff7af0','#7af0ff'][((gt*20)|0)%4]:col0;
+  const [txt,col0,hue,sat]=JUDGE[judge.g],sc=3,pop=age<.07;
+  // prism: each pixel takes its own shade of the grade's hue (light on top, deep at the bottom),
+  // with a sheen that slides across; PERFECT runs the whole rainbow
+  const col=pop?'#ffffff':(px,py)=>{const hh=hue<0?(px*5-gt*360)%360:hue+Math.sin(px*.18-gt*9)*22;
+    return `hsl(${hh},${sat}%,${86-py*2.4+(Math.sin(px*.18-gt*9)>.85?10:0)}%)`;};
   ctx.globalAlpha=age>.4?1-(age-.4)/.15:1;
   const half=tw(txt,sc)/2,x=clamp(judge.x,WALL+half+1,W-WALL-half-1),y=Math.round(judge.y-camY-Math.min(1,age/.4)*8)-(pop?3:0);
   crunchText(txt,x,y,sc,col,judge.at*997|0);ctx.globalAlpha=1;}
@@ -1579,8 +1582,9 @@ function crunchText(s,x,y,sc,col,seed){
   ctx.fillStyle='#3ad8ff';for(const [cx,cy] of cells)ctx.fillRect(cx+1,cy,sc,sc);ctx.globalAlpha=a0;
   for(const [cx,cy,k] of cells)for(let j=0;j<sc;j++)for(let i=0;i<sc;i++){
     const h=hash(k*9+j*sc+i,seed);if(h<.08)continue;                                     // chipped-off bits
-    ctx.fillStyle=j===sc-1?'rgba(18,10,24,.35)':col;ctx.fillRect(cx+i,cy+j,1,1);
-    if(j===sc-1){ctx.fillStyle=col;ctx.globalAlpha=a0*.6;ctx.fillRect(cx+i,cy+j,1,1);ctx.globalAlpha=a0;}} // scanline row
+    const c=typeof col==='function'?col(cx+i-x,cy+j-y):col;
+    if(j===sc-1){ctx.globalAlpha=a0*.6;ctx.fillStyle=c;ctx.fillRect(cx+i,cy+j,1,1);ctx.globalAlpha=a0;} // scanline row
+    else{ctx.fillStyle=c;ctx.fillRect(cx+i,cy+j,1,1);}} // scanline row
 }
 function drawComboFX(){
   if(mode!=='play'||combo<2)return;
@@ -2262,6 +2266,19 @@ function smashStart(btn,stopBtn,next){
     setTimeout(()=>{fc.animate([{opacity:1},{opacity:0}],{duration:200,fill:'forwards'});},420);
     setTimeout(next,700);
   },IMPACT);}
+// leaving the studio logo: the letters punch forward, a white flash bursts open behind them,
+// and the title fades in out of the glare
+function logoFlash(next){
+  const stage=ov.parentNode,st=document.getElementById('studio');
+  if(AC&&soundOn){const t=AC.currentTime;noise(t,.35,6000,.6,.5,'highpass',2500);tone(t,.25,1800,3600,'triangle',.06);tone(t,.3,120,40,'sine',.5);}
+  const burst=document.createElement('div');
+  Object.assign(burst.style,{position:'absolute',inset:'0',pointerEvents:'none',zIndex:'40',
+    background:'radial-gradient(circle at 50% 46%,#fff 0,#fff 18%,rgba(255,244,210,.95) 30%,rgba(255,208,74,.55) 46%,rgba(255,160,60,0) 66%)'});
+  stage.appendChild(burst);
+  burst.animate([{transform:'scale(.05)',opacity:0},{transform:'scale(.6)',opacity:1,offset:.35},{transform:'scale(2.6)',opacity:1}],{duration:260,easing:'cubic-bezier(.2,.7,.3,1)',fill:'forwards'});
+  if(st)st.animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(1.35)',filter:'brightness(3)'}],{duration:240,easing:'ease-in',fill:'forwards'});
+  setTimeout(()=>{next();burst.style.background='#fff';
+    burst.animate([{opacity:1},{opacity:0}],{duration:520,easing:'ease-out',fill:'forwards'}).onfinish=()=>burst.remove();},250);}
 function showSplash(){
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
@@ -2270,7 +2287,10 @@ function showSplash(){
     </div>
     <button class="sndbtn${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}"><i aria-hidden="true"></i><span>${soundLabel()}</span></button>`;
   let stage2=false,done=false;
-  const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);ov.classList.remove('black');showTitle();};
+  const toTitle=()=>{ov.classList.remove('black');showTitle();};
+  const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);
+    if(!stage2||matchMedia('(prefers-reduced-motion: reduce)').matches){toTitle();return;}
+    logoFlash(toTitle);};
   const play=()=>{
     if(stage2){finish();return;} // a second touch skips the logo
     stage2=true;initAudio();sfx.logo();
