@@ -1916,12 +1916,13 @@ function drawKingAura(){
 // KING slot, one row: "LV n" on the left, 10 tall cells filling left to right toward the next level on the right
 // BIG KING GAUGE along the bottom edge: LV1..LV5 stack up in ONE row (nothing resets on level-up), 9 cells per level,
 // cells rising from 2px on the left to 9px on the right. LV5 -> MAX paints the same cells blue, left to right.
-const GAUGE_ROW=11,GAUGE_PER=6,KL_GCOL=['#ff5a1a','#ff8a1a','#ffb000','#ffd400','#fff06a'];
+const GAUGE_ROW=18,GAUGE_PER=6,KL_GCOL=['#ff5a1a','#ff8a1a','#ffb000','#ffd400','#fff06a'];
+const textTall=(t,x,y,col)=>{ctx.save();ctx.translate(x,y);ctx.scale(1,2);text(t,0,0,1,col,'l',false);ctx.restore();};
 function drawBigGauge(){
   if(!(mode==='play'||mode==='super'||mode==='count'))return;
   // one strip along the bottom edge: [LV1]▮▮▮▮▮▮[2]▮▮▮▮▮▮[3]…[5]▮▮▮▮▮▮[MAX]. Each level label sits in the
   // strip itself and fills up from the bottom in its level's colour as that stretch of cells fills.
-  const n=GAUGE_PER*5,cw=2,gap=1,base=H-2,h0=2,h1=9,LP=1;
+  const n=GAUGE_PER*5,cw=2,gap=1,base=H-3,h0=3,h1=14,LP=1,LH=10; // 1.6x taller strip; labels in tall 1x2 pixels
   const labs=['LV1','2','3','4','5','MAX'],lw=labs.map(t=>tw(t,1));
   const tot=lw.reduce((a,b)=>a+b+LP*2,0)+5*(GAUGE_PER*(cw+gap)-gap);
   let x=Math.round((W-tot)/2);const cellX=[],labX=[];
@@ -1944,12 +1945,18 @@ function drawBigGauge(){
     const fr=g<5?(blue>=(g+1)*GAUGE_PER?1:clamp((filled-g*GAUGE_PER)/GAUGE_PER,0,1)):maxFr;
     const isBlue=g===5||blue>=(g+1)*GAUGE_PER,lit=isBlue?'#7af0ff':KL_GCOL[g];
     const justNow=kHud.lvPop>0&&(g<5?kingLevel===g+1:kingLevel>=6);              // the level you just reached hops
-    const hop=!justNow?0:pa<.05?-2:pa<.13?-4:pa<.21?-2:pa<.27?1:0;
-    const ty=base-5+hop,tx=labX[g];
-    text(labs[g],tx,ty,1,'#3b2a52','l',false);
-    if(fr>0){const fh=Math.max(1,Math.round(5*fr));ctx.save();ctx.beginPath();ctx.rect(tx-1,ty+5-fh,lw[g]+2,fh);ctx.clip();
-      text(labs[g],tx,ty,1,justNow&&pa<.13?'#ffffff':lit,'l',false);ctx.restore();}
-    if(fr>=1&&((g<5&&kingLevel===g+1)||(g===5&&kingLevel>=6))){R(tx,base+1,lw[g],1,lit);}}   // underline the level you're on
+    const hop=!justNow?0:pa<.05?-2:pa<.13?-4:pa<.21?-2:pa<.27?1:0;if(kingLevel>=6)continue; // at MAX the strip becomes a MAXIMUM sign
+    const ty=base-LH+hop,tx=labX[g];
+    textTall(labs[g],tx,ty,'#3b2a52');
+    if(fr>0){const fh=Math.max(1,Math.round(LH*fr));ctx.save();ctx.beginPath();ctx.rect(tx-1,ty+LH-fh,lw[g]+2,fh);ctx.clip();
+      textTall(labs[g],tx,ty,justNow&&pa<.13?'#ffffff':lit);ctx.restore();}
+    if(fr>=1&&g<5&&kingLevel===g+1){R(tx,base+1,lw[g],1,lit);}}   // underline the level you're on
+  if(kingLevel>=6){ // MAX: 'MAXIMUM' runs along the whole strip like a scrolling sign over the blue cells
+    ctx.save();ctx.beginPath();ctx.rect(0,H-GAUGE_ROW,W,GAUGE_ROW);ctx.clip();
+    ctx.globalAlpha=.55;R(0,H-GAUGE_ROW,W,GAUGE_ROW,'#0a1430');ctx.globalAlpha=1;
+    const msg='MAXIMUM ',step=tw(msg,1)+6,off=((gt*24)%step+step)%step,ty=base-LH;
+    for(let x=-step+off;x<W+step;x+=step){textTall(msg,x+1,ty+1,'#0a2a6a');textTall(msg,x,ty,'#cff6ff');}
+    ctx.restore();R(0,H-GAUGE_ROW,W,1,'#7af0ff');}
   // glass glint: a slanted shine sweeps across the lit cells every few seconds, plus the odd twinkle
   const lit=Math.max(filled,blue);if(lit<=0)return;
   const litEnd=cellX[lit-1]+cw,PER=2.8,SW=.9,ph=gt%PER;
