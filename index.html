@@ -692,7 +692,7 @@ const KING_FREEZE=1.5;let lavaHold=0;
 const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let burns=0,burnT=0; // lava bounces taken this run, and the immunity left after the last one
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
-let judge=null;const JUDGE=[['PERFECT!','#ffd400',48,100],['GOOD','#5aff6a',125,95],['CLOSE','#ff9a3a',28,98],['BAD','#a597b8',262,28]]; // [text, base colour, hue, saturation]: one colour each, never cycling
+let judge=null;const JUDGE=[['PERFECT!','#ffd400','#c24e00','#fff3a0',3],['GOOD','#5aff6a','#1a8a3a','#d8ffd0',3],['CLOSE','#ff9a3a','#a83a0a','#ffe0b0',3],['GO TO WEAK','#ff3a5a','#7a1020','#ffb0bc',2]]; // [text, colour, deep shadow, top bevel, size]: one colour each
 let dispT=0,tGains=[],gainSum=0,gainT=0,hudT=0; // TIME counter that rolls up, and the '+0.2' pops that feed it
 // TIME drives the lava: 60s banked -> x0.6, 30s (start) -> about x1, 10s -> x1.35, 0s -> TIME UP surge
 // TIME is now the honest truth: seconds until the lava reaches your feet at its current speed.
@@ -1564,28 +1564,15 @@ function drawPlayer(){
 }
 function drawJudge(){ // big aim grade where WEAK! used to be; each punch replaces it (one slot, never piles up)
   if(!judge||mode!=='play')return;const age=now()-judge.at;if(age>.55)return;
-  const [txt,col0,hue,sat]=JUDGE[judge.g],sc=3,pop=age<.07;
-  // prism: each pixel takes its own shade of the grade's hue (light on top, deep at the bottom),
-  // with a sheen that slides across; PERFECT runs the whole rainbow
-  // prism shading inside the grade's own colour: bright facet on top, deep at the bottom, a fixed diagonal glint
-  const col=pop?'#ffffff':(px,py)=>{const glint=((px+py*2)%17)<2?12:0;return `hsl(${hue},${sat}%,${Math.min(95,84-py*2.2+glint)}%)`;};
+  // same look as the game's other big pixel text (KING HIT count etc.): solid colour, a deeper shade of it
+  // as the drop shadow, a light bevel on top and a dark outline so it reads over any brick
+  const [txt,col,deep,lite,sc]=JUDGE[judge.g],pop=age<.07;
   ctx.globalAlpha=age>.4?1-(age-.4)/.15:1;
-  const half=tw(txt,sc)/2,x=clamp(judge.x,WALL+half+1,W-WALL-half-1),y=Math.round(judge.y-camY-Math.min(1,age/.4)*8)-(pop?3:0);
-  crunchText(txt,x,y,sc,col,judge.at*997|0,col0);ctx.globalAlpha=1;}
-// a blown-up, slightly busted bitmap: chunky pixels with a few bits chipped off, scanlines, and a
-// red/cyan misregistration ghost, like a low-res sprite stretched on an old screen
-function crunchText(s,x,y,sc,col,seed,ghost){
-  x=Math.round(x-tw(s,sc)/2);y=Math.round(y);const a0=ctx.globalAlpha;
-  const cells=[];for(let i=0;i<s.length;i++){const g=F[s[i]]||F[' '];for(let p=0;p<15;p++)if(g[p]==='1')cells.push([x+(i*4+p%3)*sc,y+((p/3)|0)*sc,i*15+p]);}
-  ctx.fillStyle='#120a18';for(const [cx,cy] of cells){ctx.fillRect(cx-1,cy-1,sc+2,sc+2);ctx.fillRect(cx+1,cy+2,sc,sc);} // thin outline + drop so it still reads
-  ctx.globalAlpha=a0*.35;ctx.fillStyle=ghost||'#ffffff';for(const [cx,cy] of cells)ctx.fillRect(cx-1,cy,sc,sc); // same-colour misregistration ghost // colour misregistration
-  for(const [cx,cy] of cells)ctx.fillRect(cx+1,cy,sc,sc);ctx.globalAlpha=a0;
-  for(const [cx,cy,k] of cells)for(let j=0;j<sc;j++)for(let i=0;i<sc;i++){
-    const h=hash(k*9+j*sc+i,seed);if(h<.08)continue;                                     // chipped-off bits
-    const c=typeof col==='function'?col(cx+i-x,cy+j-y):col;
-    if(j===sc-1){ctx.globalAlpha=a0*.6;ctx.fillStyle=c;ctx.fillRect(cx+i,cy+j,1,1);ctx.globalAlpha=a0;} // scanline row
-    else{ctx.fillStyle=c;ctx.fillRect(cx+i,cy+j,1,1);}} // scanline row
-}
+  const half=tw(txt,sc)/2,x=clamp(judge.x,WALL+half+2,W-WALL-half-2),y=Math.round(judge.y-camY-Math.min(1,age/.4)*8)-(pop?3:0);
+  for(const [ox,oy] of [[-1,0],[1,0],[0,-1],[-1,-1],[1,-1],[-1,sc+1],[sc+1,sc+1],[sc+1,0],[0,sc+1]])text(txt,x+ox,y+oy,sc,'#120a18','c',false);
+  text(txt,x+(sc>2?2:1),y+(sc>2?2:1),sc,deep,'c',false);       // deep shadow
+  text(txt,x,y-1,sc,pop?'#ffffff':lite,'c',false);               // top bevel
+  text(txt,x,y,sc,pop?'#ffffff':col,'c',false);ctx.globalAlpha=1;}
 function drawComboFX(){
   if(mode!=='play'||combo<2)return;
   const t=now(),age=t-comboFX.at;if(age>D.win+.2)return;
