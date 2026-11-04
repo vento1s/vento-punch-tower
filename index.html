@@ -1562,13 +1562,13 @@ function drawPlayer(){
     // tiny charge pips under the boxer: 3 steps
     const n=c>=1?3:c>=.5?2:c>=.15?1:0;for(let i=0;i<3;i++)R(Math.round(pl.x)-4+i*3,top+16,2,1,i<n?'#7af0ff':'rgba(122,240,255,.2)');}
 }
-function drawJudge(){ // big aim grade where WEAK! used to be; each punch replaces it (one slot, never piles up)
+function drawJudge(){ // big aim grade, fixed just under the HITS counter so the weak point stays in view; one slot, never piles up
   if(!judge||mode!=='play')return;const age=now()-judge.at;if(age>.55)return;
   // same look as the game's other big pixel text (KING HIT count etc.): solid colour, a deeper shade of it
   // as the drop shadow, a light bevel on top and a dark outline so it reads over any brick
   const [txt,col,deep,lite,sc]=JUDGE[judge.g],pop=age<.07;
   ctx.globalAlpha=age>.4?1-(age-.4)/.15:1;
-  const half=tw(txt,sc)/2,x=clamp(judge.x,WALL+half+2,W-WALL-half-2),y=Math.round(judge.y-camY-Math.min(1,age/.4)*8)-(pop?3:0);
+  const x=W/2,y=(sc>2?62:65)-(pop?2:0);
   for(const [ox,oy] of [[-1,0],[1,0],[0,-1],[-1,-1],[1,-1],[-1,sc+1],[sc+1,sc+1],[sc+1,0],[0,sc+1]])text(txt,x+ox,y+oy,sc,'#120a18','c',false);
   text(txt,x+(sc>2?2:1),y+(sc>2?2:1),sc,deep,'c',false);       // deep shadow
   text(txt,x,y-1,sc,pop?'#ffffff':lite,'c',false);               // top bevel
@@ -1651,7 +1651,7 @@ function drawHUD(){
    R(3,24+162*(1-room),3,162*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,chill>.05?'#7af0ff':'#ff7a1a');
    if(chill>.05)R(7,186-Math.round(40*chill),2,Math.round(40*chill),'#7af0ff');}
   if(mode==='play'&&chill>.45){ctx.globalAlpha=.6+.4*Math.sin(gt*10);text('LAVA SLOW',W/2,H-68,1,'#7af0ff','c');ctx.globalAlpha=1;}
-  if(fever>0){text('FEVER x2',W/2,62,1,'#ff7af0','c');
+  if(fever>0){text('FEVER x2',W/2,86,1,'#ff7af0','c');
     ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle='#ff7af0';ctx.lineWidth=2;ctx.strokeRect(1,20,W-2,H-21);ctx.globalAlpha=1;}
   const dist=lavaY-pl.feet;
   if(mode==='play'&&started){
