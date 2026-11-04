@@ -2392,14 +2392,21 @@ function logoPunch(next){
   const LW=144,LH=256,cv=document.createElement('canvas');cv.width=LW;cv.height=LH;
   Object.assign(cv.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'40',imageRendering:'pixelated'});
   stage.appendChild(cv);const c=cv.getContext('2d');
-  if(st)st.style.visibility='hidden';if(hint)hint.style.visibility='hidden';
-  // the logo, redrawn in canvas pixels so it can crack and shatter
-  const LINES=[['VENTO',2],['AI STUDIO',2]],cells=[];
-  LINES.forEach(([str,sc],li)=>{const x0=Math.round(LW/2-tw(str,sc)/2),y0=112+li*16;
-    for(let i=0;i<str.length;i++){const g=F[str[i]]||F[' '];for(let p=0;p<15;p++)if(g[p]==='1')cells.push({x:x0+(i*4+p%3)*sc,y:y0+((p/3)|0)*sc,sc,vx:0,vy:0,cr:0});}});
+  // the real logo stays on screen (same size, no swap) and just gets knocked about by each punch;
+  // only at the final blow is it traced into canvas pixels, at exactly where it sits, to burst apart
+  const cells=[];
+  const traceLogo=()=>{if(!st)return;const sr=stage.getBoundingClientRect(),k=LW/sr.width,off=document.createElement('canvas');off.width=LW;off.height=LH;
+    const o=off.getContext('2d');o.fillStyle='#fff';o.textBaseline='middle';
+    st.querySelectorAll('span').forEach(sp=>{const r=sp.getBoundingClientRect(),cs=getComputedStyle(sp),fs=parseFloat(cs.fontSize)*k;
+      o.font=fs+'px '+cs.fontFamily;try{o.letterSpacing=(parseFloat(cs.letterSpacing)||0)*k+'px';}catch(e){}
+      o.fillText(sp.textContent,(r.left-sr.left)*k,(r.top-sr.top+r.height/2)*k);});
+    const d=o.getImageData(0,0,LW,LH).data;
+    for(let y=0;y<LH;y++)for(let x=0;x<LW;x++)if(d[(y*LW+x)*4+3]>110)cells.push({x,y,sc:1,vx:0,vy:0});
+    st.style.visibility='hidden';if(hint)hint.style.visibility='hidden';};
+  const knock=()=>{if(st)st.animate([{transform:'translate(0,0)',filter:'brightness(1)'},{transform:`translate(${(Math.random()-.5)*10}px,${(Math.random()-.5)*8}px) rotate(${(Math.random()-.5)*4}deg)`,filter:'brightness(2.2)'},{transform:'translate(0,0)',filter:'brightness(1)'}],{duration:120});};
   const drawLogo=(shatter)=>{for(const k of cells){const x=Math.round(k.x),y=Math.round(k.y);
       c.fillStyle='#4a1408';c.fillRect(x+2,y+2,k.sc,k.sc);c.fillStyle='#c8341a';c.fillRect(x+1,y+1,k.sc,k.sc);
-      c.fillStyle=k.cr?'#8a7a7a':'#f4efe8';c.fillRect(x,y,k.sc,k.sc);if(!shatter){c.fillStyle='#bdb4ae';c.fillRect(x,y+1,k.sc,1);}}};
+      c.fillStyle='#f4efe8';c.fillRect(x,y,k.sc,k.sc);}};
   const fist=(cx,cy,sc,a,mir)=>{const w=FIST_FRONT[0].length,h=FIST_FRONT.length,x0=cx-w*sc/2,y0=cy-h*sc/2;c.globalAlpha=a;
     for(let r=0;r<h;r++)for(let q=0;q<w;q++){const ch=FIST_FRONT[r][mir?w-1-q:q];if(ch==='.')continue;c.fillStyle=FIST_FRONT_PAL[ch];
       const xa=Math.floor(x0+q*sc),ya=Math.floor(y0+r*sc);c.fillRect(xa,ya,Math.max(1,Math.floor(x0+(q+1)*sc)-xa),Math.max(1,Math.floor(y0+(r+1)*sc)-ya));}c.globalAlpha=1;}; // no overlap, so fading fists don't go plaid
@@ -2413,11 +2420,8 @@ function logoPunch(next){
   const frame=now=>{const e=now-t0;c.clearRect(0,0,LW,LH);
     const sx=shake>0?Math.round((Math.random()-.5)*shake):0,sy=shake>0?Math.round((Math.random()-.5)*shake):0;shake=Math.max(0,shake-1);
     c.save();c.translate(sx,sy);
-    if(!swapped){c.fillStyle='#000';c.fillRect(-4,-4,LW+8,LH+8);}
-    if(!shattered)drawLogo(false);
     for(const f of fists){const k=(e-f.at)/LIFE;if(k<0||k>1.15)continue;
-      if(k>=.75&&!f.hit){f.hit=true;shake=4;thump(false);
-        for(let n=0;n<10;n++){const q=cells[(hash(f.at,n)*cells.length)|0];if(q)q.cr=1;}cracked++;} // each hit cracks a few pixels
+      if(k>=.75&&!f.hit){f.hit=true;shake=4;thump(false);knock();cracked++;} // each hit knocks the logo about
       const sc=.25+Math.min(1,k)*2.1,a=k>1?1-(k-1)/.15:1;
       for(let n=0;n<8;n++){const ang=n/8*Math.PI*2+f.at,r0=8*sc,r1=r0+6+k*14;c.fillStyle='rgba(255,255,255,.5)'; // speed lines bursting outward
         for(let rr=r0;rr<r1;rr+=2)c.fillRect(Math.round(f.x+Math.cos(ang)*rr),Math.round(f.y+Math.sin(ang)*rr),1,1);}
@@ -2425,7 +2429,7 @@ function logoPunch(next){
     // the finisher: one huge fist from dead centre, the logo bursts into pixels
     const kb=(e-BIG_AT)/BIG_LIFE;
     if(kb>=0){
-      if(!shattered){shattered=true;shake=10;thump(true);
+      if(!shattered){shattered=true;shake=10;thump(true);traceLogo();
         for(const q of cells){const dx=q.x-LW/2,dy=q.y-124,d=Math.hypot(dx,dy)||1;q.vx=dx/d*(60+Math.random()*120);q.vy=dy/d*(60+Math.random()*120)-60;}}
       const dt=1/60;for(const q of cells){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=260*dt;}
       if(kb<1.6){const sc=1+Math.min(1,kb)**2*11;fist(LW/2,124,sc,kb>1?Math.max(0,1-(kb-1)/.6):1);
