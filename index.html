@@ -179,6 +179,8 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .result .who{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gi)}
 .result .who b{font-weight:400;color:var(--gold);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .result .cells{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.judgepage .judges{margin-top:0;padding:14px 14px 10px;gap:9px}.judgepage .jrow{font-size:15px}.judgepage .jacc span{font-size:24px}.judgepage .jacc i{font-size:12px}
+.tapnext{font-family:var(--f-pixel);font-size:11px;color:#a597b8;letter-spacing:.08em;margin-top:6px}
 .result .judges{display:grid;grid-template-columns:1fr;gap:4px;padding:8px 8px 6px;background:#1b1426;margin-top:6px}
 .result .jrow{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--f-pixel);font-size:10px;letter-spacing:.04em}
 .result .jrow b{font-weight:normal;text-shadow:1px 1px 0 #4a1408}.result .jrow span{color:#f4efe8}
@@ -326,7 +328,7 @@ function saveBest(b){bests[D.key]=b;try{localStorage.setItem('punchtower.best2',
 /* ---------- pixel font 3x5 ---------- */
 const F={'0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'111001111001111','4':'101101111001001','5':'111100111001111','6':'111100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001111',
 A:'111101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',Z:'111001010100111',
-'!':'010010010000010','%':'100001010100001',"'":'010010000000000','/':'001001010100100','+':'000010111010000',':':'000010000010000','.':'000000000000010','-':'000000111000000',' ':'000000000000000','x':'000101010101000'};
+'!':'010010010000010','s':'000011010001110','%':'100001010100001',"'":'010010000000000','/':'001001010100100','+':'000010111010000',':':'000010000010000','.':'000000000000010','-':'000000111000000',' ':'000000000000000','x':'000101010101000'};
 function tw(s,sc){return s.length*4*sc-sc;}
 function text(s,x,y,sc,col,align,sh){
   s=String(s);if(align==='c')x-=tw(s,sc)/2;else if(align==='r')x-=tw(s,sc);
@@ -485,6 +487,11 @@ function bgmStep(i,t,len){
   if(b8===0||b8===4)bKick(t);
   if(b8===2||b8===6)bNoise(t,.09,1800,'bandpass',.22);
   bNoise(t+len/2,.03,7000,'highpass',.05);
+  if(typeof kingLevel==='number'&&kingLevel>=6&&bgm&&bgm.kind==='game'){ // MAX: the emperor walks in - brass, timpani, a deeper melody
+    if(b8===0){[root+12,root+19,root+24].forEach((n,j)=>bNote(t,len*7.6,mtof(n),'sawtooth',j?.014:.02));bNote(t,len*7.8,mtof(root),'triangle',.1);}
+    if(b8%2===0){bKick(t);bNoise(t,.18,180,'lowpass',.2);}                       // timpani
+    if(m)bNote(t,len*.9,mtof(m-12),'sawtooth',.016);                              // brass doubling an octave down
+    if(b8===7)bNoise(t,.25,5200,'highpass',.06);}                                 // cymbal swell into the next bar
 }
 /* menu loop: an upbeat 'get ready to fight' tune for the title, how-to, ranking and result screens.
    Major key, four-on-the-floor kick, backbeat snare, bouncing octave bass, off-beat chord stabs and a punchy hook.
@@ -1718,10 +1725,10 @@ function drawHUD(){
     // '+0.2' pops float up into the counter, and a running total sits just under it
     gainT=Math.max(0,gainT-hdt);
     for(const g of tGains){g.a+=hdt;const k=g.a/.55;if(k>=1)continue;
-      ctx.globalAlpha=1-k*k;text('+'+g.v.toFixed(1),rx-12+g.x,Math.round(34-k*14),1,'#9aff7a','c');}
+      ctx.globalAlpha=1-k*k;text('+'+g.v.toFixed(1)+'s',rx-12+g.x,Math.round(34-k*14),1,'#9aff7a','c');}
     ctx.globalAlpha=1;tGains=tGains.filter(g=>g.a<.55);
     if(gainT>0&&gainSum>=.05){ctx.globalAlpha=Math.min(1,gainT*3);
-      const tx='+'+gainSum.toFixed(1)+'S';R(rx-tw(tx,1)-3,20,tw(tx,1)+4,8,'rgba(10,6,16,.7)');text(tx,rx-1,21,1,'#9aff7a','r');ctx.globalAlpha=1;}}
+      const tx='+'+gainSum.toFixed(1)+'s';R(rx-tw(tx,1)-3,20,tw(tx,1)+4,8,'rgba(10,6,16,.7)');text(tx,rx-1,21,1,'#9aff7a','r');ctx.globalAlpha=1;}}
   if(tiltOn&&(mode==='play'||mode==='count')){ // tilt meter: a bubble that slides the way you lean
     const cx=W/2,y=21,tw2=36;R(cx-tw2/2-1,y-1,tw2+2,4,'rgba(10,6,16,.75)');R(cx,y-2,1,6,'#5a4a6a');
     if(tiltG==null){if(((gt*3)|0)%2)text('NO TILT',cx,y+5,1,'#ff3a5a','c',false);}
@@ -1730,7 +1737,9 @@ function drawHUD(){
   // progress meter
   // lava gauge: how much room is left below you (full = safe, empty = lava at your feet)
   {const room=clamp((lavaY-pl.feet)/(4*FH),0,1);R(3,24,3,162,'rgba(10,6,16,.7)');
-   R(3,24+162*(1-room),3,162*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,'#ff7a1a');}
+   {const top=Math.round(24+162*(1-room));for(let y=top;y<186;y++){const k=(y-24)/162;   // blue up high -> yellow -> red near the lava
+      const c=k<.5?[94+(255-94)*k*2,148+(208-148)*k*2,184+(74-184)*k*2]:[255,208+(58-208)*(k-.5)*2,74+(90-74)*(k-.5)*2];
+      R(3,y,3,1,`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`);}}R(3,186,3,4,'#ff7a1a');}
   if(showIntro>0&&mode==='play'){const e=SHOW_INTRO-showIntro,cy=H/2-26;let x=W/2,vis=true;
     if(e<SHOW_IN){const k=e/SHOW_IN;x=-70+(W/2+70)*(1-(1-k)*(1-k));}                       // slide in, easing out
     else if(e<SHOW_IN+SHOW_BLINK)vis=(((e-SHOW_IN)/(SHOW_BLINK/6))|0)%2===0;                 // blink-blink-blink
@@ -1739,7 +1748,7 @@ function drawHUD(){
     if(vis)perfectText('SHOW TIME',x,cy,e<SHOW_IN?0:1,3,true);}
   if(kingT>0&&mode==='play'){const fr=kingT/kingTmax,bw=W-40;
     const ky=H-46-GAUGE_ROW-14; // just above the fist buttons, clear of the grades up top
-    R(16,ky-2,W-32,14,'rgba(13,10,8,.7)');text(kingT.toFixed(1)+'S   +'+(pl.level-showFrom)+'F',W/2,ky,1,'#ffd400','c','#0d0a08'); // time left + floors smashed
+    R(16,ky-2,W-32,14,'rgba(13,10,8,.7)');text(kingT.toFixed(1)+'s   +'+(pl.level-showFrom)+'F',W/2,ky,1,'#ffd400','c','#0d0a08'); // time left + floors smashed
     {const y=24,cyc=(gt%1.4); // small headline just under the top bar, no backing: a shine sweeps it and the stars twinkle
      perfectText('SHOW TIME',W/2,y,cyc<.5?cyc:1,2,cyc>=.45);}
     R(20,ky+7,bw,3,'#2a1d38');R(20,ky+7,Math.round(bw*fr),3,'#ff8a1a');R(20,ky+7,Math.round(bw*fr),1,'#ffd400');
@@ -2566,6 +2575,15 @@ function resultScreen(cleared){
   const head=cleared
     ?`<div class="eyebrow">TOWER CLEAR · ${D.tag}</div><h2 class="big">정상 정복!</h2>`
     :`<h2 class="big over">GAME OVER</h2>`;
+  // page 1: how you punched (grades + accuracy). A tap anywhere moves on to page 2, the score and ranking.
+  showOverlay(`${head}<div class="win result judgepage">${judgeBlock()}</div><div class="tapnext blinky">TAP TO CONTINUE</div>${CREDIT}`,{});
+  const g1=ovGen,t1=performance.now();
+  const next=e=>{if(gen1Done||ovGen!==g1)return;if(performance.now()-t1<500)return; // ignore the leftover mashing
+    gen1Done=true;ov.removeEventListener('pointerdown',next);removeEventListener('keydown',nextKey);scorePage(cleared,head,floor,time,en);};
+  let gen1Done=false;const nextKey=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();next(e);}};
+  ov.addEventListener('pointerdown',next);addEventListener('keydown',nextKey);
+}
+function scorePage(cleared,head,floor,time,en){
   showOverlay(`${head}
   <div class="win result">
     <div class="who"><b>${esc(en.name)}</b><span class="dchip d-${D.key}">${D.ko}</span></div>
@@ -2575,7 +2593,6 @@ function resultScreen(cleared){
       <div class="cell"><i>WEAK</i><span>${weakCount}</span></div>
       <div class="cell"><i>KING</i><span>${superCount}</span></div>
     </div>
-    ${judgeBlock()}
     <div class="total"><i>SCORE</i><span>${num(scoreOf(en))}</span></div>
   </div>
   <div class="rankbig" id="myrank">${floor>=1?'기록 등록 중…':'1층은 넘어야 랭킹에 올라가요'}</div>
