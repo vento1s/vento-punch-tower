@@ -732,7 +732,7 @@ function makeSlab(n){
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
   const base=10+Math.floor(Math.min(n,70)*.8);
   const raw=type==='stone'?base*1.6:type==='vibranium'?base*.9:type==='tnt'?6:type==='boss'?40+Math.min(n,70)*2:base;
-  const hp=Math.max(3,Math.round(raw*(type==='tnt'?1:D.hp)));
+  const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
   return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:newWeakX(null),ww:D.weakW*WEAK_WIDEN,weakHits:0,wflash:0,wFrom:null,wT:1};
 }
 function ensureSlabs(upTo){while(slabs.length<=upTo)slabs.push(makeSlab(slabs.length));}
@@ -816,6 +816,9 @@ function hit(side,power){
   if(weak&&kingT<=0&&kingLevel<KL_NEED.length){altStreak+=charged?3:1;
     if(altStreak>=kingNeed()){altStreak-=kingNeed();kingLevel++;superReady=true;if(kingLevel>=KL_NEED.length)altStreak=0;
       sfx.ready();kingLevelUp(kingLevel);fire(W/2,H+camY-20,14+kingLevel*4,50,-40);}}
+  // minimum punches per block, so it never goes down in one or two: 6 plain hits, 5 on the weak point,
+  // 3 with a ki punch or during KING TIME (big blocks higher up take more anyway)
+  {const minHits=kingT>0?3:charged?3:weak?5:6;dmg=Math.min(dmg,Math.max(1,Math.floor(s.max/minHits)));}
   s.hp-=dmg;s.flash=weak||charged?1:.6;s.bump=weak?4:charged?2+2*power:crit?3:1;
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;
   const c=SLABC[s.type];
