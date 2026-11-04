@@ -561,7 +561,7 @@ const KING_STYLE=(()=>{try{const q=new URLSearchParams(location.search).get('kin
   return localStorage.getItem('punchtower.king')==='rub'?'rub':'weak';}catch(e){return 'weak';}})();
 const KL_KT=[3,4,5,6,7,8]; // KING TIME seconds by level
 let KT_DMG0=.6,KT_DMG=.5; // KING TIME punch power: x(0.6 + 0.5 x level power) -> LV1 x0.9 ... MAX x2.85
-let kingT=0,kingTmax=1,kingPw=1,showFrom=0,showIntro=0,showLv=1; // (KING TIME is called SHOW TIME on screen)
+let kingT=0,kingTmax=1,kingPw=1,showFrom=0,showIntro=0,showLv=1,confs=[],crowdK=0,cheerT=0; // (KING TIME is called SHOW TIME on screen)
 const KL_COL=['#ff7a1a','#ff7a1a','#ff8a1a','#ff8a1a','#ff9a2a','#ffb03a'], // plain fire: the pets only grow, no colours
      KL_R=[1,1.5,2,2.5,3.5,4.5]; // half the old size
 const PET_ATK=.05; // every fire pet trailing you adds 5% punch power
@@ -744,7 +744,7 @@ function newGame(){
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -859,7 +859,7 @@ function breakSlab(s){
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();pop(popX(36),pl.feet-30,'LAVA DOWN','#ffe27a',1);}
   if(s.type==='boss'||s.type==='vibranium')pop(popX(44),pl.feet-30,s.type==='boss'?'GATE BROKEN':'SMASHED!',s.type==='boss'?'#a4b5c6':'#b7a8ff',1);
   const nx=slabs[dest+1];ensureSlabs(dest+31);
-  if(s.type!=='tnt'&&pl.jt<0&&(pl.reach||0)<REACH_MAX&&alignedUnder(slabs[dest+1])){ // stretch to the next floor, stay put
+  if(kingT<=0&&s.type!=='tnt'&&pl.jt<0&&(pl.reach||0)<REACH_MAX&&alignedUnder(slabs[dest+1])){ // (no stretching arm during SHOW TIME) // stretch to the next floor, stay put
     pl.reach=dest+1-(pl.level+1);
     pop(popX(46),pl.feet-30,'x'+(pl.reach+1)+' STRETCH!','#ffd400',pl.reach>=2?2:1);
     if(AC){const t=AC.currentTime;tone(t,.12,300+pl.reach*180,900+pl.reach*260,'square',.08);}
@@ -901,7 +901,29 @@ function startKingTime(lv,pw,cutinShown){
   for(let i=0;i<40;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*140,l=.5+Math.random()*.4;
     parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:i%3?'#ff8a1a':'#ffd400'});}
   showFrom=pl.level;}
-function beginShow(){kingT=kingTmax;showFrom=pl.level;if(AC){const t=AC.currentTime;[784,1046,1568].forEach((f,i)=>tone(t+i*.05,.12,f,f,'square',.08));}vibe(30);}
+function beginShow(){kingT=kingTmax;showFrom=pl.level;vibe(30);showFanfare();for(let i=0;i<46;i++)confetti(true);}
+// SHOW TIME stage dressing: a row of fans seen from behind at the bottom, cheering with their arms up,
+// a little fanfare, and confetti shooting up from below (same colours as the PUSH button's shards)
+const CONF_COL=['#e8344a','#ff6a7a','#ffd400','#f4efe8','#ff8a1a','#c8c0d0'];
+function confetti(burst){const x=Math.random()*W,sp=burst?120+Math.random()*130:80+Math.random()*90;
+  confs.push({x,y:H-GAUGE_ROW-4,vx:(W/2-x)*.25+(Math.random()-.5)*60,vy:-sp,c:CONF_COL[(Math.random()*CONF_COL.length)|0],ph:Math.random()*6,life:1.6+Math.random()*.6});}
+function showFanfare(){if(!AC||!soundOn)return;const t=AC.currentTime;
+  [[523,0,.1],[523,.11,.08],[523,.2,.08],[659,.3,.12],[784,.44,.35]].forEach(([f,d,l])=>{tone(t+d,l,f,f,'square',.07);tone(t+d,l,f/2,f/2,'triangle',.06);}); // ba-ba-ba-bam-BAAM
+  noise(t,.9,900,.5,.22,'bandpass',1400);noise(t+.25,.7,1300,.6,.15,'bandpass',700);}                  // crowd 'woaaah'
+const FANS=[...Array(14)].map((_,i)=>({x:4+i*10.5+((i*7)%3),h:hash(i,4),hair:['#1a1020','#3a2418','#5a3a20','#2a1d38'][i%4],shirt:['#4a3a6a','#6a2a3a','#2a4a6a','#5a4a2a','#3a5a3a'][i%5]}));
+function drawCrowd(dt){
+  const on=kingT>0||showIntro>0;crowdK=Math.max(0,Math.min(1,crowdK+(on?dt*4:-dt*3)));if(crowdK<=0&&!confs.length)return;
+  if(on&&kingT>0&&Math.random()<dt*14)confetti(false);
+  cheerT-=dt;if(on&&kingT>0&&cheerT<=0&&AC&&soundOn){cheerT=1.6+Math.random();noise(AC.currentTime,.6,1000,.5,.08,'bandpass',1500);} // the crowd keeps going 'woah'
+  const base=H-GAUGE_ROW+Math.round((1-crowdK)*26);
+  for(const f of FANS){const bob=Math.round(Math.abs(Math.sin(gt*7+f.x))*2),x=Math.round(f.x),y=base-12-Math.round(f.h*3)-bob,up=Math.sin(gt*9+f.x*.7)>0;
+    R(x-5,y+7,10,8,f.shirt);R(x-5,y+7,10,1,'#0d0a08');                                   // shoulders (back view)
+    R(x-3,y,6,7,f.hair);R(x-2,y-1,4,1,f.hair);R(x-3,y+5,6,2,'#c8826a');                  // back of the head + nape
+    const ay=up?y-6:y-2;R(x-6,ay,2,y+8-ay,f.shirt);R(x+4,ay,2,y+8-ay,f.shirt);              // both arms up, pumping
+    R(x-6,ay-2,2,2,'#e8a080');R(x+4,ay-2,2,2,'#e8a080');}                                 // hands
+  confs=confs.filter(c=>(c.life-=dt)>0);
+  for(const c of confs){c.vy+=150*dt;c.vx*=1-dt*.8;c.x+=c.vx*dt+Math.sin(gt*8+c.ph)*.4;c.y+=c.vy*dt;
+    const flip=Math.sin(gt*12+c.ph)>0;R(Math.round(c.x),Math.round(c.y),flip?3:1,flip?1:3,c.c);}}
 // big on-screen counter for the KING PUNCH climb (HUD layer, never behind sparks)
 const kHud={hits:0,mash:0,hitPop:0,mashPop:0,g:0,maxT:0};
 function drawKingHud(dt){
@@ -2046,6 +2068,7 @@ function drawStrip(){
   drawSlowMo();
   drawKingCharge();
   if(mode!=='play'&&mode!=='super'&&mode!=='count')return;
+  drawCrowd(1/60); // SHOW TIME fans + confetti, behind the buttons
   if(ctrlMode==='pad')drawPad();else drawClassicFists();
   drawBigGauge();
   drawHint();
