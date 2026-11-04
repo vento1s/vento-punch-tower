@@ -699,9 +699,9 @@ function genCracks(){const out=[];for(let k=0;k<4;k++){let x=10+Math.random()*(I
   for(let i=0;i<14;i++){p.push([x|0,y|0]);x+=(Math.random()*3-1.5);y-=Math.random()<.55?1:0;if(y<1)y=1;}out.push(p);}return out;}
 // TIME: a countdown that good smashing keeps topping up. Run out and the lava surges.
 const TIME_START=30,TIME_MAX=60,T_BREAK=1.5,T_CLEAN=1.5,T_BOSS=4,T_WEAK=.2,T_KING=1;
-// after a KING PUNCH lands, the lava freezes for a moment, then crawls at half speed (full chill)
+// after a KING PUNCH lands, the lava freezes for a moment
 const KING_FREEZE=1.5;let lavaHold=0;
-// CHILL: weak-point hits cool the lava; full chill = lava at half speed. It drains when you stop hitting weak points.
+// (CHILL - weak hits slowing the lava - was removed; TIME bonuses already push the lava back)
 const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let burns=0,burnT=0; // lava bounces taken this run, and the immunity left after the last one
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
@@ -827,7 +827,7 @@ function hit(side,power){
   sfx.hit(combo,crit,s.type);
   if(charged)sfx.kipunch(power);
   if(weak){weakCount++;weakStreak++;s.weakHits++;s.wflash=1;sfx.weak(weakStreak);weakFX(s.wx,fy,dmg);
-    chill=Math.min(1,chill+CHILL_HIT);addTime(T_WEAK);}
+    addTime(T_WEAK);} // (lava 'chill' removed: the time you gain already pushes the lava back)
   else if(charged){weakStreak=0;
     rings.push({x:fx,y:fy,life:.22,max:.22,big:true,col:'#9ff4ff'});
     for(let i=0;i<6+power*10;i++){const a=-Math.PI*Math.random(),sp=60+Math.random()*90;
@@ -891,7 +891,7 @@ function doSuper(pre,cutinShown){
   lavaY=Math.max(lavaY,pl.feet+40);lavaY+=30;
 }
 function startKingTime(lv,pw,cutinShown){
-  kingT=kingTmax=KL_KT[lv-1];kingPw=pw;lavaHold=Math.max(lavaHold,kingT+.6);chill=1;
+  kingT=kingTmax=KL_KT[lv-1];kingPw=pw;lavaHold=Math.max(lavaHold,kingT+.6);
   if(!cutinShown)showCutin();sfx.superLaunch();vibe([40,30,80]);flashO=Math.max(flashO,.5);flashCol='#ffe9a8';shake=Math.max(shake,8);
   for(let i=0;i<40;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*140,l=.5+Math.random()*.4;
     parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:i%3?'#ff8a1a':'#ffd400'});}
@@ -1033,7 +1033,7 @@ function updateSuper(dt){
   if(sup.peak){sup.endT=(sup.endT||0)+dt;}
   if(sup.peak&&sup.endT>=.4){
     pl.feet=sup.to;pl.level=sup.dest;mode='play';lastTap=now();lastSide=-1;
-    if(sup.dest>=sup.start){lavaY=pl.feet+110;lavaHold=KING_FREEZE;chill=1;pop(W/2,pl.feet-50,'LAVA FREEZE','#7af0ff',1);} // safe landing
+    if(sup.dest>=sup.start){lavaY=pl.feet+110;lavaHold=KING_FREEZE;pop(W/2,pl.feet-50,'LAVA FREEZE','#7af0ff',1);} // safe landing
     if(sup.dest>=TOP)doClear();
     sup=null;}
 }
@@ -1209,7 +1209,6 @@ function update(dt){
       // past 40F the climb keeps getting harder, but at half the rate (it used to wall everyone in the 50s)
       const L=pl.level<=40?pl.level:40+(pl.level-40)*.5;
       let v=(D.lava+L*D.grow)*(1+L/90);
-      chill=Math.max(0,chill-CHILL_DECAY*dt);v*=1-CHILL_SLOW*chill;
       timeFlash=Math.max(0,timeFlash-dt);
       {const z=zoneOfLevel(pl.level+1);if(lastZone&&z!==lastZone){pop(W/2,pl.feet-58,z.name,'#ffd04a',2);if(AC){const t=AC.currentTime;[660,880,1320].forEach((f,i)=>tone(t+i*.07,.12,f,f,'square',.07));}}lastZone=z;}
       if(tg&&(tg.type==='boss'||tg.type==='final'))v*=.6;if(fever>0)v*=.85;
@@ -1704,9 +1703,7 @@ function drawHUD(){
   // progress meter
   // lava gauge: how much room is left below you (full = safe, empty = lava at your feet)
   {const room=clamp((lavaY-pl.feet)/(4*FH),0,1);R(3,24,3,162,'rgba(10,6,16,.7)');
-   R(3,24+162*(1-room),3,162*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,chill>.05?'#7af0ff':'#ff7a1a');
-   if(chill>.05)R(7,186-Math.round(40*chill),2,Math.round(40*chill),'#7af0ff');}
-  if(mode==='play'&&chill>.45){ctx.globalAlpha=.6+.4*Math.sin(gt*10);text('LAVA SLOW',W/2,H-68,1,'#7af0ff','c');ctx.globalAlpha=1;}
+   R(3,24+162*(1-room),3,162*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,'#ff7a1a');}
   if(kingT>0&&mode==='play'){const fr=kingT/kingTmax,bw=W-40;
     const ky=H-46-GAUGE_ROW-14; // just above the fist buttons, clear of the grades up top
     R(16,ky-2,W-32,14,'rgba(13,10,8,.7)');text('KING TIME '+kingT.toFixed(1),W/2,ky,1,'#ffd400','c','#0d0a08');
@@ -2501,13 +2498,12 @@ function showHowto(){menuMusic();showOverlay(`
     <li>걷는 중에 <b>반대쪽을 탭</b>하면 가던 방향으로 휙 <b>대시</b></li>
     <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
     <li><b>TIME</b>은 용암이 발밑까지 올라오는 데 남은 시간이에요. 0이 되면 용암에 닿아요! 위로 올라가면 늘어나고, 블록을 부수면 +1.5초, 약점을 4번 넘게 연속으로 때려서 부수면 <b>CLEAN</b> +3초, 보스 블록은 +5.5초.</li>
-    <li>약점을 때릴수록 용암이 식어서 <b>LAVA SLOW</b>(최대 절반 속도). 손을 놓으면 다시 빨라져요.</li>
-    <li><b>기울기</b>를 켜면 폰을 왼쪽/오른쪽으로 기울이는 쪽으로 걸어가요. 게임 시작할 때 들고 있던 각도가 기준이에요.</li>
+        <li><b>기울기</b>를 켜면 폰을 왼쪽/오른쪽으로 기울이는 쪽으로 걸어가요. 게임 시작할 때 들고 있던 각도가 기준이에요.</li>
     <li><b>왕주먹 단계</b>: 약점을 <b>30번</b> 때릴 때마다 LV이 하나씩 올라가요(LV1~LV5). LV5에서 <b>150번</b> 더 때리면 극악의 <b>MAX</b>. 단계마다 <b>불꽃 펫</b>이 하나씩 따라다녀요. 펫 1마리당 펀치 공격력 <b>+5%</b>(MAX면 +30%), 레벨마다 <b>약점이 8%씩 넓어져요</b>(MAX면 +48%). MAX가 되면 온 화면이 파랗게 타올라요.</li>
     <li>양쪽을 같이 꾹 누르면 모은 단계 그대로 발사! 위력은 LV1 0.6배 · LV2 1배 · LV3 1.6배 · LV4 2.2배 · LV5 3배 · MAX 4.5배.</li>
     ${KING_STYLE==='rub'?`<li>올라가는 동안 화면을 <b>위아래로 크고 빠르게</b> 쓱싹! 가운데 조이스틱처럼 아래위로 빠르게 쓱쓱(화면 높이의 4분의 1쯤)! 쓸 때마다 땅! 땅! 뚫고 올라가요.</li>
     <li>문지를 시간: LV1 2초 · LV2 3초 · LV3 3.5초 · LV4 4초 · LV5 5초 · MAX 5.5초. 빠르게 계속 쓸어 게이지가 차면 <b>MAX</b>: 그때부터 1.5배. 안 비비면 헛방!</li>
-    <li>뚫은 층마다 시간 +1초, 착지하면 용암이 1.5초 얼었다가 반 속도로 기어와요.</li>`:`<li>발사하면 <b>KING TIME</b>! 몇 초 동안 <b>모든 블록 전체가 약점</b>이 돼요. 움직일 필요 없이 그냥 갈기기만 하면 전부 <b>PERFECT!</b></li>
+    <li>뚫은 층마다 시간 +1초, 착지하면 용암이 1.5초 얼어요.</li>`:`<li>발사하면 <b>KING TIME</b>! 몇 초 동안 <b>모든 블록 전체가 약점</b>이 돼요. 움직일 필요 없이 그냥 갈기기만 하면 전부 <b>PERFECT!</b></li>
     <li>KING TIME: LV1 3초 · LV2 4초 · LV3 5초 · LV4 6초 · LV5 7초 · MAX 8초. 그동안 용암은 멈추고, 펀치는 모은 단계 위력만큼 더 세져요.</li>`}
     <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
     <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
