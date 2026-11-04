@@ -283,7 +283,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
     <button id="pausebtn" class="pausebtn" type="button" aria-label="일시정지" hidden></button>
     <div id="mash" class="mash" hidden>갈겨!!<small></small></div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
-    <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>KING PUNCH</i></div></div>
+    <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>SHOW PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
   </div>
 </div>
@@ -900,7 +900,7 @@ function doSuper(pre,cutinShown){
   const start=pl.level+1,dest=pl.level+SUPER_FLOORS;ensureSlabs(dest+30);
   superReady=false;superCount++;learn('king');for(const h of holds.values())h.used=true;hum(-1);hitstop=0;impact=0;
   const lvF=kingFireLv||kingLevel||1,pw=KL_POW[lvF-1];kingFireLv=0;kingLevel=0;altStreak=0;maxHits=0;absorbOrbs();
-  if(lvF>=6){flashO=1;flashCol='#ffffff';shake=14;vibe([80,40,80,40,200]);pop(W/2,pl.feet-64,'MAX KING PUNCH!!!','#bff6ff',2);
+  if(lvF>=6){flashO=1;flashCol='#ffffff';shake=14;vibe([80,40,80,40,200]);pop(W/2,pl.feet-64,'MAX SHOW PUNCH!!!','#bff6ff',2);
     for(let i=0;i<90;i++){const a=Math.random()*Math.PI*2,sp=80+Math.random()*220,l=.6+Math.random()*.6;
       parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:KL_COL[i%6]});}
     for(let i=0;i<4;i++)rings.push({x:pl.x,y:pl.feet-12,life:.3+i*.12,max:.3+i*.12,big:true,col:KL_COL[i]});
@@ -1802,7 +1802,7 @@ function drawBigFist(cx,cy,sc,mirror,pal){const w=BIG_FIST[0].length,h=BIG_FIST.
   for(let r=0;r<h;r++){const row=BIG_FIST[r];for(let c=0;c<w;c++){const ch=row[mirror?w-1-c:c];if(ch!=='.')R(x0+c*sc,y0+r*sc,sc,sc,pal[ch]);}}}
 // raised arm: the big fist on top of a forearm that runs down into the hero's white gi sleeve
 // raised fist: flat skin tone, crease lines for the folded fingers and thumb, forearm into the white gi sleeve
-const BIG_ARM=["......ssssssss........", "....ssssssssssss......", "...sHHssssssssssss....", "..sHsssLssssLsssssss..", "..sHssLLsssLLssssLsss.", ".sHsssLssssLsssssLssss", ".sHsssLsssLssssssLssss", ".sssssLLLLLLLLLLLLssss", "sHssssssssssssssLssss.", "sHssssssssssssssLsssD.", "sssssssssssssssLsssDD.", "sssssLLLLLLLLLLsssDDD.", "ssssssssssssssssssDD..", "sssssssssssssssssDD...", ".ssssssssssssssDDD....", ".sssssssssssDDD.......", "..sssssssssDD.........", "..sssssssssD..........", "..ssssssssDD..........", "..HsssssssDD..........", "..wwwwwwwwwwG.........", ".wwwwwwwwwwwGG........", ".wwwwwwwwwwwGG........", "wwwwwwwwwwwwGGG.......", "wwwwwwwwwwwwGGG......."];
+const BIG_ARM=[".ssss.ssss.ssss.ssss..",".HHssLHHssLHHssLHHssD.","sHssssHssssHssssHsssD.","ssssssssssssssssssssD.","LLLLLLLLLLLLLLLLLLLLL.","sHHssLHHssLHHssLHHssD.","sHsssLHsssLHsssLHsssD.","sssssLssssLssssLssssD.","LLLLLLLLLLLLLssLssssD.","sHHHsssssssDLssLssssD.","sssssssssssDLssLssssD.","sssssssssssDLssLssssD.","sssssssssssDLLLLLLLLL.","HsssssssssssssssssDD..","sssssssssssssssssDD...",".ssssssssssssssDD.....",".sssssssssssssD.......","..ssssssssssD.........","..sssssssssD..........","..HssssssssD..........","..wwwwwwwwwwG.........",".wwwwwwwwwwwGG........",".wwwwwwwwwwwGG........","wwwwwwwwwwwwGGG.......","wwwwwwwwwwwwGGG......."]; // squared-off fist: four knuckles, four folded fingers, thumb across
 const ARM_PAL={s:'#f2a08c',L:'#9e4a3a',H:'#ffc4b2',D:'#c87864',w:'#f4efe8',G:'#c4bccd'};
 const ARM_HOT={s:'#ffb8a2',L:'#b4584a',H:'#ffe2d8',D:'#dc8c76',w:'#ffffff',G:'#d6cfe0'};
 // MAX: the fists burn blue
@@ -1927,7 +1927,7 @@ function drawKingCharge(){
   ctx.fillStyle=g;ctx.fillRect(x-40,y-40,80,80);ctx.globalCompositeOperation='source-over';
   // a ring that tightens onto the boxer as the charge completes
   pxRing(x,y,Math.round(30-22*k),k>.85&&((gt*30)|0)%2?'#ffffff':'#ffd400');
-  const txt=kingLevel>=6?'KING MAX!':'KING LV'+kingLevel,tw0=tw(txt,2);
+  const txt=kingLevel>=6?'SHOW MAX!':'SHOW LV'+kingLevel,tw0=tw(txt,2);
   R(W/2-tw0/2-4,46,tw0+8,16,'#0d0a08');R(W/2-tw0/2-4,59,(tw0+8)*k,3,'#ff8a00');
   text(txt,W/2,49,2,k>.85&&((gt*20)|0)%2?'#ffffff':'#ffd400','c',false);
 }
@@ -2073,7 +2073,7 @@ function drawHint(){
   else if(hint.id==='dash'){let ws=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T)ws=h.side;if(ws<0){hint=null;return;}
     const x=ws?22:W-22;arrowDown(x,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP!',x,fy-18+bob,1,'#ffd400','c');banner('TAP THE FOOT TO DASH','#ffd400');}
   else if(hint.id==='king'){for(const x of [22,W-22]){arrowDown(x,fy-6+bob,blink?'#ff8a1a':'#ffffff');text('HOLD',x,fy-18+bob,1,'#ff8a1a','c');}
-    banner('HOLD BOTH FOR KING!','#ff8a1a');}
+    banner('HOLD BOTH FOR SHOW!','#ff8a1a');}
 }
 function kingRow(x0,y0,w,h,label,labelCol,frac,cellCol){
   // no box; cells rise left to right like signal bars (5px -> 14px), all standing on one baseline.
@@ -2622,7 +2622,7 @@ function scorePage(cleared,head,floor,time,en){
       <div class="cell"><i>FLOOR</i><span>${floor}F</span></div>
       <div class="cell"><i>TIME</i><span>${fmt(time)}</span></div>
       <div class="cell"><i>WEAK</i><span>${weakCount}</span></div>
-      <div class="cell"><i>KING</i><span>${superCount}</span></div>
+      <div class="cell"><i>SHOW</i><span>${superCount}</span></div>
     </div>
     <div class="total"><i>SCORE</i><span>${num(scoreOf(en))}</span></div>
   </div>
