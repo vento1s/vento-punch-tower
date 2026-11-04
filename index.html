@@ -544,7 +544,7 @@ function unlockSecret(){secretSkin=true;try{localStorage.setItem('punchtower.sec
   flashO=1;flashCol='#ffffff';shake=12;vibe([60,40,60,40,60,40,200]);
   pop(W/2,pl.feet-70,'SECRET SKIN','#ffd400',2);setTimeout(()=>{if(mode==='play')pop(W/2,pl.feet-56,'UNLOCKED!!','#7af0ff',2);},400);
   for(let i=0;i<120;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*200,l=.7+Math.random()*.7;
-    parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:['#ffd400','#ffffff','#7af0ff','#ff7af0','#9aff7a','#ff8a1a'][i%6]});}
+    parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:['#ffd400','#ffffff','#ffe27a','#ff8a1a'][i%4]});}
   if(AC){const t=AC.currentTime;[523,659,784,1046,784,1046,1318,1568,2093].forEach((f,i)=>tone(t+i*.08,.25,f,f,'square',.08));}}
 const KL_NEED=[30,30,30,30,30,150],KL_POW=[.6,1,1.6,2.2,3,4.5];
 const KL_RUB=[2,3,3.5,4,5,5.5]; // seconds of rubbing (갈겨!!) you get after firing, by level
@@ -692,7 +692,7 @@ const KING_FREEZE=1.5;let lavaHold=0;
 const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let burns=0,burnT=0; // lava bounces taken this run, and the immunity left after the last one
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
-let judge=null;const JUDGE=[['PERFECT!','#ffd400',-1,95],['GOOD','#5aff6a',125,95],['CLOSE','#ff9a3a',28,98],['BAD','#a597b8',262,28]]; // [text, base colour, prism hue (-1 = full rainbow), saturation]
+let judge=null;const JUDGE=[['PERFECT!','#ffd400',48,100],['GOOD','#5aff6a',125,95],['CLOSE','#ff9a3a',28,98],['BAD','#a597b8',262,28]]; // [text, base colour, hue, saturation]: one colour each, never cycling
 let dispT=0,tGains=[],gainSum=0,gainT=0,hudT=0; // TIME counter that rolls up, and the '+0.2' pops that feed it
 // TIME drives the lava: 60s banked -> x0.6, 30s (start) -> about x1, 10s -> x1.35, 0s -> TIME UP surge
 // TIME is now the honest truth: seconds until the lava reaches your feet at its current speed.
@@ -883,14 +883,14 @@ function drawKingHud(dt){
   R(W/2-46,y-4,92,sup.maxed?110:open?94:46,'rgba(13,10,8,.72)');
   text(String(kHud.hits),W/2-6,y+(7-sc)*2,sc,kHud.hitPop>0?'#ffffff':'#ffd400','c','#c24e00');
   text('HIT',W/2+tw(String(kHud.hits),sc)/2,y+(sc*5)-10,2,'#ff8a00','l','#0d0a08');
-  if(kHud.mash>0){const hue=(gt*900)%360,ms=kHud.mashPop>0?3:2;
-    text('+'+kHud.mash+' MASH',W/2,y+40-(ms-2)*2,ms,`hsl(${hue},100%,65%)`,'c','#0d0a08');}
+  if(kHud.mash>0){const ms=kHud.mashPop>0?3:2;
+    text('+'+kHud.mash+' MASH',W/2,y+40-(ms-2)*2,ms,'#ffd400','c','#0d0a08');}
   if(open){ // mash gauge: shoots up with every tap, MAX = bonus floors
     const tgt=sup.maxed?1:(sup.gauge||0);kHud.g+=(tgt-kHud.g)*Math.min(1,dt*30);
     const gx=W/2-42,gy=y+56,gw=84,segs=20,fill=kHud.g*segs;
     R(gx-1,gy-1,gw+2,10,'#0d0a08');
     for(let i=0;i<segs;i++){const sx=gx+Math.round(i*gw/segs),sw=Math.round((i+1)*gw/segs)-Math.round(i*gw/segs)-1;
-      const on=i<fill;R(sx,gy,sw,8,!on?'#2a1d38':sup.maxed?`hsl(${(gt*900+i*18)%360},100%,62%)`:FIREPAL(.25+.7*i/segs));
+      const on=i<fill;R(sx,gy,sw,8,!on?'#2a1d38':sup.maxed?'#7af0ff':FIREPAL(.25+.7*i/segs));
       if(on)R(sx,gy,sw,2,'rgba(255,255,255,.45)');}
     { // time left to rub: shrinking bar + seconds (full until you start rubbing)
       const rem=left,fr=sup.rubDur?rem/sup.rubDur:0,low=sup.rubOn&&rem<1,tc=low?(((gt*10)|0)%2?'#ffffff':'#ff3a5a'):'#7af0ff';
@@ -1206,7 +1206,7 @@ function update(dt){
     if(Math.random()<.4)parts.push({x:pl.x+(Math.random()-.5)*14,y:lavaY,vx:0,vy:-30-Math.random()*30,life:.5,col:'#ffd04a',s:1,g:40});
     if(endT>1.3&&ov.hidden)showOver();}
   else if(mode==='clear'){endT+=dt;
-    if(Math.random()<dt*3){const fx=WALL+10+Math.random()*(IN-20),fy=ROOF-60-Math.random()*90;const col=['#ffd04a','#ff6a50','#7af0ff','#ff7af0','#9aff7a'][(Math.random()*5)|0];
+    if(Math.random()<dt*3){const fx=WALL+10+Math.random()*(IN-20),fy=ROOF-60-Math.random()*90;const col=['#ffd04a','#ffffff','#ff8a1a'][(Math.random()*3)|0];
       for(let i=0;i<26;i++){const a=i/26*Math.PI*2;parts.push({x:fx,y:fy,vx:Math.cos(a)*60,vy:Math.sin(a)*60,life:.9,col,s:1,g:40});}if(AC)noise(AC.currentTime,.3,1800,.7,.25,'lowpass',300);}
     if(endT>1.8&&ov.hidden)showClear();}
   const target=(mode==='dead'?Math.min(pl.feet,lavaY):pl.feet)-(mode==='clear'?150:178);
@@ -1258,7 +1258,7 @@ function drawUnder(gl){ // pebbles, gems, roots and the odd fossil in the dirt
     if(sy<gl+3)continue;
     const f=-wy/FH,d=dirtCol(f);
     if(h>.9){R(x,sy,3,2,DIRT[Math.min(10,Math.floor(f*10/SURF)+3)]||'#6a4426');R(x,sy+2,3,1,'rgba(0,0,0,.35)');}
-    else if(h>.885){const tw=((gt*4+cx+cy)|0)%6===0;const gc=['#7af0ff','#ff7ad8','#9aff7a','#ffd04a'][(cx+cy*3)&3];
+    else if(h>.885){const tw=((gt*4+cx+cy)|0)%6===0;const gc=['#7af0ff','#ffd04a'][(cx+cy*3)&1];
       R(x,sy,2,2,gc);if(tw){R(x-1,sy,4,1,'#fff');R(x,sy-1,1,4,'#fff');}}
     else if(h>.875&&f<SURF-1){R(x,sy+1,6,1,'#cbbfa6');R(x-1,sy,2,3,'#cbbfa6');R(x+5,sy,2,3,'#cbbfa6');}
   }
@@ -1518,7 +1518,7 @@ function drawPlayer(){
   let feet=pl.feet;if(pl.jt>=0)feet-=Math.sin(Math.PI*pl.jt)*10;
   const px=Math.round(pl.x)-4,top=Math.round(feet-14-hop-camY+pl.sink);
   const fev=fever>0;
-  const pal={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:fev?`hsl(${(gt*720)%360},90%,72%)`:'#f4efe8',G:fev?'#ffffff':'#c4bccd',b:'#1e1a24',d:'#3a2a24'};
+  const pal={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:fev?'#ff9af4':'#f4efe8',G:fev?'#ffffff':'#c4bccd',b:'#1e1a24',d:'#3a2a24'};
   if(mode==='dead'){for(const k in pal)pal[k]='#ff6a3a';}
   // dash afterimages
   if(ghosts.length){const gp={};for(const k in pal)gp[k]='#7af0ff';
@@ -1567,19 +1567,19 @@ function drawJudge(){ // big aim grade where WEAK! used to be; each punch replac
   const [txt,col0,hue,sat]=JUDGE[judge.g],sc=3,pop=age<.07;
   // prism: each pixel takes its own shade of the grade's hue (light on top, deep at the bottom),
   // with a sheen that slides across; PERFECT runs the whole rainbow
-  const col=pop?'#ffffff':(px,py)=>{const hh=hue<0?(px*5-gt*360)%360:hue+Math.sin(px*.18-gt*9)*22;
-    return `hsl(${hh},${sat}%,${86-py*2.4+(Math.sin(px*.18-gt*9)>.85?10:0)}%)`;};
+  // prism shading inside the grade's own colour: bright facet on top, deep at the bottom, a fixed diagonal glint
+  const col=pop?'#ffffff':(px,py)=>{const glint=((px+py*2)%17)<2?12:0;return `hsl(${hue},${sat}%,${Math.min(95,84-py*2.2+glint)}%)`;};
   ctx.globalAlpha=age>.4?1-(age-.4)/.15:1;
   const half=tw(txt,sc)/2,x=clamp(judge.x,WALL+half+1,W-WALL-half-1),y=Math.round(judge.y-camY-Math.min(1,age/.4)*8)-(pop?3:0);
-  crunchText(txt,x,y,sc,col,judge.at*997|0);ctx.globalAlpha=1;}
+  crunchText(txt,x,y,sc,col,judge.at*997|0,col0);ctx.globalAlpha=1;}
 // a blown-up, slightly busted bitmap: chunky pixels with a few bits chipped off, scanlines, and a
 // red/cyan misregistration ghost, like a low-res sprite stretched on an old screen
-function crunchText(s,x,y,sc,col,seed){
+function crunchText(s,x,y,sc,col,seed,ghost){
   x=Math.round(x-tw(s,sc)/2);y=Math.round(y);const a0=ctx.globalAlpha;
   const cells=[];for(let i=0;i<s.length;i++){const g=F[s[i]]||F[' '];for(let p=0;p<15;p++)if(g[p]==='1')cells.push([x+(i*4+p%3)*sc,y+((p/3)|0)*sc,i*15+p]);}
   ctx.fillStyle='#120a18';for(const [cx,cy] of cells){ctx.fillRect(cx-1,cy-1,sc+2,sc+2);ctx.fillRect(cx+1,cy+2,sc,sc);} // thin outline + drop so it still reads
-  ctx.globalAlpha=a0*.4;ctx.fillStyle='#ff3a5a';for(const [cx,cy] of cells)ctx.fillRect(cx-1,cy,sc,sc); // colour misregistration
-  ctx.fillStyle='#3ad8ff';for(const [cx,cy] of cells)ctx.fillRect(cx+1,cy,sc,sc);ctx.globalAlpha=a0;
+  ctx.globalAlpha=a0*.35;ctx.fillStyle=ghost||'#ffffff';for(const [cx,cy] of cells)ctx.fillRect(cx-1,cy,sc,sc); // same-colour misregistration ghost // colour misregistration
+  for(const [cx,cy] of cells)ctx.fillRect(cx+1,cy,sc,sc);ctx.globalAlpha=a0;
   for(const [cx,cy,k] of cells)for(let j=0;j<sc;j++)for(let i=0;i<sc;i++){
     const h=hash(k*9+j*sc+i,seed);if(h<.08)continue;                                     // chipped-off bits
     const c=typeof col==='function'?col(cx+i-x,cy+j-y):col;
@@ -1591,7 +1591,7 @@ function drawComboFX(){
   const t=now(),age=t-comboFX.at;if(age>D.win+.2)return;
   // top-centre, clear of the boxer
   const fresh=age<.07,sc=3;
-  const col=fever>0?`hsl(${(gt*720)%360},95%,70%)`:combo>=24?'#ffd04a':'#f4efe8';
+  const col=fever>0?'#ff7af0':combo>=24?'#ffd04a':'#f4efe8';
   ctx.globalAlpha=age>D.win?Math.max(0,1-(age-D.win)/.2):1;
   text(String(combo),W/2,fresh?32:34,fresh?sc+1:sc,col,'c');
   text('HITS',W/2,fresh?54:52,1,'#a597b8','c',false);
@@ -1664,8 +1664,8 @@ function drawHUD(){
    R(3,24+162*(1-room),3,162*room,room>.5?'#5e94b8':room>.25?'#ffd04a':'#ff3a5a');R(3,186,3,4,chill>.05?'#7af0ff':'#ff7a1a');
    if(chill>.05)R(7,186-Math.round(40*chill),2,Math.round(40*chill),'#7af0ff');}
   if(mode==='play'&&chill>.45){ctx.globalAlpha=.6+.4*Math.sin(gt*10);text('LAVA SLOW',W/2,H-68,1,'#7af0ff','c');ctx.globalAlpha=1;}
-  if(fever>0){text('FEVER x2',W/2,62,1,`hsl(${(gt*720+120)%360},95%,70%)`,'c');
-    ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle=`hsl(${(gt*720)%360},95%,60%)`;ctx.lineWidth=2;ctx.strokeRect(1,20,W-2,H-21);ctx.globalAlpha=1;}
+  if(fever>0){text('FEVER x2',W/2,62,1,'#ff7af0','c');
+    ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle='#ff7af0';ctx.lineWidth=2;ctx.strokeRect(1,20,W-2,H-21);ctx.globalAlpha=1;}
   const dist=lavaY-pl.feet;
   if(mode==='play'&&started){
     const sy=lavaY-camY;
@@ -1878,7 +1878,7 @@ function drawBigGauge(){
   const blue=kingLevel>=6?n:kingLevel===5?Math.floor(Math.min(1,altStreak/KL_NEED[5])*n+1e-6):0; // pass 2: toward MAX, blue
   for(let i=0;i<n;i++){const lv=Math.floor(i/GAUGE_PER),ch=Math.round(h0+(h1-h0)*i/(n-1)),sx=x0+i*(cw+gap)+lv*lvGap,sy=base-ch;
     let col='#2a1d38';
-    if(i<blue)col=kingLevel>=6?['#3a8aff','#7af0ff','#cff6ff'][(i+((gt*12)|0))%3]:'#3a8aff';
+    if(i<blue)col=kingLevel>=6?(i%3===2?'#7af0ff':'#3a8aff'):'#3a8aff';
     else if(i<filled)col=KL_GCOL[lv];
     else if(i===filled&&kingLevel<5&&((gt*6)|0)%2)col='#5a4a6a';                 // the next cell blinks
     R(sx,sy,cw,ch,col);if(col!=='#2a1d38'&&col!=='#5a4a6a')R(sx,sy,cw,1,'rgba(255,255,255,.45)');}
