@@ -251,6 +251,13 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 @keyframes finIn{0%{transform:scale(2.2);opacity:0}8%{transform:scale(.9);opacity:1}14%{transform:scale(1.05)}20%{transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
 @keyframes finHue{0%{color:var(--gold)}33%{color:#fff}66%{color:#ff8a00}}
 @media (prefers-reduced-motion:reduce){.finale,.finale b{animation:none}}
+/* first run: while the leaf falls, a caption explains the punch (the fists demo it below) - nothing stops */
+.coach{position:absolute;left:0;right:0;top:15%;display:grid;justify-items:center;gap:8px;padding:10px 8px 12px;pointer-events:none;z-index:2;
+  background:rgba(13,10,8,.55);box-shadow:0 2px 0 var(--gold),0 -2px 0 var(--gold);animation:newIn .3s steps(6) both}
+.coach[hidden]{display:none}
+.coach b{font-family:var(--f-display);font-weight:400;font-size:clamp(22px,8.6cqw,34px);line-height:1;color:var(--gold);text-shadow:3px 3px 0 #c24e00}
+.coach i{font-style:normal;font-family:var(--f-display);font-size:clamp(14px,5cqw,20px);line-height:1.5;color:#f4efe8;text-align:center}
+@media (prefers-reduced-motion:reduce){.coach{animation:none}}
 /* NEW! card when a move opens up mid-run (the game is frozen behind it) */
 .newsk{position:absolute;left:0;right:0;top:32%;display:grid;justify-items:center;gap:10px;padding:14px 8px 16px;pointer-events:none;z-index:2;
   background:rgba(13,10,8,.9);box-shadow:0 3px 0 var(--gold),0 -3px 0 var(--gold),0 7px 0 var(--ink),0 -7px 0 var(--ink);animation:newIn .3s steps(6) both}
@@ -294,6 +301,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
     <div id="mash" class="mash" hidden>갈겨!!<small></small></div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
     <div id="newsk" class="newsk" hidden><em>NEW!</em><b></b><i></i></div>
+    <div id="coach" class="coach" hidden><b>L R L R 번갈아 탁탁!</b><i>두 주먹을 누르면 펀치!<br>윗층을 깨고 올라가요</i></div>
     <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>SHOW PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
   </div>
@@ -732,8 +740,9 @@ function showHint(id){if(!hintsOn||knows(id)||mode!=='play'||ctrlMode!=='classic
   if(hint&&hint.id!==id){if(id!==tryK)return;hint=null;} /* the move you're being asked to try beats any other tip */
   const t=now();if(hintCool[id]&&t<hintCool[id]&&id!==tryK)return;if(!hint)hint={id,t0:t};hint.t=t;}
 const newEl=document.getElementById('newsk');
-/* the same card opens a first run: how a punch works, before anything else */
-const TAP_CARD=['펀치!','두 주먹 버튼을 누르면\n층을 깨고 올라가요\n(번갈아 누르면 더 세져요)'];let tapCardShown=false;
+const coachEl=document.getElementById('coach');let demoPh=-1;
+const coaching=()=>mode==='count'&&!knows('tap')&&ov.hidden; /* first run, during the leaf */
+function syncCoach(){const show=coaching();if(coachEl.hidden===show)coachEl.hidden=!show;}
 /* first VIBRANIUM block in the way: only alternating hands on its weak point really hurt it */
 const VIB_CARD=['비브라늄','엄청 단단한 블록!\n약점 아래서 양손을 번갈아 때려야\n데미지가 훨씬 세져요'];let vibCardShown=false;
 function showCard(k,tag,nm,sub,dur){newCard={k,t:0,dur};hint=null;
@@ -802,7 +811,7 @@ function newGame(){
   preloadDieVoice();
   tiltZero=tiltG==null?0:tiltG; // whatever angle you hold the phone at now counts as level
   D=DIFFS[diffIdx];
-  runOpen={};newCard=null;tryK=null;tapCardShown=false;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
+  runOpen={};newCard=null;tryK=null;demoPh=-1;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
@@ -1300,7 +1309,6 @@ function update(dt){
   if(showIntro>0&&mode==='play')showIntro=Math.max(0,showIntro-dt);
   if(kingT>0&&mode==='play'){kingT=Math.max(0,kingT-dt); // ticks even through hit-stop, so KING TIME is real seconds
     if(kingT===0){pop(W/2,pl.feet-50,'SHOW END','#ffd400',2,true);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
-  if(mode==='play'&&started&&!tapCardShown&&!knows('tap')){tapCardShown=true;showCard('tap','HOW TO',TAP_CARD[0],TAP_CARD[1],3.2);return;} /* first run: explain the punch right at GO */
   if(mode==='play'&&started&&kingT<=0&&showIntro<=0&&bothT<=0&&kingSlowT<=0)for(const k of SKILL_ORDER)if(!skillOn(k)&&tgtN()>=SKILL_AT[k]){openSkill(k);return;}
   if(mode==='play'&&started&&kingT<=0&&showIntro<=0&&bothT<=0&&kingSlowT<=0&&!vibCardShown&&!knows('vib')){const v=tgt();if(v&&v.type==='vibranium'&&!v.broken&&pl.jt<0){vibCardShown=true;showCard('vib','TIP',VIB_CARD[0],VIB_CARD[1],3.2);return;}}
   if(hitstop>0){hitstop-=dt;return;}
@@ -1842,11 +1850,11 @@ function drawHUD(){
     const sy=lavaY-camY;
     if(dist<60){const a=(1-dist/60)*.5*(.7+.3*Math.sin(gt*16));const g=ctx.createLinearGradient(0,H-90,0,H);g.addColorStop(0,'rgba(255,30,10,0)');g.addColorStop(1,`rgba(255,30,10,${a})`);ctx.fillStyle=g;ctx.fillRect(0,H-90,W,90);}
   }
-  if((mode==='count'||(mode==='play'&&!started))&&ov.hidden){const b=((gt*3)|0)%2;
+  if((mode==='count'||(mode==='play'&&!started))&&ov.hidden&&!coaching()){const b=((gt*3)|0)%2;
     const lines=ctrlMode==='pad'
-      ?['LEFT: DRAG = MOVE','FLICK = DASH','RIGHT: L R = PUNCH','HOLD BUTTON = KI']
+      ?['LEFT: DRAG TO MOVE','FLICK TO DASH','RIGHT: L R PUNCH','HOLD BUTTON: KI']
       :[];
-    text('TAP = PUNCH',W/2,120,2,b?'#ffd04a':'#f4efe8','c');
+    text('TAP: PUNCH',W/2,120,2,b?'#ffd04a':'#f4efe8','c');
     lines.forEach((l,i)=>text(l,W/2,138+i*9,1,'#7af0ff','c',false));
     const y2=142+lines.length*9;
     text('L R L R UNDER THE',W/2,y2,1,'#a597b8','c',false);text('RED WEAK POINT',W/2,y2+8,1,'#ff3a5a','c',false);}
@@ -1963,7 +1971,7 @@ function drawCountdown(){
     if(Math.abs(sway)<.35)drawLeaf(x,y,LEAF_FLAT,false);else drawLeaf(x,y,LEAF_TILT,sway<0);
     // quiet "READY" while it falls; each beep flashes it
     const since=LEAF_BEEPS.reduce((m,b)=>(LEAF_T-countT)>=b?(LEAF_T-countT)-b:m,9),hot=since<.15;
-    text('READY',W/2,66,2,hot?'#ffffff':'#a597b8','c','#0d0a08');}
+    if(!coaching())text('READY',W/2,66,2,hot?'#ffffff':'#a597b8','c','#0d0a08');} /* first run: the caption takes READY's place */
   else if(mode==='play'&&started&&tNow<1.2&&leafLand){ // the leaf lies where it landed for a moment
     ctx.globalAlpha=Math.max(0,1-tNow/1.2);drawLeaf(leafLand.x,leafLand.y-camY-3,LEAF_FLAT,false);ctx.globalAlpha=1;}
   if(mode==='play'&&started&&tNow<.7){const sc=tNow<.1?5:4;
@@ -2136,6 +2144,8 @@ function drawRubStick(dt){
 }
 function drawHint(){
   if(newCard)return;
+  if(coaching()&&ctrlMode==='classic'){const fy0=H-46-GAUGE_ROW-10,sd=tapFX[0]>=tapFX[1]?0:1,x=sd?W-22:22,bl=((gt*5)|0)%2;
+    for(let i=0;i<4;i++)R(x-3+i,fy0-6+i,7-2*i,1,bl?'#ffd400':'#ffffff');R(x-1,fy0-11,3,5,bl?'#ffd400':'#ffffff');text(sd?'R':'L',x,fy0-19,1,'#ffd400','c');return;}
   if(mode==='play'&&started&&!knows('tap'))showHint('tap'); // the very first run: tap a fist = punch the floor above
   if(tryK&&tryK!=='king'&&mode==='play')showHint(tryK); // a move that just opened: the arrows stay until it's done once
   if(superReady&&kingLevel>=1)showHint('king'); // stays up until the first KING PUNCH
@@ -2187,7 +2197,7 @@ function drawKingFire(){
     for(let i=0;i<lv*2;i++){const sx=x0+((hash(i,(gt*6)|0)*w)|0),sy=base-full-((gt*40+i*17)%(14+lv*3));R(sx,sy,1,1,PAL(.7));} // sparks
 }
 function drawStrip(){
-  syncMash();syncPauseBtn();syncNewCard();
+  syncMash();syncPauseBtn();syncNewCard();syncCoach();
   drawKingHud(1/60);
   drawCountdown();
   drawSlowMo();
@@ -2394,6 +2404,7 @@ function beginCountdown(){newGame();for(const v of BURN_VOICES)clipDecode(v);mod
 function updateCountdown(dt){
   countT-=dt;const el=LEAF_T-countT;
   while(leafBeeps<LEAF_BEEPS.length&&el>=LEAF_BEEPS[leafBeeps]){leafBeeps++;sfx.count(false);vibe(8);} // ti... ti... ti...
+  if(coaching()&&ctrlMode==='classic'){const ph=Math.floor(el/.3);demoPh=ph;if(el-ph*.3<.14)tapFX[ph%2]=1;} /* the fists show it: left, right, left, right */
   if(countT<=0){leafLand={x:leafX(1),y:pl.feet};sfx.count(true);vibe(25);mode='play';started=true;tStart=now();lastTap=-9;bgmStart();     // TIII! the leaf lands
     if(AC){const t=AC.currentTime; // 'pasak': a dry leaf crunching -- a cluster of tiny bright crackles
       [0,.018,.034,.055,.08,.11].forEach((d,i)=>noise(t+d,.035+Math.random()*.02,2600+Math.random()*2800,1.4,.32-i*.035,'bandpass'));
