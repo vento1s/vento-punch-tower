@@ -196,6 +196,9 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .result .total span{font-family:var(--f-pixel);font-size:18px;color:var(--gold);text-shadow:2px 2px 0 #a33f00}
 .rankbig{font-family:var(--f-pixel);font-size:11px;line-height:1.6;color:var(--gi);min-height:1.6em}
 .rankbig b{color:var(--gold);font-weight:400;font-size:16px}
+.sharesheet{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:12px;padding:16px;box-sizing:border-box;overflow-y:auto;background:var(--void)}
+.sharesheet img{display:block;width:min(100%,280px);height:auto;box-shadow:0 0 0 3px var(--gold);-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+.sharesheet .pair{width:min(100%,280px)}
 .btn2.sharebtn{width:calc(100% - 16px);max-width:280px;margin-top:-2px;color:var(--gold)}
 .blinky{animation:blinky 1s steps(2) infinite;color:var(--lava-hi)}
 @keyframes blinky{50%{opacity:.25}}
@@ -624,6 +627,7 @@ const KING_STYLE=(()=>{try{const q=new URLSearchParams(location.search).get('kin
   return localStorage.getItem('punchtower.king')==='rub'?'rub':'weak';}catch(e){return 'weak';}})();
 const KL_KT=[3,4,5,6,7,8]; // KING TIME seconds by level
 let KT_DMG0=1.2,KT_DMG=1; // SHOW TIME punch power: x(1.2 + level power) -> LV1 x1.8 ... MAX x5.7 (doubled)
+let brkFX=[],showBrk=0; /* SHOW TIME: one BREAK! slam per floor smashed */
 let kingT=0,kingTmax=1,kingPw=1,showFrom=0,showIntro=0,showLv=1,confs=[],crowdK=0,cheerT=0; // (KING TIME is called SHOW TIME on screen)
 const KL_COL=['#ff7a1a','#ff7a1a','#ff8a1a','#ff8a1a','#ff9a2a','#ffb03a'], // plain fire: the pets only grow, no colours
      KL_R=[1,1.5,2,2.5,3.5,4.5]; // half the old size
@@ -753,7 +757,7 @@ function learn(k){if(knows(k))return;learned[k]++;saveLearned();if(hint&&hint.id
    the world freezes, then the hint arrows ask for one try). A move pulled off once (learned.got) is open from 1F in
    later runs; '힌트 다시 보기' locks them all again. Same table for every difficulty. */
 const SKILL_AT={walk:5,dash:15,king:20},SKILL_ORDER=['walk','dash','king']; /* ki comes with walking: the walk itself gathers it */
-const SKILL_KO={walk:['걷기','꾹 누르면 그쪽으로 걸어요\n오래 걸을수록 기가 모여서\n손을 떼면 첫 펀치가 세져요'],dash:['대시','한쪽을 꾹 눌러 이동하다가\n반대쪽 버튼을 누르면 점프해요!'],king:['SHOW TIME','양쪽 주먹을 같이 꾹 눌렀다 놓고\n양 주먹을 연타하세요!\n모든 벽돌을 가볍게 뚫고 지나가요']};
+const SKILL_KO={walk:['걷기','꾹 누르면 그쪽으로 걸어요\n손을 떼면 기 펀치!'],dash:['대시','한쪽을 꾹 눌러 도움닫기!\n달리다가 반대쪽 버튼을 누르면\n휙 점프해요'],king:['SHOW TIME','양쪽 주먹을 같이 꾹 눌렀다 놓고\n양 주먹을 연타하세요!\n모든 벽돌을 가볍게 뚫고 지나가요']};
 const NEW_T=1.8,NEW_SKIP=2;let runOpen={},newCard=null,tryK=null;const cardHolds=new Map(); /* thumbs pressed during a card: they carry on once it closes */
 if(!learned.got||typeof learned.got!=='object'){ /* first load of this version: players who already used a move (or climbed past its floor) keep it */
   let bm=0;for(const k in bests)bm=Math.max(bm,(bests[k]&&bests[k].floor)||0);
@@ -778,7 +782,7 @@ function showCard(k,tag,nm,sub,dur){newCard={k,t:0,dur};hint=null;
   newEl.hidden=true;void newEl.offsetWidth;newEl.hidden=false;
   vibe([20,30,40]);if(AC){const t=AC.currentTime;[784,1046,1318,1568].forEach((f,i)=>tone(t+i*.07,.16,f,f,'square',.08));tone(t+.28,.45,2093,2093,'triangle',.07);}}
 function openSkill(k){runOpen[k]=1;tryK=k;
-  if(k==='walk'||k==='dash'){const s=tgt();if(s&&!s.broken){const h=wkW(s)/2;s.wFrom=null;s.wT=1;s.wx=Math.round(pl.x<W/2?W-WALL-4-h:WALL+4+h);}} /* weak point on the far side: walk (or dash) all the way there */
+  if(k==='walk'||k==='dash'){const s=tgt();if(s&&!s.broken){const h=wkW(s)/2,far=pl.x<W/2?W-WALL-4-h:WALL+4+h,near=pl.x+(pl.x<W/2?1:-1)*(h+16);s.wFrom=null;s.wT=1;s.wx=Math.round(k==='dash'?far:near);}} /* walk: the weak point a few steps away; dash: the far side, a full run-up */
   showCard(k,'NEW!',SKILL_KO[k][0],SKILL_KO[k][1],NEW_T);}
 function closeCard(){if(!newCard)return;const k=newCard.k;newCard=null;newEl.hidden=true;lastTap=now();
   for(const [id,sd] of cardHolds)holds.set(id,{side:sd,t:0,c:0,used:false,born:now()});cardHolds.clear();
@@ -839,7 +843,7 @@ function newGame(){
   preloadDieVoice();
   tiltZero=tiltG==null?0:tiltG; // whatever angle you hold the phone at now counts as level
   D=DIFFS[diffIdx];
-  runOpen={};newCard=null;tryK=null;demoPh=-1;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
+  runOpen={};newCard=null;tryK=null;brkFX=[];showBrk=0;demoPh=-1;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
@@ -952,6 +956,10 @@ function breakSlab(s){
   shake=Math.max(shake,4.5);hitstop=Math.max(hitstop,.085);
   {const clean=weakStreak>=4,t=T_BREAK+(clean?T_CLEAN:0)+(s.type==='boss'?T_BOSS:0);
    addTime(t,(clean?'CLEAN ':'')+'+'+t.toFixed(1)+'s');}
+  if(kingT>0){showBrk++;brkFX.push({n:showBrk,at:now(),x:W/2+Math.round(Math.random()*14-7),tilt:showBrk%2?1:-1});if(brkFX.length>4)brkFX.shift();
+    flashO=Math.max(flashO,.3);flashCol='#ffffff';shake=Math.max(shake,7);vibe(45);
+    const ry=-(s.n)*FH+FH/2;rings.push({x:pl.x,y:ry,life:.32,max:.32,big:true,col:'#ffd400'});rings.push({x:pl.x,y:ry,life:.2,max:.2,big:false});
+    if(AC){const t=AC.currentTime;tone(t,.09,1400+Math.min(showBrk,12)*90,500,'square',.07);}}
   let dest=s.n;
   if(s.type==='tnt'){sfx.boom();shake=8;pop(popX(38),pl.feet-30,'BOOM!','#ff6a50',2);
     for(let k=1;k<=2;k++){const n2=slabs[s.n+k];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='vibranium'){n2.broken=true;debris(n2);dest=n2.n;}else break;}}
@@ -1000,7 +1008,7 @@ function startKingTime(lv,pw,cutinShown){
   for(let i=0;i<40;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*140,l=.5+Math.random()*.4;
     parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:i%3?'#ff8a1a':'#ffd400'});}
   showFrom=pl.level;}
-function beginShow(){kingT=kingTmax;showFrom=pl.level;vibe(30);showFanfare();for(let i=0;i<46;i++)confetti(true);}
+function beginShow(){kingT=kingTmax;showFrom=pl.level;showBrk=0;brkFX=[];vibe(30);showFanfare();for(let i=0;i<46;i++)confetti(true);}
 // SHOW TIME stage dressing: a row of fans seen from behind at the bottom, cheering with their arms up,
 // a little fanfare, and confetti shooting up from below (same colours as the PUSH button's shards)
 const CONF_COL=['#e8344a','#ff6a7a','#ffd400','#f4efe8','#ff8a1a','#c8c0d0'];
@@ -1336,7 +1344,7 @@ function update(dt){
   if(bgm&&(bgm.kind==='game'||bgm.kind==='max')&&bgm.kind!==gameTrack())bgmStart(gameTrack()); // MAX reached / spent: swap the music
   if(showIntro>0&&mode==='play')showIntro=Math.max(0,showIntro-dt);
   if(kingT>0&&mode==='play'){kingT=Math.max(0,kingT-dt); // ticks even through hit-stop, so KING TIME is real seconds
-    if(kingT===0){pop(W/2,pl.feet-50,'SHOW END','#ffd400',2,true);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
+    if(kingT===0){pop(W/2,pl.feet-50,'SHOW END','#ffd400',2,true);if(KING_STYLE!=='rub'&&showBrk>0)showFinale(showBrk,0);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
   if(mode==='play'&&started&&kingT<=0&&showIntro<=0&&bothT<=0&&kingSlowT<=0)for(const k of SKILL_ORDER)if(!skillOn(k)&&tgtN()>=SKILL_AT[k]){openSkill(k);return;}
   if(mode==='play'&&started&&kingT<=0&&showIntro<=0&&bothT<=0&&kingSlowT<=0&&!vibCardShown&&!knows('vib')){const v=tgt();if(v&&v.type==='vibranium'&&!v.broken&&pl.jt<0){vibCardShown=true;showCard('vib','TIP',VIB_CARD[0],VIB_CARD[1],3.2);return;}}
   if(hitstop>0){hitstop-=dt;return;}
@@ -1780,6 +1788,16 @@ function logoText(s,cx,y,sc,e1,e2,white){
   ctx.fillStyle=e1;for(const [px,py] of cells)ctx.fillRect(px+1,py+1,sc,sc);
   for(const [px,py] of cells){ctx.fillStyle=white?'#ffffff':'#f4efe8';ctx.fillRect(px,py,sc,sc);
     if(!white){ctx.fillStyle='#bdb4ae';for(let j=1;j<sc;j+=2)ctx.fillRect(px,py+j,sc,1);}}}  // fine scanlines: every other 1px row
+// SHOW TIME BREAK! slams: each floor smashed punches the word in again with speed lines, and the floor count stamps above it
+function drawBreakFX(){if(!brkFX.length||mode!=='play')return;const t=now(),b=brkFX[brkFX.length-1],age=t-b.at;if(age>.75){brkFX=[];return;}
+  const y=Math.round(H*.3-Math.max(0,age-.35)*30);
+  if(age<.18){const k=age/.18;ctx.globalAlpha=1-k;ctx.fillStyle='#ffffff'; // speed lines bursting out of the word
+    for(let a=0;a<16;a++){const an=a/16*Math.PI*2+b.n*.7,r0=22+k*34,r1=r0+16+k*22;for(let r=r0;r<r1;r+=2)ctx.fillRect(Math.round(b.x+Math.cos(an)*r*1.35),Math.round(y+8+Math.sin(an)*r*.75),1,1);}
+    ctx.globalAlpha=1;}
+  ctx.globalAlpha=age>.55?Math.max(0,1-(age-.55)/.2):1;
+  perfectText('BREAK!',b.x+(age<.08?b.tilt*2:0),y,age,3,false);
+  const c='x'+b.n,pc=age<.06;logoText(c,W/2,y-17-(pc?2:0),pc?3:2,'#ff8a1a','#5a2000',pc);
+  ctx.globalAlpha=1;}
 function drawComboFX(){
   if(mode!=='play'||combo<2||kingT>0)return; // SHOW TIME has its own headline
   const t=now(),age=t-comboFX.at;if(age>D.win+.2)return;
@@ -2197,9 +2215,9 @@ function drawHint(){
     else if(c<.3){label('HOLD',fx(hs));hintMsg='기가 모이는 중...';}
     else{up(fx(hs),fy-9+bob);label('LET GO!',fx(hs));hintMsg='지금 손을 떼면 기 펀치!';}}
   else if(hint.id==='dash'){let ws=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T)ws=h.side;
-    if(ws<0&&tryK==='dash'){hold(toWeak());hintMsg='한쪽을 꾹 눌러 이동하다가…';return;}
+    if(ws<0&&tryK==='dash'){hold(toWeak());hintMsg='꾹 눌러서 도움닫기…';return;}
     if(ws<0){hint=null;return;}
-    tap(ws?0:1,'TAP!');hintMsg='반대쪽을 누르면 점프!';}
+    tap(ws?0:1,'TAP!');hintMsg='지금 반대쪽! 점프!';}
   else if(hint.id==='king'){const lift=16+Math.min(kingLevel,5)*4,flow=Math.floor(((gt*2.2)%1)*8); // above the blaze; the arrows keep sliding down
     for(const sd of [0,1]){down(fx(sd),fy-6-lift+flow);text('HOLD',fx(sd),fy-18-lift,1,'#ffd400','c');}
     hintMsg='양쪽 같이 꾹! 그다음 연타!';}
@@ -2280,7 +2298,7 @@ function render(){
   drawLv6Vignette();
   drawRings();
   drawLava();
-  drawComboFX();drawJudge();
+  drawComboFX();drawJudge();drawBreakFX();
   for(const p of pops){ctx.globalAlpha=Math.min(1,p.life*3);text(p.t,p.x,p.y-camY,p.sc,p.col,'c');}ctx.globalAlpha=1;
   ctx.restore();
   if(flashO>0&&!RM){ctx.globalAlpha=Math.min(1,flashO);R(0,0,W,H,flashCol);ctx.globalAlpha=1;}
@@ -2794,7 +2812,7 @@ function prepShare(cleared,en,acc,rank,online){const myGen=ovGen;
   Promise.all([document.fonts.load('88px "PunchTowerKR"'),document.fonts.load('40px "Press Start 2P"')]).catch(()=>{}).then(()=>{
     if(myGen!==ovGen)return;const c=drawShareCard(cleared,en,acc,rank,online);
     c.toBlob(b=>{if(myGen===ovGen&&b)shareBlob=b;},'image/png');});
-  shareBlob=null;}
+  if(!online)shareBlob=null;} /* the ranked redraw keeps the first card until it's ready, so a tap never finds nothing */
 function drawShareCard(cleared,en,acc,rank,online){
   const CW=1080,CH=1350,c=document.createElement('canvas');c.width=CW;c.height=CH;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
   const KR='"PunchTowerKR","Press Start 2P",monospace',PX=document.fonts.check('8px "Press Start 2P"')?'"Press Start 2P","PunchTowerKR",monospace':KR,BASE=f=>f===KR?14:10;
@@ -2837,17 +2855,27 @@ function drawShareCard(cleared,en,acc,rank,online){
   say(SHARE_URL.replace(/^https:\/\/|\/$/g,''),CW/2,1240,24,PX,'#f4efe8','center',null,false);
   g.fillStyle='rgba(0,0,0,.07)';for(let y=0;y<CH;y+=6)g.fillRect(0,y,CW,2); // the cabinet scanlines
   return c;}
-function shareResult(){const btn=ov.querySelector('#sharebtn');sfx.select();
-  const done=t=>{if(btn){btn.textContent=t;setTimeout(()=>{if(btn.isConnected)btn.textContent='결과 자랑하기';},2200);}};
+function copyText(t){try{if(navigator.clipboard&&isSecureContext)return navigator.clipboard.writeText(t).then(()=>true,()=>copyOld(t));}catch(e){}return Promise.resolve(copyOld(t));}
+function copyOld(t){try{const a=document.createElement('textarea');a.value=t;a.setAttribute('readonly','');a.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(a);a.select();a.setSelectionRange(0,t.length);const ok=document.execCommand('copy');a.remove();return ok;}catch(e){return false;}}
+/* tap: phones with a share sheet get the card image straight into it (KakaoTalk, Instagram ...).
+   Anywhere else (KakaoTalk's own browser, PC ...) the card opens big on a sheet: long-press or the button saves it, the other button copies the link. */
+function shareResult(){sfx.select();
   const file=shareBlob&&new File([shareBlob],'punch-tower.png',{type:'image/png'});
-  const save=()=>{if(shareBlob){const a=document.createElement('a');a.href=URL.createObjectURL(shareBlob);a.download='punch-tower.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
-    try{navigator.clipboard&&navigator.clipboard.writeText(shareText).catch(()=>{});}catch(e){}
-    done(shareBlob?'이미지 저장 + 링크 복사!':'링크 복사했어요!');};
-  try{
-    if(file&&navigator.canShare&&navigator.canShare({files:[file]}))navigator.share({files:[file],text:shareText}).catch(e=>{if(e&&e.name!=='AbortError')save();});
-    else if(navigator.share)navigator.share({title:'펀치펀치 타워',text:shareText}).catch(e=>{if(e&&e.name!=='AbortError')save();});
-    else save();
-  }catch(e){save();}}
+  try{if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],text:shareText}).catch(e=>{if(!e||e.name!=='AbortError')shareSheet();});return;}}catch(e){}
+  shareSheet();}
+function shareSheet(){const old=ov.querySelector('.sharesheet');if(old)old.remove();
+  const url=shareBlob?URL.createObjectURL(shareBlob):'',d=document.createElement('div');d.className='sharesheet';
+  d.innerHTML=`<div class="eyebrow">SHARE</div>${url?`<img src="${url}" alt="내 기록 카드"><p class="bnote">이미지를 길게 눌러 저장하거나 공유하세요</p>`:'<p class="bnote">카드를 만드는 중이에요. 링크는 바로 보낼 수 있어요</p>'}
+    <div class="pair">${url?'<button class="btn2" type="button" data-s="save">이미지 저장</button>':''}<button class="btn2" type="button" data-s="link">${navigator.share?'링크 공유':'링크 복사'}</button></div>
+    <button class="ghost" type="button" data-s="close">닫기</button>`;
+  const close=()=>{d.remove();if(url)setTimeout(()=>URL.revokeObjectURL(url),1000);};
+  d.addEventListener('click',e=>{const k=e.target.dataset&&e.target.dataset.s;if(!k)return;sfx.select();
+    if(k==='close')close();
+    else if(k==='save'){const a=document.createElement('a');a.href=url;a.download='punch-tower.png';document.body.appendChild(a);a.click();a.remove();e.target.textContent='저장했어요!';}
+    else if(k==='link'){const btn=e.target,ok=()=>{btn.textContent='링크 복사했어요!';};
+      if(navigator.share)navigator.share({title:'펀치펀치 타워',text:shareText}).catch(er=>{if(!er||er.name!=='AbortError')copyText(shareText).then(ok);});
+      else copyText(shareText).then(r=>{btn.textContent=r?'링크 복사했어요!':'복사가 안 돼요';});}});
+  ov.appendChild(d);}
 function showOver(){resultScreen(false);}
 function showClear(){resultScreen(true);}
 showSplash();
