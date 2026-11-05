@@ -257,7 +257,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .newsk[hidden]{display:none}
 .newsk em{font-style:normal;font-family:var(--f-pixel);font-size:clamp(12px,4.4cqw,16px);letter-spacing:.1em;color:var(--ink);background:var(--gold);padding:4px 7px 3px;animation:newBlink .36s steps(2) infinite}
 .newsk b{font-family:var(--f-display);font-weight:400;font-size:clamp(40px,16cqw,64px);line-height:1;color:#fff;text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),5px 5px 0 #c24e00}
-.newsk i{font-style:normal;font-family:var(--f-display);font-size:clamp(15px,5.6cqw,22px);color:#7af0ff}
+.newsk i{font-style:normal;white-space:pre-line;text-align:center;line-height:1.5;font-family:var(--f-display);font-size:clamp(15px,5.6cqw,22px);color:#7af0ff}
 @keyframes newIn{0%{transform:scaleY(0)}100%{transform:scaleY(1)}}
 @keyframes newBlink{50%{background:#fff}}
 @media (prefers-reduced-motion:reduce){.newsk,.newsk em{animation:none}}
@@ -732,12 +732,16 @@ function showHint(id){if(!hintsOn||knows(id)||mode!=='play'||ctrlMode!=='classic
   if(hint&&hint.id!==id){if(id!==tryK)return;hint=null;} /* the move you're being asked to try beats any other tip */
   const t=now();if(hintCool[id]&&t<hintCool[id]&&id!==tryK)return;if(!hint)hint={id,t0:t};hint.t=t;}
 const newEl=document.getElementById('newsk');
-function openSkill(k){runOpen[k]=1;tryK=k;newCard={k,t:0};hint=null;
-  if(k==='walk'||k==='dash'){const s=tgt();if(s&&!s.broken){const h=wkW(s)/2;s.wFrom=null;s.wT=1;s.wx=Math.round(pl.x<W/2?W-WALL-4-h:WALL+4+h);}} /* weak point on the far side: walk (or dash) all the way there */
+/* the same card opens a first run: how a punch works, before anything else */
+const TAP_CARD=['펀치!','두 주먹 버튼을 누르면\n층을 깨고 올라가요\n(번갈아 누르면 더 세져요)'];let tapCardShown=false;
+function showCard(k,tag,nm,sub,dur){newCard={k,t:0,dur};hint=null;
   holds.clear();bothT=0;hum(-1);kingGrowl(false);stick.id=null;stick.dx=0;
-  newEl.querySelector('b').textContent=SKILL_KO[k][0];newEl.querySelector('i').textContent=SKILL_KO[k][1];
+  newEl.querySelector('em').textContent=tag;newEl.querySelector('b').textContent=nm;newEl.querySelector('i').textContent=sub;
   newEl.hidden=true;void newEl.offsetWidth;newEl.hidden=false;
   vibe([20,30,40]);if(AC){const t=AC.currentTime;[784,1046,1318,1568].forEach((f,i)=>tone(t+i*.07,.16,f,f,'square',.08));tone(t+.28,.45,2093,2093,'triangle',.07);}}
+function openSkill(k){runOpen[k]=1;tryK=k;
+  if(k==='walk'||k==='dash'){const s=tgt();if(s&&!s.broken){const h=wkW(s)/2;s.wFrom=null;s.wT=1;s.wx=Math.round(pl.x<W/2?W-WALL-4-h:WALL+4+h);}} /* weak point on the far side: walk (or dash) all the way there */
+  showCard(k,'NEW!',SKILL_KO[k][0],SKILL_KO[k][1],NEW_T);}
 function closeCard(){if(!newCard)return;const k=newCard.k;newCard=null;newEl.hidden=true;lastTap=now();
   lavaHold=Math.max(lavaHold,1); /* a breath to try the new move */
   if(k==='king'&&kingLevel<1){kingLevel=1;superReady=true;altStreak=0;kingLevelUp(1);}} /* SHOW TIME opens with LV1 already in hand, so it can be tried at once */
@@ -795,7 +799,7 @@ function newGame(){
   preloadDieVoice();
   tiltZero=tiltG==null?0:tiltG; // whatever angle you hold the phone at now counts as level
   D=DIFFS[diffIdx];
-  runOpen={};newCard=null;tryK=null;if(newEl)newEl.hidden=true;
+  runOpen={};newCard=null;tryK=null;tapCardShown=false;if(newEl)newEl.hidden=true;
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
@@ -1227,7 +1231,7 @@ addEventListener('blur',()=>{holds.clear();});
 // while the charge itself and your thumbs stay on real time
 function update(dt){
   if(mode==='pause')return; // frozen; render keeps drawing the paused frame
-  if(newCard){newCard.t+=dt;if(started)tStart+=dt;if(newCard.t>=NEW_T)closeCard();return;} /* NEW! card: the world holds still */
+  if(newCard){newCard.t+=dt;if(started)tStart+=dt;if(newCard.t>=newCard.dur)closeCard();return;} /* NEW! card: the world holds still */
   const real=dt;
   // charge: world barely slows; once it's full, time slams to a crawl for the 'kingSlow' beat, then the punch fires
   const tsTarget=kingSlowT>0?.07:(bothT>0&&mode==='play')?.85:1;
@@ -1291,6 +1295,7 @@ function update(dt){
   if(showIntro>0&&mode==='play')showIntro=Math.max(0,showIntro-dt);
   if(kingT>0&&mode==='play'){kingT=Math.max(0,kingT-dt); // ticks even through hit-stop, so KING TIME is real seconds
     if(kingT===0){pop(W/2,pl.feet-50,'SHOW END','#ffd400',2,true);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
+  if(mode==='play'&&started&&!tapCardShown&&!knows('tap')){tapCardShown=true;showCard('tap','HOW TO',TAP_CARD[0],TAP_CARD[1],3.2);return;} /* first run: explain the punch right at GO */
   if(mode==='play'&&started&&kingT<=0&&showIntro<=0&&bothT<=0&&kingSlowT<=0)for(const k of SKILL_ORDER)if(!skillOn(k)&&tgtN()>=SKILL_AT[k]){openSkill(k);return;}
   if(hitstop>0){hitstop-=dt;return;}
   ensureSlabs(pl.level+30);
@@ -2137,7 +2142,7 @@ function drawHint(){
   if(hint.id==='tap'){for(const x of [22,W-22]){arrowDown(x,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP',x,fy-18+bob,1,'#ffd400','c');}
     const hx=Math.round(pl.x),hy=Math.round(pl.feet-camY)-30-bob,ac=blink?'#ffd400':'#ffffff'; /* up arrow from his head to the floor he's breaking */
     for(let i=0;i<4;i++)R(hx-3+i,hy-i,7-2*i,1,ac);R(hx-1,hy+1,3,5,ac);
-    {const t2='BREAK THE FLOOR',w0=tw(t2,1)+8,by=58;R(W/2-w0/2,by,w0,19,'rgba(13,10,8,.85)');text('TAP: PUNCH UP!',W/2,by+2,1,'#ffd400','c',false);text(t2,W/2,by+11,1,'#f4efe8','c',false);}} /* high up, clear of the boxer */
+    }
   else if(hint.id==='alt'){const nx=lastSide===0?W-22:22;arrowDown(nx,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP',nx,fy-18+bob,1,'#ffd400','c');banner('ALTERNATE L R!','#ffd400');}
   else if(hint.id==='walk'){const s=tgt();const d=s&&s.wx>pl.x?1:0,x=d?W-22:22;
     arrowSide(x+(d?8:-8),fy-4+bob,d?1:-1,blink?'#7af0ff':'#ffffff');text('HOLD',x,fy-18+bob,1,'#7af0ff','c');banner('HOLD A FIST TO WALK','#7af0ff');}
