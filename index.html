@@ -711,8 +711,8 @@ function tiltWake(){ // from any tap: browsers that need a permission prompt get
 // HINTS: a tip pops up only at the moment a move is needed, and retires for good once you've pulled it off a few times.
 // Progress is kept on this device; "힌트 다시 보기" on the how-to screen resets it, and the title has an on/off toggle.
 let hintsOn=true;try{hintsOn=localStorage.getItem('punchtower.hints')!=='off';}catch(e){}
-const HINT_GOAL={alt:10,walk:3,dash:2,king:1,ki:1};
-let learned={alt:0,walk:0,dash:0,king:0,ki:0};try{Object.assign(learned,JSON.parse(localStorage.getItem('punchtower.learned')||'{}'));}catch(e){}
+const HINT_GOAL={alt:10,walk:3,dash:2,king:1,ki:1,tap:1};
+let learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0};try{Object.assign(learned,JSON.parse(localStorage.getItem('punchtower.learned')||'{}'));}catch(e){}
 function saveLearned(){try{localStorage.setItem('punchtower.learned',JSON.stringify(learned));}catch(e){}}
 const knows=k=>learned[k]>=HINT_GOAL[k];
 let hint=null;const hintCool={};let sameSide=0,offHits=0;
@@ -904,7 +904,7 @@ function debris(s){const y=-s.n*FH;const c=SLABC[s.type];
   for(let i=0;i<34;i++)parts.push({x:WALL+Math.random()*IN,y:y+Math.random()*10,vx:(Math.random()-.5)*160,vy:-60-Math.random()*120,life:.7+Math.random()*.6,col:[c[0],c[1],c[2]][i%3],s:Math.random()<.4?2:1,g:420});
   for(let i=0;i<10;i++)parts.push({x:WALL+Math.random()*IN,y:y+5,vx:(Math.random()-.5)*40,vy:-10-Math.random()*20,life:.6,col:'rgba(220,210,230,.5)',s:3,g:-20});}
 function breakSlab(s){
-  s.broken=true;s.hp=0;debris(s);sfx.brk(s.type);vibe(30);
+  s.broken=true;s.hp=0;debris(s);sfx.brk(s.type);vibe(30);learn('tap'); /* first floor broken: the opening tip retires */
   shake=Math.max(shake,4.5);hitstop=Math.max(hitstop,.085);
   {const clean=weakStreak>=4,t=T_BREAK+(clean?T_CLEAN:0)+(s.type==='boss'?T_BOSS:0);
    addTime(t,(clean?'CLEAN ':'')+'+'+t.toFixed(1)+'s');}
@@ -2125,6 +2125,7 @@ function drawRubStick(dt){
 }
 function drawHint(){
   if(newCard)return;
+  if(mode==='play'&&started&&!knows('tap'))showHint('tap'); // the very first run: tap a fist = punch the floor above
   if(tryK&&tryK!=='king'&&mode==='play')showHint(tryK); // a move that just opened: the arrows stay until it's done once
   if(superReady&&kingLevel>=1)showHint('king'); // stays up until the first KING PUNCH
   if(!hint||!hintsOn)return;
@@ -2133,7 +2134,11 @@ function drawHint(){
   const arrowDown=(x,y,col)=>{for(let i=0;i<4;i++)R(x-3+i,y+i,7-2*i,1,col);R(x-1,y-5,3,5,col);};
   const arrowSide=(x,y,dir,col)=>{for(let i=0;i<4;i++)R(x+(dir>0?i:-i),y-3+i,1,7-2*i,col);R(dir>0?x-5:x+1,y-1,5,3,col);};
   const banner=(t,col)=>{const w0=tw(t,1)+8;R(W/2-w0/2,fy-30,w0,10,'rgba(13,10,8,.85)');text(t,W/2,fy-28,1,col,'c',false);};
-  if(hint.id==='alt'){const nx=lastSide===0?W-22:22;arrowDown(nx,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP',nx,fy-18+bob,1,'#ffd400','c');banner('ALTERNATE L R!','#ffd400');}
+  if(hint.id==='tap'){for(const x of [22,W-22]){arrowDown(x,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP',x,fy-18+bob,1,'#ffd400','c');}
+    const hx=Math.round(pl.x),hy=Math.round(pl.feet-camY)-30-bob,ac=blink?'#ffd400':'#ffffff'; /* up arrow from his head to the floor he's breaking */
+    for(let i=0;i<4;i++)R(hx-3+i,hy-i,7-2*i,1,ac);R(hx-1,hy+1,3,5,ac);
+    {const t2='BREAK THE FLOOR',w0=tw(t2,1)+8,by=58;R(W/2-w0/2,by,w0,19,'rgba(13,10,8,.85)');text('TAP: PUNCH UP!',W/2,by+2,1,'#ffd400','c',false);text(t2,W/2,by+11,1,'#f4efe8','c',false);}} /* high up, clear of the boxer */
+  else if(hint.id==='alt'){const nx=lastSide===0?W-22:22;arrowDown(nx,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP',nx,fy-18+bob,1,'#ffd400','c');banner('ALTERNATE L R!','#ffd400');}
   else if(hint.id==='walk'){const s=tgt();const d=s&&s.wx>pl.x?1:0,x=d?W-22:22;
     arrowSide(x+(d?8:-8),fy-4+bob,d?1:-1,blink?'#7af0ff':'#ffffff');text('HOLD',x,fy-18+bob,1,'#7af0ff','c');banner('HOLD A FIST TO WALK','#7af0ff');}
   else if(hint.id==='ki'){let hs=-1,c=0;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T&&h.c>=c){hs=h.side;c=h.c;}
@@ -2664,7 +2669,7 @@ function showHowto(){menuMusic();showOverlay(`
   <div class="hint">PC: ← → 펀치 · 꾹 = 이동 · 양쪽 같이 꾹 = 왕펀치 · 올라갈 때 ↑ ↓ 번갈아</div>
   <button class="btn2" type="button" data-act="rehint">힌트 다시 보기</button>
   <button class="btn" type="button" data-act="back">돌아가기</button>
-  ${CREDIT}`,{back:showTitle,rehint:()=>{learned={alt:0,walk:0,dash:0,king:0,ki:0,got:{}};runOpen={};saveLearned();hintsOn=true;try{localStorage.setItem('punchtower.hints','on');}catch(e){}
+  ${CREDIT}`,{back:showTitle,rehint:()=>{learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0,got:{}};runOpen={};saveLearned();hintsOn=true;try{localStorage.setItem('punchtower.hints','on');}catch(e){}
     sfx.select();const b=ov.querySelector('[data-act="rehint"]');if(b){b.textContent='처음부터 다시 배워요!';b.disabled=true;}}});}
 function showRanking(){menuMusic();showOverlay(`
   <div class="eyebrow">HIGH SCORES</div>
