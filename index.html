@@ -251,13 +251,16 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 @keyframes finIn{0%{transform:scale(2.2);opacity:0}8%{transform:scale(.9);opacity:1}14%{transform:scale(1.05)}20%{transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
 @keyframes finHue{0%{color:var(--gold)}33%{color:#fff}66%{color:#ff8a00}}
 @media (prefers-reduced-motion:reduce){.finale,.finale b{animation:none}}
-/* first run: while the leaf falls, a caption explains the punch (the fists demo it below) - nothing stops */
-.coach{position:absolute;left:0;right:0;top:15%;display:grid;justify-items:center;gap:8px;padding:10px 8px 12px;pointer-events:none;z-index:2;
-  background:rgba(13,10,8,.55);box-shadow:0 2px 0 var(--gold),0 -2px 0 var(--gold);animation:newIn .3s steps(6) both}
-.coach[hidden]{display:none}
-.coach b{font-family:var(--f-display);font-weight:400;font-size:clamp(22px,8.6cqw,34px);line-height:1;color:var(--gold);text-shadow:3px 3px 0 #c24e00}
-.coach i{font-style:normal;font-family:var(--f-display);font-size:clamp(14px,5cqw,20px);line-height:1.5;color:#f4efe8;text-align:center}
-@media (prefers-reduced-motion:reduce){.coach{animation:none}}
+/* first run: while the leaf falls, the same card (tag + title + line) explains the punch, see-through so the leaf shows - nothing stops */
+.newsk.coach{top:15%;background:rgba(13,10,8,.55);box-shadow:0 2px 0 var(--gold),0 -2px 0 var(--gold);gap:8px;padding:10px 8px 12px}
+.newsk.coach b{font-size:clamp(26px,10cqw,40px)}
+.newsk.coach em{animation:none}
+/* hint bar: the sentence for whatever tip is up, just above the fists (same face and gold rim as the cards) */
+.hintbar{position:absolute;left:0;right:0;top:calc(147 / 256 * 100%);margin:0 auto;width:max-content;max-width:calc(100% - 16px);box-sizing:border-box;
+  padding:5px 10px 4px;background:rgba(13,10,8,.88);box-shadow:0 2px 0 var(--gold),0 -2px 0 var(--gold);pointer-events:none;z-index:2;
+  font-family:var(--f-display);font-size:clamp(12px,4.4cqw,17px);line-height:1.2;color:var(--gold);text-align:center}
+.hintbar[hidden]{display:none}
+.hintbar.hi{top:calc(126 / 256 * 100%)}
 /* NEW! card when a move opens up mid-run (the game is frozen behind it) */
 .newsk{position:absolute;left:0;right:0;top:32%;display:grid;justify-items:center;gap:10px;padding:14px 8px 16px;pointer-events:none;z-index:2;
   background:rgba(13,10,8,.9);box-shadow:0 3px 0 var(--gold),0 -3px 0 var(--gold),0 7px 0 var(--ink),0 -7px 0 var(--ink);animation:newIn .3s steps(6) both}
@@ -305,7 +308,8 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
     <div id="mash" class="mash" hidden>갈겨!!<small></small></div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
     <div id="newsk" class="newsk" hidden><em>NEW!</em><b></b><i></i><small>화면을 탭하면 계속</small></div>
-    <div id="coach" class="coach" hidden><b>L R L R 번갈아 탁탁!</b><i>두 주먹을 누르면 펀치!<br>윗층을 깨고 올라가요</i></div>
+    <div id="coach" class="newsk coach" hidden><em>HOW TO</em><b>L R 번갈아 탁탁!</b><i>두 주먹을 누르면 펀치!<br>윗층을 깨고 올라가요</i></div>
+    <div id="hintbar" class="hintbar" hidden></div>
     <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>SHOW PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
   </div>
@@ -745,6 +749,9 @@ function showHint(id){if(!hintsOn||knows(id)||mode!=='play'||ctrlMode!=='classic
   const t=now();if(hintCool[id]&&t<hintCool[id]&&id!==tryK)return;if(!hint)hint={id,t0:t};hint.t=t;}
 const newEl=document.getElementById('newsk');
 const coachEl=document.getElementById('coach');let demoPh=-1;
+const hintEl=document.getElementById('hintbar');let hintMsg='';
+function syncHintBar(){const t=ov.hidden&&mode==='play'?hintMsg:'',hi=!!(hint&&hint.id==='king');if(hintEl.classList.contains('hi')!==hi)hintEl.classList.toggle('hi',hi); /* above the blazing fists for SHOW TIME */
+  if(hintEl.textContent!==t)hintEl.textContent=t;if(hintEl.hidden===!!t)hintEl.hidden=!t;}
 const coaching=()=>mode==='count'&&!knows('tap')&&ov.hidden; /* first run, during the leaf */
 function syncCoach(){const show=coaching();if(coachEl.hidden===show)coachEl.hidden=!show;}
 /* first VIBRANIUM block in the way: only alternating hands on its weak point really hurt it */
@@ -2148,38 +2155,38 @@ function drawRubStick(dt){
     ctx.globalAlpha=1;}
 }
 function drawHint(){
+  /* ONE LOOK FOR EVERY TIP: the arrow and a one-word label (TAP / HOLD / LET GO!) in gold sit over the fist to use,
+     and the sentence goes in Korean into the hint bar (same face and gold rim as the cards). */
+  hintMsg='';
   if(newCard)return;
-  if(coaching()&&ctrlMode==='classic'){const fy0=H-46-GAUGE_ROW-10,sd=tapFX[0]>=tapFX[1]?0:1,x=sd?W-22:22,bl=((gt*5)|0)%2;
-    for(let i=0;i<4;i++)R(x-3+i,fy0-6+i,7-2*i,1,bl?'#ffd400':'#ffffff');R(x-1,fy0-11,3,5,bl?'#ffd400':'#ffffff');text(sd?'R':'L',x,fy0-19,1,'#ffd400','c');return;}
+  const fy=H-46-GAUGE_ROW-10,bob=Math.round(Math.sin(gt*10)*2),blink=((gt*5)|0)%2,col=blink?'#ffd400':'#ffffff';
+  const down=(x,y)=>{for(let i=0;i<4;i++)R(x-3+i,y+i,7-2*i,1,col);R(x-1,y-5,3,5,col);};
+  const up=(x,y)=>{for(let i=0;i<4;i++)R(x-3+i,y-i,7-2*i,1,col);R(x-1,y+1,3,5,col);};
+  const side=(x,y,dir)=>{for(let i=0;i<4;i++)R(x+(dir>0?i:-i),y-3+i,1,7-2*i,col);R(dir>0?x-5:x+1,y-1,5,3,col);};
+  const fx=sd=>sd?W-22:22,label=(t,x)=>text(t,x,fy-18+bob,1,'#ffd400','c');
+  const tap=(sd,t)=>{down(fx(sd),fy-6+bob);label(t||'TAP',fx(sd));};
+  const hold=(sd,t)=>{side(fx(sd)+(sd?8:-8),fy-4+bob,sd?1:-1);label(t||'HOLD',fx(sd));};
+  const toWeak=()=>{const s=tgt();return s&&s.wx>pl.x+2?1:s&&s.wx<pl.x-2?0:lastSide===0?1:0;};
+  if(coaching()&&ctrlMode==='classic'){const sd=tapFX[0]>=tapFX[1]?0:1;down(fx(sd),fy-6);label(sd?'R':'L',fx(sd));return;} // the leaf: fists demo L R L R
   if(mode==='play'&&started&&!knows('tap'))showHint('tap'); // the very first run: tap a fist = punch the floor above
   if(tryK&&tryK!=='king'&&mode==='play')showHint(tryK); // a move that just opened: the arrows stay until it's done once
   if(superReady&&kingLevel>=1)showHint('king'); // stays up until the first KING PUNCH
   if(!hint||!hintsOn)return;
   if(mode!=='play'||now()-hint.t>3.5){if(hint){hintCool[hint.id]=now()+5;}hint=null;return;}
-  const fy=H-46-GAUGE_ROW-10,bob=Math.round(Math.sin(gt*10)*2),blink=((gt*5)|0)%2;
-  const arrowDown=(x,y,col)=>{for(let i=0;i<4;i++)R(x-3+i,y+i,7-2*i,1,col);R(x-1,y-5,3,5,col);};
-  const arrowSide=(x,y,dir,col)=>{for(let i=0;i<4;i++)R(x+(dir>0?i:-i),y-3+i,1,7-2*i,col);R(dir>0?x-5:x+1,y-1,5,3,col);};
-  const banner=(t,col)=>{const w0=tw(t,1)+8;R(W/2-w0/2,fy-30,w0,10,'rgba(13,10,8,.85)');text(t,W/2,fy-28,1,col,'c',false);};
-  if(hint.id==='tap'){for(const x of [22,W-22]){arrowDown(x,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP',x,fy-18+bob,1,'#ffd400','c');}
-    const hx=Math.round(pl.x),hy=Math.round(pl.feet-camY)-30-bob,ac=blink?'#ffd400':'#ffffff'; /* up arrow from his head to the floor he's breaking */
-    for(let i=0;i<4;i++)R(hx-3+i,hy-i,7-2*i,1,ac);R(hx-1,hy+1,3,5,ac);
-    }
-  else if(hint.id==='alt'){const nx=lastSide===0?W-22:22;arrowDown(nx,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP',nx,fy-18+bob,1,'#ffd400','c');banner('ALTERNATE L R!','#ffd400');}
-  else if(hint.id==='walk'){const s=tgt();const d=s&&s.wx>pl.x?1:0,x=d?W-22:22;
-    arrowSide(x+(d?8:-8),fy-4+bob,d?1:-1,blink?'#7af0ff':'#ffffff');text('HOLD',x,fy-18+bob,1,'#7af0ff','c');banner('HOLD A FIST TO WALK','#7af0ff');}
+  if(hint.id==='tap'){tap(0);tap(1);up(Math.round(pl.x),Math.round(pl.feet-camY)-30-bob);hintMsg='주먹을 눌러 윗층을 부숴요';}
+  else if(hint.id==='alt'){tap(lastSide===0?1:0);hintMsg='왼손 오른손 번갈아 쳐요!';}
+  else if(hint.id==='walk'){hold(toWeak());hintMsg='꾹 눌러서 빨간 약점 밑으로 걸어가요';}
   else if(hint.id==='ki'){let hs=-1,c=0;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T&&h.c>=c){hs=h.side;c=h.c;}
-    if(hs<0){const s=tgt(),d=s&&s.wx>pl.x+2?1:s&&s.wx<pl.x-2?0:lastSide===0?1:0,x=d?W-22:22; /* the fist toward the weak point: walk there while it charges */
-      arrowDown(x,fy-6+bob,blink?'#7af0ff':'#ffffff');text('HOLD',x,fy-18+bob,1,'#7af0ff','c');banner('HOLD... THEN LET GO','#7af0ff');}
-    else{const x=hs?W-22:22,ready=c>=.3;
-      if(ready){for(let i=0;i<4;i++)R(x-3+i,fy-9-i+bob,7-2*i,1,blink?'#ffd400':'#ffffff');R(x-1,fy-9+bob,3,5,blink?'#ffd400':'#ffffff');} /* arrow up: lift the thumb */
-      text(ready?'LET GO!':'HOLD',x,fy-18+bob,1,ready?'#ffd400':'#7af0ff','c');banner(ready?'LET GO: KI PUNCH!':'CHARGING...',ready?'#ffd400':'#7af0ff');}}
+    if(hs<0){hold(toWeak());hintMsg='꾹 눌러 걸으면 기가 모여요';}
+    else if(c<.3){label('HOLD',fx(hs));hintMsg='기가 모이는 중...';}
+    else{up(fx(hs),fy-9+bob);label('LET GO!',fx(hs));hintMsg='지금 손을 떼면 기 펀치!';}}
   else if(hint.id==='dash'){let ws=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T)ws=h.side;
-    if(ws<0&&tryK==='dash'){const s=tgt(),d=s&&s.wx>pl.x?1:0,x=d?W-22:22; /* not walking yet: first hold one fist */
-      arrowSide(x+(d?8:-8),fy-4+bob,d?1:-1,blink?'#7af0ff':'#ffffff');text('HOLD',x,fy-18+bob,1,'#7af0ff','c');banner('HOLD THEN TAP OTHER','#ffd400');return;}
+    if(ws<0&&tryK==='dash'){hold(toWeak());hintMsg='한쪽을 꾹 눌러 걷다가…';return;}
     if(ws<0){hint=null;return;}
-    const x=ws?22:W-22;arrowDown(x,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP!',x,fy-18+bob,1,'#ffd400','c');banner('TAP TO DASH','#ffd400');}
-  else if(hint.id==='king'){const up=16+Math.min(kingLevel,5)*4,flow=Math.floor(((gt*2.2)%1)*8); // above the blaze; the arrow keeps sliding down
-    for(const x of [22,W-22]){arrowDown(x,fy-6-up+flow,blink?'#ff8a1a':'#ffffff');text('HOLD',x,fy-18-up,1,'#ff8a1a','c');}}
+    tap(ws?0:1,'TAP!');hintMsg='반대쪽을 탁! 대시';}
+  else if(hint.id==='king'){const lift=16+Math.min(kingLevel,5)*4,flow=Math.floor(((gt*2.2)%1)*8); // above the blaze; the arrows keep sliding down
+    for(const sd of [0,1]){down(fx(sd),fy-6-lift+flow);text('HOLD',fx(sd),fy-18-lift,1,'#ffd400','c');}
+    hintMsg='양쪽 주먹을 같이 꾹! SHOW TIME';}
 }
 function kingRow(x0,y0,w,h,label,labelCol,frac,cellCol){
   // no box; cells rise left to right like signal bars (5px -> 14px), all standing on one baseline.
@@ -2211,7 +2218,7 @@ function drawStrip(){
   drawCrowd(1/60); // SHOW TIME fans + confetti, behind the buttons
   if(ctrlMode==='pad')drawPad();else drawClassicFists();
   drawBigGauge();
-  drawHint();
+  drawHint();syncHintBar();
   const y0=STRIP,h=H-y0-3;
   // KING FIST slot: gauge until 20 alternating hits, then a burning button
   const x0=BTN_L+1,w=ctrlMode==='pad'?44:BTN_R-BTN_L-2; // pad mode leaves room for the fist buttons
