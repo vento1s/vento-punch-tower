@@ -265,6 +265,10 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .newsk em{font-style:normal;font-family:var(--f-pixel);font-size:clamp(12px,4.4cqw,16px);letter-spacing:.1em;color:var(--ink);background:var(--gold);padding:4px 7px 3px;animation:newBlink .36s steps(2) infinite}
 .newsk b{font-family:var(--f-display);font-weight:400;font-size:clamp(40px,16cqw,64px);line-height:1;color:#fff;text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),5px 5px 0 #c24e00}
 .newsk i{font-style:normal;white-space:pre-line;text-align:center;line-height:1.5;font-family:var(--f-display);font-size:clamp(15px,5.6cqw,22px);color:#7af0ff}
+/* 'tap to go on' appears once the card can be closed */
+.newsk small{font-family:var(--f-display);font-size:clamp(11px,4cqw,15px);color:var(--muted);visibility:hidden}
+.newsk.ready small{visibility:visible;color:var(--gold);animation:newBlink2 .8s steps(2) infinite}
+@keyframes newBlink2{50%{opacity:.35}}
 @keyframes newIn{0%{transform:scaleY(0)}100%{transform:scaleY(1)}}
 @keyframes newBlink{50%{background:#fff}}
 @media (prefers-reduced-motion:reduce){.newsk,.newsk em{animation:none}}
@@ -300,7 +304,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
     <button id="pausebtn" class="pausebtn" type="button" aria-label="일시정지" hidden></button>
     <div id="mash" class="mash" hidden>갈겨!!<small></small></div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
-    <div id="newsk" class="newsk" hidden><em>NEW!</em><b></b><i></i></div>
+    <div id="newsk" class="newsk" hidden><em>NEW!</em><b></b><i></i><small>화면을 탭하면 계속</small></div>
     <div id="coach" class="coach" hidden><b>L R L R 번갈아 탁탁!</b><i>두 주먹을 누르면 펀치!<br>윗층을 깨고 올라가요</i></div>
     <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>SHOW PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
@@ -730,7 +734,7 @@ function learn(k){if(knows(k))return;learned[k]++;saveLearned();if(hint&&hint.id
    later runs; '힌트 다시 보기' locks them all again. Same table for every difficulty. */
 const SKILL_AT={walk:5,ki:10,dash:15,king:20},SKILL_ORDER=['walk','ki','dash','king'];
 const SKILL_KO={walk:['걷기','꾹 누르면 그쪽으로 걸어요'],ki:['기 펀치','꾹 모았다가 떼면 강펀치!'],dash:['대시','걷다가 반대쪽을 탁!'],king:['SHOW TIME','양쪽 주먹을 같이 꾹!']};
-const NEW_T=1.8,NEW_SKIP=.7;let runOpen={},newCard=null,tryK=null;const cardHolds=new Map(); /* thumbs pressed during a card: they carry on once it closes */
+const NEW_T=1.8,NEW_SKIP=2;let runOpen={},newCard=null,tryK=null;const cardHolds=new Map(); /* thumbs pressed during a card: they carry on once it closes */
 if(!learned.got||typeof learned.got!=='object'){ /* first load of this version: players who already used a move (or climbed past its floor) keep it */
   let bm=0;for(const k in bests)bm=Math.max(bm,(bests[k]&&bests[k].floor)||0);
   learned.got={walk:knows('walk')||bm>=5?1:0,ki:knows('walk')||bm>=10?1:0,dash:knows('dash')||bm>=15?1:0,king:knows('king')||bm>=20?1:0};saveLearned();}
@@ -757,7 +761,8 @@ function closeCard(){if(!newCard)return;const k=newCard.k;newCard=null;newEl.hid
   for(const [id,sd] of cardHolds)holds.set(id,{side:sd,t:0,c:0,used:false,born:now()});cardHolds.clear();
   lavaHold=Math.max(lavaHold,1); /* a breath to try the new move */
   if(k==='king'&&kingLevel<1){kingLevel=1;superReady=true;altStreak=0;kingLevelUp(1);}} /* SHOW TIME opens with LV1 already in hand, so it can be tried at once */
-function syncNewCard(){const show=!!newCard&&mode!=='pause'&&ov.hidden;if(newEl.hidden===show)newEl.hidden=!show;}
+function syncNewCard(){const show=!!newCard&&mode!=='pause'&&ov.hidden;if(newEl.hidden===show)newEl.hidden=!show;
+  const rd=!!newCard&&newCard.t>=NEW_SKIP;if(newEl.classList.contains('ready')!==rd)newEl.classList.toggle('ready',rd);}
 let ctrlMode='classic';try{if(localStorage.getItem('punchtower.ctrl')==='pad')ctrlMode='pad';}catch(e){}
 const STICK_MAX=14;let stick={id:null,ox:0,oy:0,dx:0,t0:0,dashed:false};
 let comboFX={dx:12,at:-9};
@@ -1245,7 +1250,7 @@ addEventListener('blur',()=>{holds.clear();cardHolds.clear();});
 // while the charge itself and your thumbs stay on real time
 function update(dt){
   if(mode==='pause')return; // frozen; render keeps drawing the paused frame
-  if(newCard){newCard.t+=dt;if(started)tStart+=dt;if(newCard.t>=newCard.dur)closeCard();return;} /* NEW! card: the world holds still */
+  if(newCard){newCard.t+=dt;if(started)tStart+=dt;return;} /* stays until a tap (accepted after NEW_SKIP) */ /* NEW! card: the world holds still */
   const real=dt;
   // charge: world barely slows; once it's full, time slams to a crawl for the 'kingSlow' beat, then the punch fires
   const tsTarget=kingSlowT>0?.07:(bothT>0&&mode==='play')?.85:1;
