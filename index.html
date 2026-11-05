@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0b0811"><link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="상남자 김주먹"><meta name="description" content="상남자 김주먹이 엄지 두 개로 천장을 부수며 용암보다 높이 오르는 도트 연타 게임. VENTO AI STUDIO"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0}[hidden]{display:none!important}</style></head><body><title>상남자 김주먹: 펀치펀치 타워</title>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,interactive-widget=overlays-content"><link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#0b0811"><link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="상남자 김주먹"><meta name="description" content="상남자 김주먹이 엄지 두 개로 천장을 부수며 용암보다 높이 오르는 도트 연타 게임. VENTO AI STUDIO"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;height:100%}body{margin:0}[hidden]{display:none!important}</style></head><body><title>상남자 김주먹: 펀치펀치 타워</title>
 <meta name="author" content="VENTO AI STUDIO">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -290,6 +290,14 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .pmenu{width:calc(100% - 16px);max-width:260px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .cutin{position:absolute;inset:0;display:flex;align-items:center;pointer-events:none;z-index:2;overflow:hidden}
 .cutin[hidden]{display:none}
+/* phone turned sideways: the game is portrait-only, so cover it and ask to turn back (game pauses underneath) */
+.rotate{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--void);text-align:center;padding:16px}
+.rotate b{font-family:var(--f-display);font-weight:400;font-size:22px;color:var(--gold)}
+.rotate span{font-family:var(--f-display);font-size:13px;color:var(--muted)}
+.rotate i{width:34px;height:56px;box-shadow:0 0 0 4px var(--gold);position:relative;animation:turnback 1.6s steps(4) infinite}
+.rotate i::after{content:"";position:absolute;left:12px;bottom:5px;width:10px;height:4px;background:var(--gold)}
+@keyframes turnback{0%,30%{transform:rotate(-90deg)}70%,100%{transform:rotate(0)}}
+@media (orientation:landscape) and (max-height:540px) and (pointer:coarse){.rotate{display:flex}}
 .cutin .band{width:100%;padding:12px 0 8px;text-align:center;
   background:linear-gradient(90deg,#c8341a,#ff7a1a 35%,#ffd04a 55%,#ff7a1a 75%,#c8341a);
   box-shadow:0 6px 0 #4a1408,0 -6px 0 #4a1408;transform:skewY(-8deg);animation:cut .5s steps(7) forwards}
@@ -315,6 +323,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
     <div id="ov" class="ov"></div>
   </div>
 </div>
+<div id="rotate" class="rotate" aria-live="polite"><i aria-hidden="true"></i><b>폰을 세로로 돌려 주세요</b><span>세로 화면 전용 게임이에요</span></div>
 
 <script>
 (()=>{
@@ -325,9 +334,14 @@ const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const stage=document.getElementById('stage'),wrap=document.getElementById('wrap'),ov=document.getElementById('ov');
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function fit(){const r=wrap.getBoundingClientRect();const s=Math.min(r.width/W,r.height/H);
+/* the cabinet size stays put while the on-screen keyboard is up: at the same width a shorter window is the keyboard, not a new screen */
+let fitW=0,fitH=0;
+function fit(){wrap.style.height='';const r=wrap.getBoundingClientRect(),typing=/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'');
+  if(Math.abs(r.width-fitW)<2&&r.height<fitH&&(typing||fitH-r.height>150)){wrap.style.height=fitH+'px';return;}
+  fitW=r.width;fitH=r.height;const s=Math.min(r.width/W,r.height/H);
   stage.style.width=Math.floor(W*s)+'px';stage.style.height=Math.floor(H*s)+'px';}
 addEventListener('resize',fit);fit();
+addEventListener('focusout',()=>setTimeout(()=>{if(!/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'')){fitW=0;fitH=0;fit();scrollTo(0,0);}},350));
 
 /* ---------- difficulty ---------- */
 const DIFFS=[
@@ -739,7 +753,7 @@ function learn(k){if(knows(k))return;learned[k]++;saveLearned();if(hint&&hint.id
    the world freezes, then the hint arrows ask for one try). A move pulled off once (learned.got) is open from 1F in
    later runs; '힌트 다시 보기' locks them all again. Same table for every difficulty. */
 const SKILL_AT={walk:5,dash:15,king:20},SKILL_ORDER=['walk','dash','king']; /* ki comes with walking: the walk itself gathers it */
-const SKILL_KO={walk:['걷기','꾹 누르면 그쪽으로 걸어요\n오래 걸을수록 기가 모여서\n손을 떼면 첫 펀치가 세져요'],dash:['대시','걷다가 반대쪽을 탁!'],king:['SHOW TIME','양쪽 주먹을 같이 꾹!']};
+const SKILL_KO={walk:['걷기','꾹 누르면 그쪽으로 걸어요\n오래 걸을수록 기가 모여서\n손을 떼면 첫 펀치가 세져요'],dash:['대시','한쪽을 꾹 눌러 이동하다가\n반대쪽 버튼을 누르면 점프해요!'],king:['SHOW TIME','양쪽 주먹을 같이 꾹 눌렀다 놓고\n양 주먹을 연타하세요!\n모든 벽돌을 가볍게 뚫고 지나가요']};
 const NEW_T=1.8,NEW_SKIP=2;let runOpen={},newCard=null,tryK=null;const cardHolds=new Map(); /* thumbs pressed during a card: they carry on once it closes */
 if(!learned.got||typeof learned.got!=='object'){ /* first load of this version: players who already used a move (or climbed past its floor) keep it */
   let bm=0;for(const k in bests)bm=Math.max(bm,(bests[k]&&bests[k].floor)||0);
@@ -2183,12 +2197,12 @@ function drawHint(){
     else if(c<.3){label('HOLD',fx(hs));hintMsg='기가 모이는 중...';}
     else{up(fx(hs),fy-9+bob);label('LET GO!',fx(hs));hintMsg='지금 손을 떼면 기 펀치!';}}
   else if(hint.id==='dash'){let ws=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T)ws=h.side;
-    if(ws<0&&tryK==='dash'){hold(toWeak());hintMsg='한쪽을 꾹 눌러 걷다가…';return;}
+    if(ws<0&&tryK==='dash'){hold(toWeak());hintMsg='한쪽을 꾹 눌러 이동하다가…';return;}
     if(ws<0){hint=null;return;}
-    tap(ws?0:1,'TAP!');hintMsg='반대쪽을 탁! 대시';}
+    tap(ws?0:1,'TAP!');hintMsg='반대쪽을 누르면 점프!';}
   else if(hint.id==='king'){const lift=16+Math.min(kingLevel,5)*4,flow=Math.floor(((gt*2.2)%1)*8); // above the blaze; the arrows keep sliding down
     for(const sd of [0,1]){down(fx(sd),fy-6-lift+flow);text('HOLD',fx(sd),fy-18-lift,1,'#ffd400','c');}
-    hintMsg='양쪽 주먹을 같이 꾹! SHOW TIME';}
+    hintMsg='양쪽 같이 꾹! 그다음 연타!';}
 }
 function kingRow(x0,y0,w,h,label,labelCol,frac,cellCol){
   // no box; cells rise left to right like signal bars (5px -> 14px), all standing on one baseline.
@@ -2369,7 +2383,11 @@ async function fillBoard(sel,_unused,hiId,preset){
 
 /* ---------- screens ---------- */
 const CREDIT=`<footer class="credit">© 2026 VENTO AI STUDIO</footer>`;
-function startGame(){
+function lockPortrait(){try{const o=screen.orientation;if(o&&o.lock)o.lock('portrait').catch(()=>{});}catch(e){}}
+const sideways=matchMedia('(orientation:landscape) and (max-height:540px) and (pointer:coarse)');
+const onSideways=()=>{if(sideways.matches&&ov.hidden&&(mode==='play'||mode==='super'||mode==='count'))pauseGame();};
+try{sideways.addEventListener('change',onSideways);}catch(e){sideways.addListener&&sideways.addListener(onSideways);}
+function startGame(){lockPortrait();
   const inp=ov.querySelector('#pname');
   if(inp){const v=inp.value.trim().slice(0,NAME_MAX);
     if(!v){startGuest();return;} // no name typed: just play as a guest instead of blocking the start
