@@ -733,6 +733,7 @@ function showHint(id){if(!hintsOn||knows(id)||mode!=='play'||ctrlMode!=='classic
   const t=now();if(hintCool[id]&&t<hintCool[id]&&id!==tryK)return;if(!hint)hint={id,t0:t};hint.t=t;}
 const newEl=document.getElementById('newsk');
 function openSkill(k){runOpen[k]=1;tryK=k;newCard={k,t:0};hint=null;
+  if(k==='walk'||k==='dash'){const s=tgt();if(s&&!s.broken){const h=wkW(s)/2;s.wFrom=null;s.wT=1;s.wx=Math.round(pl.x<W/2?W-WALL-4-h:WALL+4+h);}} /* weak point on the far side: walk (or dash) all the way there */
   holds.clear();bothT=0;hum(-1);kingGrowl(false);stick.id=null;stick.dx=0;
   newEl.querySelector('b').textContent=SKILL_KO[k][0];newEl.querySelector('i').textContent=SKILL_KO[k][1];
   newEl.hidden=true;void newEl.offsetWidth;newEl.hidden=false;
@@ -913,7 +914,7 @@ function breakSlab(s){
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();pop(popX(36),pl.feet-30,'LAVA DOWN','#ffe27a',1);}
   if(s.type==='boss'||s.type==='vibranium')pop(popX(44),pl.feet-30,s.type==='boss'?'GATE BROKEN':'SMASHED!',s.type==='boss'?'#a4b5c6':'#b7a8ff',1);
   const nx=slabs[dest+1];ensureSlabs(dest+31);
-  if(kingT<=0&&s.type!=='tnt'&&pl.jt<0&&(pl.reach||0)<REACH_MAX&&alignedUnder(slabs[dest+1])){ // (no stretching arm during SHOW TIME) // stretch to the next floor, stay put
+  if(kingT<=0&&skillOn('walk')&&s.type!=='tnt'&&pl.jt<0&&(pl.reach||0)<REACH_MAX&&alignedUnder(slabs[dest+1])){ // (no stretching arm during SHOW TIME) // stretch to the next floor, stay put
     pl.reach=dest+1-(pl.level+1);
     pop(popX(46),pl.feet-30,'x'+(pl.reach+1)+' STRETCH!','#ffd400',pl.reach>=2?2:1);
     if(AC){const t=AC.currentTime;tone(t,.12,300+pl.reach*180,900+pl.reach*260,'square',.08);}
