@@ -732,14 +732,14 @@ function learn(k){if(knows(k))return;learned[k]++;saveLearned();if(hint&&hint.id
 /* SKILL UNLOCKS: a first run starts with taps only; each move opens when its floor becomes the target (NEW! card,
    the world freezes, then the hint arrows ask for one try). A move pulled off once (learned.got) is open from 1F in
    later runs; '힌트 다시 보기' locks them all again. Same table for every difficulty. */
-const SKILL_AT={walk:5,ki:10,dash:15,king:20},SKILL_ORDER=['walk','ki','dash','king'];
-const SKILL_KO={walk:['걷기','꾹 누르면 그쪽으로 걸어요'],ki:['기 펀치','꾹 모았다가 떼면 강펀치!'],dash:['대시','걷다가 반대쪽을 탁!'],king:['SHOW TIME','양쪽 주먹을 같이 꾹!']};
+const SKILL_AT={walk:5,dash:15,king:20},SKILL_ORDER=['walk','dash','king']; /* ki comes with walking: the walk itself gathers it */
+const SKILL_KO={walk:['걷기','꾹 누르면 그쪽으로 걸어요\n오래 걸을수록 기가 모여서\n손을 떼면 첫 펀치가 세져요'],dash:['대시','걷다가 반대쪽을 탁!'],king:['SHOW TIME','양쪽 주먹을 같이 꾹!']};
 const NEW_T=1.8,NEW_SKIP=2;let runOpen={},newCard=null,tryK=null;const cardHolds=new Map(); /* thumbs pressed during a card: they carry on once it closes */
 if(!learned.got||typeof learned.got!=='object'){ /* first load of this version: players who already used a move (or climbed past its floor) keep it */
   let bm=0;for(const k in bests)bm=Math.max(bm,(bests[k]&&bests[k].floor)||0);
   learned.got={walk:knows('walk')||bm>=5?1:0,ki:knows('walk')||bm>=10?1:0,dash:knows('dash')||bm>=15?1:0,king:knows('king')||bm>=20?1:0};saveLearned();}
-const skillOn=k=>!!(learned.got[k]||runOpen[k]);
-function gotSkill(k){if(!learned.got[k]){learned.got[k]=1;saveLearned();}if(tryK===k){tryK=null;if(hint&&hint.id===k)hint=null;}}
+const skillOn=k=>{if(k==='ki')k='walk';return !!(learned.got[k]||runOpen[k]);}; /* ki opens together with walking */
+function gotSkill(k){if(!learned.got[k]){learned.got[k]=1;saveLearned();}if(tryK===k){tryK=k==='walk'&&!learned.got.ki?'ki':null;if(hint&&hint.id===k)hint=null;}} /* walked: now let go for the ki punch */
 function showHint(id){if(!hintsOn||knows(id)||mode!=='play'||ctrlMode!=='classic')return;
   if(hint&&hint.id!==id){if(id!==tryK)return;hint=null;} /* the move you're being asked to try beats any other tip */
   const t=now();if(hintCool[id]&&t<hintCool[id]&&id!==tryK)return;if(!hint)hint={id,t0:t};hint.t=t;}
