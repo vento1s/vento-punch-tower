@@ -251,6 +251,16 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 @keyframes finIn{0%{transform:scale(2.2);opacity:0}8%{transform:scale(.9);opacity:1}14%{transform:scale(1.05)}20%{transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
 @keyframes finHue{0%{color:var(--gold)}33%{color:#fff}66%{color:#ff8a00}}
 @media (prefers-reduced-motion:reduce){.finale,.finale b{animation:none}}
+/* NEW! card when a move opens up mid-run (the game is frozen behind it) */
+.newsk{position:absolute;left:0;right:0;top:32%;display:grid;justify-items:center;gap:10px;padding:14px 8px 16px;pointer-events:none;z-index:2;
+  background:rgba(13,10,8,.9);box-shadow:0 3px 0 var(--gold),0 -3px 0 var(--gold),0 7px 0 var(--ink),0 -7px 0 var(--ink);animation:newIn .3s steps(6) both}
+.newsk[hidden]{display:none}
+.newsk em{font-style:normal;font-family:var(--f-pixel);font-size:clamp(12px,4.4cqw,16px);letter-spacing:.1em;color:var(--ink);background:var(--gold);padding:4px 7px 3px;animation:newBlink .36s steps(2) infinite}
+.newsk b{font-family:var(--f-display);font-weight:400;font-size:clamp(40px,16cqw,64px);line-height:1;color:#fff;text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),5px 5px 0 #c24e00}
+.newsk i{font-style:normal;font-family:var(--f-display);font-size:clamp(15px,5.6cqw,22px);color:#7af0ff}
+@keyframes newIn{0%{transform:scaleY(0)}100%{transform:scaleY(1)}}
+@keyframes newBlink{50%{background:#fff}}
+@media (prefers-reduced-motion:reduce){.newsk,.newsk em{animation:none}}
 @keyframes mashShake{50%{transform:translate(3px,-2px) scale(1.06);color:#fff}}
 @media (prefers-reduced-motion:reduce){.mash{animation:none}}
 /* pause: small pixel 'II' button in the HUD gap between the difficulty tag and the clock */
@@ -283,6 +293,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
     <button id="pausebtn" class="pausebtn" type="button" aria-label="일시정지" hidden></button>
     <div id="mash" class="mash" hidden>갈겨!!<small></small></div>
     <div id="finale" class="finale" hidden><b></b><i></i></div>
+    <div id="newsk" class="newsk" hidden><em>NEW!</em><b></b><i></i></div>
     <div id="cutin" class="cutin" hidden><div class="band"><b>왕펀치!!</b><i>SHOW PUNCH</i></div></div>
     <div id="ov" class="ov"></div>
   </div>
@@ -700,14 +711,36 @@ function tiltWake(){ // from any tap: browsers that need a permission prompt get
 // HINTS: a tip pops up only at the moment a move is needed, and retires for good once you've pulled it off a few times.
 // Progress is kept on this device; "힌트 다시 보기" on the how-to screen resets it, and the title has an on/off toggle.
 let hintsOn=true;try{hintsOn=localStorage.getItem('punchtower.hints')!=='off';}catch(e){}
-const HINT_GOAL={alt:10,walk:3,dash:2,king:1};
-let learned={alt:0,walk:0,dash:0,king:0};try{Object.assign(learned,JSON.parse(localStorage.getItem('punchtower.learned')||'{}'));}catch(e){}
+const HINT_GOAL={alt:10,walk:3,dash:2,king:1,ki:1};
+let learned={alt:0,walk:0,dash:0,king:0,ki:0};try{Object.assign(learned,JSON.parse(localStorage.getItem('punchtower.learned')||'{}'));}catch(e){}
 function saveLearned(){try{localStorage.setItem('punchtower.learned',JSON.stringify(learned));}catch(e){}}
 const knows=k=>learned[k]>=HINT_GOAL[k];
 let hint=null;const hintCool={};let sameSide=0,offHits=0;
 function learn(k){if(knows(k))return;learned[k]++;saveLearned();if(hint&&hint.id===k&&knows(k))hint=null;}
+/* SKILL UNLOCKS: a first run starts with taps only; each move opens when its floor becomes the target (NEW! card,
+   the world freezes, then the hint arrows ask for one try). A move pulled off once (learned.got) is open from 1F in
+   later runs; '힌트 다시 보기' locks them all again. Same table for every difficulty. */
+const SKILL_AT={walk:5,ki:10,dash:15,king:20},SKILL_ORDER=['walk','ki','dash','king'];
+const SKILL_KO={walk:['걷기','꾹 누르면 그쪽으로 걸어요'],ki:['기 펀치','꾹 모았다가 떼면 강펀치!'],dash:['대시','걷다가 반대쪽을 탁!'],king:['SHOW TIME','양쪽 주먹을 같이 꾹!']};
+const NEW_T=1.8,NEW_SKIP=.7;let runOpen={},newCard=null,tryK=null;
+if(!learned.got||typeof learned.got!=='object'){ /* first load of this version: players who already used a move (or climbed past its floor) keep it */
+  let bm=0;for(const k in bests)bm=Math.max(bm,(bests[k]&&bests[k].floor)||0);
+  learned.got={walk:knows('walk')||bm>=5?1:0,ki:knows('walk')||bm>=10?1:0,dash:knows('dash')||bm>=15?1:0,king:knows('king')||bm>=20?1:0};saveLearned();}
+const skillOn=k=>!!(learned.got[k]||runOpen[k]);
+function gotSkill(k){if(!learned.got[k]){learned.got[k]=1;saveLearned();}if(tryK===k){tryK=null;if(hint&&hint.id===k)hint=null;}}
 function showHint(id){if(!hintsOn||knows(id)||mode!=='play'||ctrlMode!=='classic')return;
-  if(hint&&hint.id!==id)return;const t=now();if(hintCool[id]&&t<hintCool[id])return;if(!hint)hint={id,t0:t};hint.t=t;}
+  if(hint&&hint.id!==id){if(id!==tryK)return;hint=null;} /* the move you're being asked to try beats any other tip */
+  const t=now();if(hintCool[id]&&t<hintCool[id]&&id!==tryK)return;if(!hint)hint={id,t0:t};hint.t=t;}
+const newEl=document.getElementById('newsk');
+function openSkill(k){runOpen[k]=1;tryK=k;newCard={k,t:0};hint=null;
+  holds.clear();bothT=0;hum(-1);kingGrowl(false);stick.id=null;stick.dx=0;
+  newEl.querySelector('b').textContent=SKILL_KO[k][0];newEl.querySelector('i').textContent=SKILL_KO[k][1];
+  newEl.hidden=true;void newEl.offsetWidth;newEl.hidden=false;
+  vibe([20,30,40]);if(AC){const t=AC.currentTime;[784,1046,1318,1568].forEach((f,i)=>tone(t+i*.07,.16,f,f,'square',.08));tone(t+.28,.45,2093,2093,'triangle',.07);}}
+function closeCard(){if(!newCard)return;const k=newCard.k;newCard=null;newEl.hidden=true;lastTap=now();
+  lavaHold=Math.max(lavaHold,1); /* a breath to try the new move */
+  if(k==='king'&&kingLevel<1){kingLevel=1;superReady=true;altStreak=0;kingLevelUp(1);}} /* SHOW TIME opens with LV1 already in hand, so it can be tried at once */
+function syncNewCard(){const show=!!newCard&&mode!=='pause'&&ov.hidden;if(newEl.hidden===show)newEl.hidden=!show;}
 let ctrlMode='classic';try{if(localStorage.getItem('punchtower.ctrl')==='pad')ctrlMode='pad';}catch(e){}
 const STICK_MAX=14;let stick={id:null,ox:0,oy:0,dx:0,t0:0,dashed:false};
 let comboFX={dx:12,at:-9};
@@ -754,13 +787,14 @@ function makeSlab(n){
   const base=10+Math.floor(Math.min(n,70)*.8);
   const raw=type==='stone'?base*1.6:type==='vibranium'?base*.9:type==='tnt'?6:type==='boss'?40+Math.min(n,70)*2:base;
   const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
-  return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:newWeakX(null),ww:D.weakW*WEAK_WIDEN,weakHits:0,wflash:0,wFrom:null,wT:1};
+  return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:n<SKILL_AT.walk&&!skillOn('walk')?Math.round(W/2):newWeakX(null),ww:D.weakW*WEAK_WIDEN,weakHits:0,wflash:0,wFrom:null,wT:1};
 }
 function ensureSlabs(upTo){while(slabs.length<=upTo)slabs.push(makeSlab(slabs.length));}
 function newGame(){
   preloadDieVoice();
   tiltZero=tiltG==null?0:tiltG; // whatever angle you hold the phone at now counts as level
   D=DIFFS[diffIdx];
+  runOpen={};newCard=null;tryK=null;if(newEl)newEl.hidden=true;
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
@@ -781,7 +815,8 @@ const fistX=side=>pl.x+(side?4:-4);
 const REACH_MAX=3;
 const tgtN=()=>pl.level+1+(pl.reach||0),tgt=()=>slabs[tgtN()];
 const alignedUnder=s=>s&&!s.broken&&s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
-function hopTo(dest){pl.from=pl.feet;pl.to=-dest*FH;pl.jt=0;pl.jd=.13+.07*Math.max(0,dest-pl.level-1);pl.level=dest;pl.reach=0;sfx.jump();}
+function hopTo(dest){pl.from=pl.feet;pl.to=-dest*FH;pl.jt=0;pl.jd=.13+.07*Math.max(0,dest-pl.level-1);pl.level=dest;pl.reach=0;sfx.jump();
+  if(!skillOn('walk'))for(let n=dest+1;n<SKILL_AT.walk;n++){const s=slabs[n];if(s&&!s.broken)s.wx=Math.round(pl.tx);}} /* taps only: the weak point stays over his head */
 
 function relocateWeak(s){s.wFrom=s.wx;s.wx=newWeakX(s.wx);s.wT=0;s.weakHits=0;sfx.shift();}
 
@@ -823,7 +858,7 @@ function hit(side,power){
    if(g!==null&&(kingT>0||!(onWeak&&!alt&&!charged))){if(kingT<=0)judge={g,at:t,n:tgtN()};jCount[g]++;}} // SHOW TIME counts them but shows one big sign instead
   // hints: same hand over and over on the weak point -> "alternate"; punching far from the weak point -> "hold to walk"
   if(!charged){if(onWeak){offHits=0;if(alt){sameSide=0;learn('alt');}else if(++sameSide>=3)showHint('alt');}
-    else if(Math.abs(pl.x-s.wx)>wkW(s)/2+10&&++offHits>=4)showHint('walk');}
+    else if(skillOn('walk')&&Math.abs(pl.x-s.wx)>wkW(s)/2+10&&++offHits>=4)showHint('walk');}
   // balance: off the weak point every punch does 1. On it (alternating hands) 3, then 4 from the
   // 10th weak hit in a row and 5 from the 20th. Mashing elsewhere needs 3-5x the punches.
   let dmg;
@@ -834,7 +869,7 @@ function hit(side,power){
   if(orbs.length&&dmg>0){const v=dmg*(1+PET_ATK*orbs.length);dmg=Math.floor(v)+(Math.random()<v-Math.floor(v)?1:0);} // fire pets: +5% each (rounded by chance, exact on average)
   // KING FIST gauge fills only from weak-point hits
   if(weak&&kingT<=0&&kingLevel>=KL_NEED.length&&!secretSkin){maxHits+=charged?3:1;if(maxHits>=SECRET_NEED)unlockSecret();} // hidden: hoard at MAX
-  if(weak&&kingT<=0&&kingLevel<KL_NEED.length){altStreak+=charged?3:1;
+  if(weak&&kingT<=0&&kingLevel<KL_NEED.length&&skillOn('king')){altStreak+=charged?3:1;
     if(altStreak>=kingNeed()){altStreak-=kingNeed();kingLevel++;superReady=true;if(kingLevel>=KL_NEED.length)altStreak=0;
       sfx.ready();kingLevelUp(kingLevel);fire(W/2,H+camY-20,14+kingLevel*4,50,-40);}}
   // minimum punches per block, so it never goes down in one or two: 6 plain hits, 5 on the weak point,
@@ -898,7 +933,7 @@ function doSuper(pre,cutinShown){
   if(pl.jt>=0){pl.jt=-1;pl.feet=pl.to;}
   if(pl.reach){pl.level+=pl.reach;pl.feet=-pl.level*FH;pl.reach=0;}
   const start=pl.level+1,dest=pl.level+SUPER_FLOORS;ensureSlabs(dest+30);
-  superReady=false;superCount++;learn('king');for(const h of holds.values())h.used=true;hum(-1);hitstop=0;impact=0;
+  superReady=false;superCount++;learn('king');gotSkill('king');for(const h of holds.values())h.used=true;hum(-1);hitstop=0;impact=0;
   const lvF=kingFireLv||kingLevel||1,pw=KL_POW[lvF-1];kingFireLv=0;kingLevel=0;altStreak=0;maxHits=0;absorbOrbs();
   if(lvF>=6){flashO=1;flashCol='#ffffff';shake=14;vibe([80,40,80,40,200]);pop(W/2,pl.feet-64,'MAX SHOW PUNCH!!!','#bff6ff',2);
     for(let i=0;i<90;i++){const a=Math.random()*Math.PI*2,sp=80+Math.random()*220,l=.6+Math.random()*.6;
@@ -1111,14 +1146,15 @@ const STRIP=H-34,BTN_L=44,BTN_R=W-44,BOTH_HOLD=1.2,KING_SYNC=.3; // hold both si
 const NUDGE=2.5; // px per punch toward the punching hand (alternate to stay put)
 const DASH=16,DASH_CD=.22,DASH_T=.12;
 function dash(dirSide){
-  if(dashCD>0)return;learn('dash');
+  if(dashCD>0)return;learn('dash');gotSkill('dash');
   dashCD=DASH_CD;dashT=DASH_T;const d=dirSide?1:-1;
   pl.tx=clamp(pl.x+d*DASH,XMIN,XMAX);
   for(let i=0;i<6;i++)parts.push({x:pl.x-d*3,y:pl.feet-1,vx:-d*(30+Math.random()*50),vy:-Math.random()*25,life:.3,col:'rgba(230,220,240,.6)',s:Math.random()<.5?2:1,g:40});
   sfx.dash();vibe(8);
 }
 function press(id,side){if(holds.has(id))return;
-  if(mode==='play'&&ctrlMode==='classic')for(const h of holds.values()){if(!h.used&&h.side!==side&&h.t>=HOLD_T){
+  if(newCard){if(newCard.t>=NEW_SKIP)closeCard();return;} /* NEW! card: a tap after a beat skips it */
+  if(mode==='play'&&ctrlMode==='classic'&&skillOn('dash'))for(const h of holds.values()){if(!h.used&&h.side!==side&&h.t>=HOLD_T){
     holds.set(id,{side,t:0,c:0,used:true,pend:true,from:h.side,born:now()});return;}} // dash or punch? decided in a moment (see DASH_GRACE)
   if(mode==='super'){holds.set(id,{side,t:0,c:0,used:true,rub:true});return;} // KING PUNCH: rub up and down
   holds.set(id,{side,t:0,c:0,used:false,born:now()});
@@ -1135,12 +1171,13 @@ function resolvePend(id,h){h.pend=false;
 function release(id){const h=holds.get(id);holds.delete(id);
   if(h&&h.pend){if(mode==='play'){const held=[...holds.values()].some(o=>!o.used&&o.side===h.from);if(held)dash(h.from);else if(ctrlMode==='classic')hit(h.side);}return;} // quick tap while walking = dash right away
   if(!h||h.used||h.drag||mode!=='play')return;  // a drag was for positioning, so no punch on release
-  if(h.t>=HOLD_T)hit(h.side,Math.max(.05,h.c)); // held: ki punch
-  else if(ctrlMode==='classic')hit(h.side);      // classic quick tap: normal punch, on release
+  if(h.t>=HOLD_T&&skillOn('ki')){if(h.c>=.3)gotSkill('ki');hit(h.side,Math.max(.05,h.c));} // held: ki punch
+  else if(ctrlMode==='classic')hit(h.side);      // classic quick tap (or any hold before KI opens): normal punch, on release
   for(const [oid,o] of holds)if(o.pend&&o.from===h.side)resolvePend(oid,o); // the other thumb was waiting on this one
 }
 const toCanvas=e=>{const r=stage.getBoundingClientRect();return [(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H];};
 stage.addEventListener('pointerdown',e=>{if(!ov.hidden)return;e.preventDefault();
+  if(newCard){if(newCard.t>=NEW_SKIP)closeCard();return;}
   const [x,y]=toCanvas(e);
   try{stage.setPointerCapture(e.pointerId);}catch(_){}
   if(ctrlMode==='pad'){
@@ -1154,7 +1191,7 @@ function markDrag(id,x,y){const h=holds.get(id);if(h){h.x0=x;h.lx=x;h.drag=false
 stage.addEventListener('pointermove',e=>{const h=holds.get(e.pointerId);if(!h||h.x0===undefined)return;
   if(mode==='super'){const [,y]=toCanvas(e);if(h.ly===undefined)h.ly=y;
     if(Math.abs(y-h.ly)>=2){superRub(y-h.ly,h.side,y);h.ly=y;}return;} // ignore thumb tremble under 2px
-  if(mode!=='play')return;
+  if(mode!=='play'||!skillOn('walk'))return;
   const [x]=toCanvas(e);
   if(!h.drag&&Math.abs(x-h.x0)>=(h.t>=HOLD_T?DRAG_START_WALK:DRAG_START)){h.drag=true;h.lx=h.x0;}   // past the threshold it's a drag, not a tap/hold
   if(h.drag){let d=x-h.lx;
@@ -1163,7 +1200,7 @@ stage.addEventListener('pointermove',e=>{const h=holds.get(e.pointerId);if(!h||h
 stage.addEventListener('pointermove',e=>{if(stick.id!==e.pointerId)return;
   const [x]=toCanvas(e);const raw=x-stick.ox;stick.dx=clamp(raw,-STICK_MAX,STICK_MAX);
   // a quick flick to the edge right after touching = dash
-  if(!stick.dashed&&now()-stick.t0<.2&&Math.abs(raw)>=STICK_MAX&&mode==='play'){stick.dashed=true;dash(raw>0?1:0);}});
+  if(!stick.dashed&&now()-stick.t0<.2&&Math.abs(raw)>=STICK_MAX&&mode==='play'&&skillOn('dash')){stick.dashed=true;dash(raw>0?1:0);}});
 const endStick=id=>{if(stick.id===id){stick.id=null;stick.dx=0;return true;}return false;};
 stage.addEventListener('pointerup',e=>{if(!endStick(e.pointerId))release(e.pointerId);});
 stage.addEventListener('pointercancel',e=>{if(!endStick(e.pointerId))holds.delete(e.pointerId);});
@@ -1174,6 +1211,7 @@ addEventListener('pointerdown',()=>{keyMode=false;},true);
 addEventListener('keydown',e=>{
   if(!ov.hidden){return;}
   const k=e.key.toLowerCase();keyMode=true;
+  if(newCard){if(!e.repeat&&newCard.t>=NEW_SKIP)closeCard();e.preventDefault();return;}
   // KING climb on a computer: alternate UP and DOWN; each press counts as one full-size sweep (same key twice = nothing)
   if(mode==='super'&&sup&&['arrowup','arrowdown','w','s'].includes(k)){e.preventDefault();
     if(!e.repeat){const up=k==='arrowup'||k==='w';superRub(up?-STROKE_FULL:STROKE_FULL,up?1:0);}return;}
@@ -1188,6 +1226,7 @@ addEventListener('blur',()=>{holds.clear();});
 // while the charge itself and your thumbs stay on real time
 function update(dt){
   if(mode==='pause')return; // frozen; render keeps drawing the paused frame
+  if(newCard){newCard.t+=dt;if(started)tStart+=dt;if(newCard.t>=NEW_T)closeCard();return;} /* NEW! card: the world holds still */
   const real=dt;
   // charge: world barely slows; once it's full, time slams to a crawl for the 'kingSlow' beat, then the punch fires
   const tsTarget=kingSlowT>0?.07:(bothT>0&&mode==='play')?.85:1;
@@ -1209,12 +1248,13 @@ function update(dt){
   for(const g of ghosts)g.life-=dt;ghosts=ghosts.filter(g=>g.life>0);
   if(dashT>0){dashT-=dt;ghosts.push({x:pl.x,life:.16});}
   // holds: walk toward the held side while ki gathers in that fist
-  let dir=0,maxC=-1,hasL=false,hasR=false,bornL=-1,bornR=-1,newest=-1;
+  let dir=0,maxC=-1,hasL=false,hasR=false,bornL=-1,bornR=-1,newest=-1;const canWalk=skillOn('walk'),canKi=skillOn('ki');
   if(mode==='play'){
     for(const h of holds.values()){if(h.used)continue;h.t+=real;if(h.side){hasR=true;bornR=Math.max(bornR,h.born||0);}else{hasL=true;bornL=Math.max(bornL,h.born||0);}
       if(h.t<HOLD_T||h.drag)continue; // dragging thumbs don't walk or charge
-      if(!h.walked){h.walked=true;learn('walk');offHits=0;}if(h.t>HOLD_T+.5)showHint('dash'); // hints
-      if(ctrlMode==='classic'&&(h.born||0)>=newest){newest=h.born||0;dir=h.side?1:-1;} // the thumb pressed last decides the way
+      if(canWalk){if(!h.walked){h.walked=true;learn('walk');offHits=0;if(ctrlMode==='classic')gotSkill('walk');}if(h.t>HOLD_T+.5&&skillOn('dash'))showHint('dash'); // hints
+        if(ctrlMode==='classic'&&(h.born||0)>=newest){newest=h.born||0;dir=h.side?1:-1;}} // the thumb pressed last decides the way
+      if(!canKi)continue; /* KI not open yet: holding gathers nothing */
       const pc=h.c;h.c=Math.min(1,(h.t-HOLD_T)/CHARGE_T);maxC=Math.max(maxC,h.c);
       const g=guardPos(h.side);
       if(h.c>=1&&pc<1){sfx.kimax();
@@ -1223,7 +1263,7 @@ function update(dt){
         parts.push({x:g.x+Math.cos(a)*r,y:g.y+Math.sin(a)*r,vx:-Math.cos(a)*r/l,vy:-Math.sin(a)*r/l,life:l,max:l,s:1,g:0,ki:true});}}
     for(const [oid,o] of holds)if(o.pend&&now()-o.born>=DASH_GRACE)resolvePend(oid,o); // waited out the grace: it's a dash
     if(holds.size||stick.id!==null){lastTap=now();comboFX.at=lastTap;}
-    if(ctrlMode==='pad'&&stick.id!==null&&Math.abs(stick.dx)>=2)pl.tx+=stick.dx/STICK_MAX*MOVE_SPD*1.2*dt;
+    if(ctrlMode==='pad'&&stick.id!==null&&Math.abs(stick.dx)>=2&&canWalk){pl.tx+=stick.dx/STICK_MAX*MOVE_SPD*1.2*dt;gotSkill('walk');}
   }
   hum(maxC);
   // both thumbs held -> KING FIST
@@ -1250,6 +1290,7 @@ function update(dt){
   if(showIntro>0&&mode==='play')showIntro=Math.max(0,showIntro-dt);
   if(kingT>0&&mode==='play'){kingT=Math.max(0,kingT-dt); // ticks even through hit-stop, so KING TIME is real seconds
     if(kingT===0){pop(W/2,pl.feet-50,'SHOW END','#ffd400',2,true);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
+  if(mode==='play'&&started&&kingT<=0&&showIntro<=0&&bothT<=0&&kingSlowT<=0)for(const k of SKILL_ORDER)if(!skillOn(k)&&tgtN()>=SKILL_AT[k]){openSkill(k);return;}
   if(hitstop>0){hitstop-=dt;return;}
   ensureSlabs(pl.level+30);
   for(let n=Math.max(1,pl.level-2);n<=pl.level+6;n++){const s=slabs[n];
@@ -1858,7 +1899,7 @@ function drawClassicFists(){
   const sc=2,w=BIG_ARM[0].length;
   for(const sd of [0,1]){
     let held=false,charge=0;for(const h of holds.values())if(h.side===sd&&!h.used){held=true;charge=Math.max(charge,h.c);}
-    if(walkSide>=0&&sd!==walkSide&&!held){drawShoe(sd?W-25:25,H-26-GAUGE_ROW,walkSide===1,dashT>0);continue;}
+    if(walkSide>=0&&sd!==walkSide&&!held&&skillOn('dash')){drawShoe(sd?W-25:25,H-26-GAUGE_ROW,walkSide===1,dashT>0);continue;}
     const hit=tapFX[sd]>.45, up=hit?7:held?3:0;          // a punch jabs the arm upward
     const x0=Math.round((sd?W-22:22)-w*sc/2), y0=H-46-GAUGE_ROW-up;   // raised one layer: the big KING gauge runs along the bottom
     const maxed=kingLevel>=6&&mode==='play';
@@ -2011,6 +2052,8 @@ function drawBigGauge(){
   // one strip along the bottom edge: [LV1]▮▮▮▮▮▮[2]▮▮▮▮▮▮[3]…[5]▮▮▮▮▮▮[MAX]. Each level label sits in the
   // strip itself and fills up from the bottom in its level's colour as that stretch of cells fills.
   const n=GAUGE_PER*5,cw=2,gap=1,base=H-3,h0=3,h1=14,LP=1,LH=10; // 1.6x taller strip; labels in tall 1x2 pixels
+  if(!skillOn('king')){R(0,H-GAUGE_ROW,W,GAUGE_ROW,'rgba(10,6,16,.78)'); /* SHOW TIME still locked: a dim teaser instead of the gauge */
+    const t='SHOW TIME 20F';textTall(t,Math.round((W-tw(t,1))/2),H-3-10,'#5a4a6a');return;}
   const labs=['LV1','2','3','4','5','MAX'],lw=labs.map(t=>tw(t,1));
   const tot=lw.reduce((a,b)=>a+b+LP*2,0)+5*(GAUGE_PER*(cw+gap)-gap);
   let x=Math.round((W-tot)/2);const cellX=[],labX=[];
@@ -2080,6 +2123,8 @@ function drawRubStick(dt){
     ctx.globalAlpha=1;}
 }
 function drawHint(){
+  if(newCard)return;
+  if(tryK&&tryK!=='king'&&mode==='play')showHint(tryK); // a move that just opened: the arrows stay until it's done once
   if(superReady&&kingLevel>=1)showHint('king'); // stays up until the first KING PUNCH
   if(!hint||!hintsOn)return;
   if(mode!=='play'||now()-hint.t>3.5){if(hint){hintCool[hint.id]=now()+5;}hint=null;return;}
@@ -2090,7 +2135,16 @@ function drawHint(){
   if(hint.id==='alt'){const nx=lastSide===0?W-22:22;arrowDown(nx,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP',nx,fy-18+bob,1,'#ffd400','c');banner('ALTERNATE L R!','#ffd400');}
   else if(hint.id==='walk'){const s=tgt();const d=s&&s.wx>pl.x?1:0,x=d?W-22:22;
     arrowSide(x+(d?8:-8),fy-4+bob,d?1:-1,blink?'#7af0ff':'#ffffff');text('HOLD',x,fy-18+bob,1,'#7af0ff','c');banner('HOLD A FIST TO WALK','#7af0ff');}
-  else if(hint.id==='dash'){let ws=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T)ws=h.side;if(ws<0){hint=null;return;}
+  else if(hint.id==='ki'){let hs=-1,c=0;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T&&h.c>=c){hs=h.side;c=h.c;}
+    if(hs<0){const s=tgt(),d=s&&s.wx>pl.x+2?1:s&&s.wx<pl.x-2?0:lastSide===0?1:0,x=d?W-22:22; /* the fist toward the weak point: walk there while it charges */
+      arrowDown(x,fy-6+bob,blink?'#7af0ff':'#ffffff');text('HOLD',x,fy-18+bob,1,'#7af0ff','c');banner('HOLD... THEN LET GO','#7af0ff');}
+    else{const x=hs?W-22:22,ready=c>=.3;
+      if(ready){for(let i=0;i<4;i++)R(x-3+i,fy-9-i+bob,7-2*i,1,blink?'#ffd400':'#ffffff');R(x-1,fy-9+bob,3,5,blink?'#ffd400':'#ffffff');} /* arrow up: lift the thumb */
+      text(ready?'LET GO!':'HOLD',x,fy-18+bob,1,ready?'#ffd400':'#7af0ff','c');banner(ready?'LET GO: KI PUNCH!':'CHARGING...',ready?'#ffd400':'#7af0ff');}}
+  else if(hint.id==='dash'){let ws=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T)ws=h.side;
+    if(ws<0&&tryK==='dash'){const s=tgt(),d=s&&s.wx>pl.x?1:0,x=d?W-22:22; /* not walking yet: first hold one fist */
+      arrowSide(x+(d?8:-8),fy-4+bob,d?1:-1,blink?'#7af0ff':'#ffffff');text('HOLD',x,fy-18+bob,1,'#7af0ff','c');banner('HOLD THEN TAP OTHER','#ffd400');return;}
+    if(ws<0){hint=null;return;}
     const x=ws?22:W-22;arrowDown(x,fy-6+bob,blink?'#ffd400':'#ffffff');text('TAP!',x,fy-18+bob,1,'#ffd400','c');banner('TAP TO DASH','#ffd400');}
   else if(hint.id==='king'){const up=16+Math.min(kingLevel,5)*4,flow=Math.floor(((gt*2.2)%1)*8); // above the blaze; the arrow keeps sliding down
     for(const x of [22,W-22]){arrowDown(x,fy-6-up+flow,blink?'#ff8a1a':'#ffffff');text('HOLD',x,fy-18-up,1,'#ff8a1a','c');}}
@@ -2116,7 +2170,7 @@ function drawKingFire(){
     for(let i=0;i<lv*2;i++){const sx=x0+((hash(i,(gt*6)|0)*w)|0),sy=base-full-((gt*40+i*17)%(14+lv*3));R(sx,sy,1,1,PAL(.7));} // sparks
 }
 function drawStrip(){
-  syncMash();syncPauseBtn();
+  syncMash();syncPauseBtn();syncNewCard();
   drawKingHud(1/60);
   drawCountdown();
   drawSlowMo();
@@ -2609,8 +2663,8 @@ function showHowto(){menuMusic();showOverlay(`
   <div class="hint">PC: ← → 펀치 · 꾹 = 이동 · 양쪽 같이 꾹 = 왕펀치 · 올라갈 때 ↑ ↓ 번갈아</div>
   <button class="btn2" type="button" data-act="rehint">힌트 다시 보기</button>
   <button class="btn" type="button" data-act="back">돌아가기</button>
-  ${CREDIT}`,{back:showTitle,rehint:()=>{learned={alt:0,walk:0,dash:0,king:0};saveLearned();hintsOn=true;try{localStorage.setItem('punchtower.hints','on');}catch(e){}
-    sfx.select();const b=ov.querySelector('[data-act="rehint"]');if(b){b.textContent='힌트가 다시 나와요!';b.disabled=true;}}});}
+  ${CREDIT}`,{back:showTitle,rehint:()=>{learned={alt:0,walk:0,dash:0,king:0,ki:0,got:{}};runOpen={};saveLearned();hintsOn=true;try{localStorage.setItem('punchtower.hints','on');}catch(e){}
+    sfx.select();const b=ov.querySelector('[data-act="rehint"]');if(b){b.textContent='처음부터 다시 배워요!';b.disabled=true;}}});}
 function showRanking(){menuMusic();showOverlay(`
   <div class="eyebrow">HIGH SCORES</div>
   <h2 class="big">랭킹</h2>
