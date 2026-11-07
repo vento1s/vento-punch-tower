@@ -896,7 +896,8 @@ function newWeakX(prev,prev2){const mw=D.weakW*WEAK_WIDEN*(1+WEAK_PER_LV*6),lo=W
 // floors are generated on demand: the tower never ends, the lava just keeps getting faster
 function makeSlab(n){
   let type='brick';const r=Math.random();
-  const vibP=n<4?0:Math.min(.4,.12+n*.004)*D.vib;
+  const vibFrom=learned.got.walk&&learned.got.dash?4:SKILL_AT.walk+5; /* still learning to walk + dash: no vibranium until 5 floors after that card */
+  const vibP=n<vibFrom?0:Math.min(.4,.12+n*.004)*D.vib;
   const prev=slabs[n-1],prev2=slabs[n-2];
   const vibRun=prev&&prev.type==='vibranium'&&prev2&&prev2.type==='vibranium';
   if(n%10===0)type='boss';
