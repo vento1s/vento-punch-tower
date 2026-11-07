@@ -729,6 +729,7 @@ let altStreak=0,superReady=false,sup=null,superCount=0,flashO=0,flashCol='#fff3c
 const holds=new Map();let bothT=0,chargeOsc=null,chargeGain=null;
 const HOLD_T=.16,CHARGE_T=.9,MOVE_SPD=42;
 let ghosts=[],dashCD=0,dashT=0;
+let dashFar=false; /* the try-out has just moved on to the dash: put the next weak point on the far side */
 let shareSnap=null,shareBlob=null,shareText=''; // result share: last game frame, the ready-made card image and its message
 // control schemes: 'classic' = tap halves (hold to walk), 'pad' = left-side drag stick + right-side L/R fist buttons
 // TILT: lean the phone left/right and the boxer walks that way (on top of the thumb controls).
@@ -760,14 +761,14 @@ function learn(k){if(knows(k))return;learned[k]++;saveLearned();if(hint&&hint.id
 /* SKILL UNLOCKS: a first run starts with taps only; each move opens when its floor becomes the target (NEW! card,
    the world freezes, then the hint arrows ask for one try). A move pulled off once (learned.got) is open from 1F in
    later runs; '힌트 다시 보기' locks them all again. Same table for every difficulty. */
-const SKILL_AT={walk:5,dash:15,king:20},SKILL_ORDER=['walk','dash','king']; /* ki comes with walking: the walk itself gathers it */
-const SKILL_KO={walk:['걷기','꾹 누르면 그쪽으로 걸어요\n손을 떼면 기 펀치!'],dash:['대시','한쪽을 꾹 눌러 도움닫기!\n달리다가 반대쪽 버튼을 누르면\n휙 점프해요'],king:['SHOW TIME','양쪽 주먹을 같이 꾹 눌렀다 놓고\n양 주먹을 연타하세요!\n모든 벽돌을 가볍게 뚫고 지나가요']};
+const SKILL_AT={walk:5,dash:5,king:20},SKILL_ORDER=['walk','dash','king']; /* ki comes with walking; the dash opens on the same card, so 'walk + other fist' never means a plain punch first */
+const SKILL_KO={walk:['걷기 · 대시','꾹 누르면 그쪽으로 걸어요\n손을 떼면 기 펀치!\n걷다가 반대쪽을 누르면 휙 점프!'],dash:['대시','한쪽을 꾹 눌러 도움닫기!\n달리다가 반대쪽 버튼을 누르면\n휙 점프해요'],king:['SHOW TIME','양쪽 주먹을 같이 꾹 눌렀다 놓고\n양 주먹을 연타하세요!\n모든 벽돌을 가볍게 뚫고 지나가요']};
 const NEW_T=1.8,NEW_SKIP=2;let runOpen={},newCard=null,tryK=null;const cardHolds=new Map(); /* thumbs pressed during a card: they carry on once it closes */
 if(!learned.got||typeof learned.got!=='object'){ /* first load of this version: players who already used a move (or climbed past its floor) keep it */
   let bm=0;for(const k in bests)bm=Math.max(bm,(bests[k]&&bests[k].floor)||0);
   learned.got={walk:knows('walk')||bm>=5?1:0,ki:knows('walk')||bm>=10?1:0,dash:knows('dash')||bm>=15?1:0,king:knows('king')||bm>=20?1:0};saveLearned();}
 const skillOn=k=>{if(k==='ki')k='walk';return !!(learned.got[k]||runOpen[k]);}; /* ki opens together with walking */
-function gotSkill(k){if(!learned.got[k]){learned.got[k]=1;saveLearned();}if(tryK===k){tryK=k==='walk'&&!learned.got.ki?'ki':null;if(hint&&hint.id===k)hint=null;}} /* walked: now let go for the ki punch */
+function gotSkill(k){if(!learned.got[k]){learned.got[k]=1;saveLearned();}if(tryK===k){tryK=k==='walk'&&!learned.got.ki?'ki':(k==='walk'||k==='ki')&&!learned.got.dash?'dash':null;if(tryK==='dash')dashFar=true;if(hint&&hint.id===k)hint=null;}} /* walked: let go for the ki punch; then one dash across */
 function showHint(id){if(!hintsOn||knows(id)||mode!=='play'||ctrlMode!=='classic')return;
   if(hint&&hint.id!==id){if(id!==tryK)return;hint=null;} /* the move you're being asked to try beats any other tip */
   const t=now();if(hintCool[id]&&t<hintCool[id]&&id!==tryK)return;if(!hint)hint={id,t0:t};hint.t=t;}
@@ -789,12 +790,12 @@ function showCard(k,tag,nm,sub,dur){newCard={k,t:0,dur};hint=null;startDemo(k);
    A 120x64 pixel loop drawn on its own little canvas: the two fist buttons at the bottom get held / tapped
    (they sink, with the same gold arrow + HOLD / TAP / LET GO words as the in-game hints), and the hero above does the move. */
 const demoCv=newEl.querySelector('canvas.demo'),dg=demoCv.getContext('2d');let demoK=null,demoRAF=0,demoT0=0;
-const DEMO_LEN={walk:3.4,dash:3,king:3.6};
+const DEMO_LEN={walk:6.4,dash:3,king:3.6}; /* the walk card shows the walk + ki punch, then the dash */
 function startDemo(k){stopDemo();if(!DEMO_LEN[k]){demoCv.hidden=true;newEl.classList.remove('hasdemo');return;}
   demoK=k;demoT0=performance.now();demoCv.hidden=false;newEl.classList.add('hasdemo');
   const loop=()=>{if(!demoK)return;drawDemo((performance.now()-demoT0)/1000%DEMO_LEN[demoK]);demoRAF=requestAnimationFrame(loop);};loop();}
 function stopDemo(){demoK=null;cancelAnimationFrame(demoRAF);}
-function drawDemo(t){const k=demoK,g=dg,D=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,w|0,h|0);};
+function drawDemo(t){let k=demoK;if(k==='walk'&&t>=3.4){k='dash';t-=3.4;}const g=dg,D=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,w|0,h|0);};
   const txt=(s,x,y,col,al)=>{s=String(s);if(al==='c')x-=tw(s,1)/2;x=Math.round(x);
     for(const [ox,oy,c] of [[1,1,'#120a18'],[0,0,col]])for(let i=0;i<s.length;i++){const gl=F[s[i]]||F[' '];for(let p=0;p<15;p++)if(gl[p]==='1')D(x+ox+i*4+p%3,y+oy+((p/3)|0),1,1,c);}};
   const spr=(rows,x,y,pal,mir)=>{for(let r=0;r<rows.length;r++){const row=rows[r],w=row.length;for(let c=0;c<w;c++){const ch=row[mir?w-1-c:c];if(ch!=='.')D(x+c,y+r,1,1,pal[ch]);}}};
@@ -849,7 +850,7 @@ function drawDemo(t){const k=demoK,g=dg,D=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect
   if(lbl){const xs=lblSide===2?[14,105]:[lblSide?105:14];
     for(const x of xs){const bob=blink?1:0;D(x-1,38+bob,3,2,'#ffd400');D(x-2,40+bob,5,1,'#ffd400');D(x-1,41+bob,3,1,'#ffd400');D(x,42+bob,1,1,'#ffd400');}
     txt(lbl,lblSide===2?60:lblSide?96-tw(lbl,1):24,lblSide===2?44:40,lbl==='LET GO'?'#7af0ff':'#ffd400',lblSide===2?'c':null);}}
-function openSkill(k){runOpen[k]=1;tryK=k;
+function openSkill(k){runOpen[k]=1;tryK=k;if(k==='walk'&&!learned.got.dash)runOpen.dash=1; /* walking and the dash come together */
   if(k==='walk'||k==='dash'){const s=tgt();if(s&&!s.broken){const h=wkW(s)/2,far=pl.x<W/2?W-WALL-4-h:WALL+4+h,near=pl.x+(pl.x<W/2?1:-1)*(h+16);s.wFrom=null;s.wT=1;s.wx=Math.round(k==='dash'?far:near);}} /* walk: the weak point a few steps away; dash: the far side, a full run-up */
   showCard(k,'NEW!',SKILL_KO[k][0],SKILL_KO[k][1],NEW_T);}
 function closeCard(){if(!newCard)return;const k=newCard.k;newCard=null;newEl.hidden=true;stopDemo();lastTap=now();
@@ -911,7 +912,7 @@ function newGame(){
   preloadDieVoice();
   tiltZero=tiltG==null?0:tiltG; // whatever angle you hold the phone at now counts as level
   D=DIFFS[diffIdx];
-  runOpen={};newCard=null;tryK=null;brkFX=[];showBrk=0;demoPh=-1;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
+  runOpen={};newCard=null;tryK=null;dashFar=false;brkFX=[];showBrk=0;demoPh=-1;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
@@ -2271,6 +2272,7 @@ function drawHint(){
   const toWeak=()=>{const s=tgt();return s&&s.wx>pl.x+2?1:s&&s.wx<pl.x-2?0:lastSide===0?1:0;};
   if(coaching()&&ctrlMode==='classic'){const sd=tapFX[0]>=tapFX[1]?0:1;down(fx(sd),fy-6);label(sd?'R':'L',fx(sd));return;} // the leaf: fists demo L R L R
   if(mode==='play'&&started&&!knows('tap'))showHint('tap'); // the very first run: tap a fist = punch the floor above
+  if(dashFar&&tryK==='dash'&&mode==='play'){const s=tgt();if(s&&!s.broken&&s.hp===s.max){const h=wkW(s)/2;s.wFrom=null;s.wT=1;s.wx=Math.round(pl.x<W/2?W-WALL-4-h:WALL+4+h);dashFar=false;}}
   if(tryK&&tryK!=='king'&&mode==='play')showHint(tryK); // a move that just opened: the arrows stay until it's done once
   if(superReady&&kingLevel>=1)showHint('king'); // stays up until the first KING PUNCH
   if(!hint||!hintsOn)return;
