@@ -5,13 +5,13 @@
 <meta property="og:title" content="상남자 김주먹: 펀치펀치 타워">
 <meta property="og:description" content="엄지 두 개로 천장을 부숴라! 용암보다 높이, 누가 더 높이? 설치 없이 바로 하는 도트 연타 게임">
 <meta property="og:url" content="https://vento-punch-tower.vercel.app/">
-<meta property="og:image" content="https://vento-punch-tower.vercel.app/og.png">
+<meta property="og:image" content="https://vento-punch-tower.vercel.app/og.png?v=21">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="상남자 김주먹: 펀치펀치 타워 로고와 게임 화면">
 <meta property="og:locale" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://vento-punch-tower.vercel.app/og.png">
+<meta name="twitter:image" content="https://vento-punch-tower.vercel.app/og.png?v=21">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
@@ -143,6 +143,13 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .darr:disabled{color:var(--edge);cursor:default;box-shadow:0 -3px 0 0 #2a2034,0 3px 0 0 #2a2034,-3px 0 0 0 #2a2034,3px 0 0 0 #2a2034}
 .darr:active:not(:disabled){transform:translateY(2px)}
 .menu .stat.best{text-align:center;margin-top:-8px;font-size:10px}
+.vsban{width:calc(100% - 20px);max-width:320px;margin:10px 0 2px;padding:8px 10px;background:var(--ink);text-align:center;
+  box-shadow:0 -3px 0 0 var(--gold),0 3px 0 0 var(--gold),-3px 0 0 0 var(--gold),3px 0 0 0 var(--gold),6px 6px 0 0 var(--amber)}
+.vsban i{display:block;font-style:normal;font-family:var(--f-pixel);font-size:10px;letter-spacing:.1em;color:var(--lava-hi);margin-bottom:5px}
+.vsban p{margin:0;font-size:13px;line-height:1.5;color:var(--gi);word-break:keep-all}
+.vsban b{color:var(--gold);font-weight:400}.vsban b.fl{font-family:var(--f-pixel);font-size:12px}
+.ezscore .flr i .vsres{display:block;margin-top:7px;font-family:var(--f-body);font-size:12px;letter-spacing:0;color:var(--gi);white-space:nowrap}
+.vsres u{text-decoration:none;color:var(--lava-hi)}.ezscore .flr i .vsres.ok{color:var(--gold);animation:blinky 1s steps(2) infinite}
 .icons{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .ico{display:grid;justify-items:center;gap:6px;padding:10px 0 8px;border:0;border-radius:0;cursor:pointer;background:var(--ink);color:var(--gi);font-family:var(--f-display);font-size:13px;
   box-shadow:0 -3px 0 0 var(--gi),0 3px 0 0 var(--gi),-3px 0 0 0 var(--gi),3px 0 0 0 var(--gi),inset 0 -3px 0 0 #2a2034}
@@ -327,7 +334,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .press{font-family:var(--f-pixel);font-size:10px;letter-spacing:.14em;color:var(--gi)}
 .arcade{margin:auto;display:grid;justify-items:center;gap:30px}
 .pushcue{display:grid;justify-items:center;gap:8px}
-.pushtxt{font-family:var(--f-pixel);font-size:13px;letter-spacing:.08em;color:var(--gold);text-shadow:2px 2px 0 #a33f00;animation:pushBlink .5s steps(2) infinite}
+.pushtxt{display:block;width:min(84cqw,300px);height:auto;image-rendering:pixelated;image-rendering:crisp-edges} /* pixel-art PUSH! PUSH!, blinks by swapping palettes */
 @keyframes pushBlink{50%{color:var(--amber);text-shadow:2px 2px 0 #6e0a0a}}
 /* chunky pixel down-arrow that keeps jabbing at the button */
 .pusharrow{position:relative;width:35px;height:35px;margin:4px 0 2px;animation:pushJab .5s steps(2) infinite}
@@ -357,7 +364,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .studio .w2{animation-delay:.16s}.splash .w3{animation-delay:.5s}
 .studio.lit{color:#fff;text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408,0 0 14px rgba(255,208,74,.9)}
 @keyframes popin{from{opacity:0;transform:scale(1.7)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.board li.me,.blinky,.studio span,.splash .w3,.namebox.bad{animation:none}}
+@media (prefers-reduced-motion:reduce){.board li.me,.blinky,.vsres.ok,.studio span,.splash .w3,.namebox.bad{animation:none}}
 .mash{position:absolute;left:0;right:0;bottom:41%;text-align:center;pointer-events:none;z-index:2;
   font-family:var(--f-display);font-size:clamp(34px,13cqw,52px);color:var(--gold);
   text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px -3px 0 var(--ink),6px 6px 0 #c24e00;
@@ -372,9 +379,19 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .finale i{font-style:normal;font-family:var(--f-display);font-size:18px;color:#fff;background:var(--weak);padding:4px 10px 3px;box-shadow:3px 3px 0 var(--ink)}
 .finale i:empty{display:none}
 .finale.big b{font-size:clamp(40px,15cqw,60px)}
+/* SHOW TIME: the 'N층 돌파!' lettering, a size down, twinkling right on top of the floor count while SHOW TIME runs */
+.finale .fst{display:none;position:relative;font-style:normal;font-family:var(--f-display);font-size:clamp(24px,8.5cqw,34px);line-height:1;letter-spacing:.04em;color:var(--gold);
+  text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),2px 2px 0 var(--ink),-2px -2px 0 var(--ink),4px 4px 0 #c24e00;
+  animation:finHue .3s steps(3) infinite,fstTw .6s steps(2) infinite}
+.finale.low .fst{display:block}
+.finale .fst::before,.finale .fst::after{content:"";position:absolute;width:3px;height:3px;background:#fff;
+  box-shadow:0 -6px #fff,0 -3px #fff6b0,0 3px #fff6b0,0 6px #fff,-6px 0 #fff,-3px 0 #fff6b0,3px 0 #fff6b0,6px 0 #fff;animation:fstStar .6s steps(2) infinite}
+.finale .fst::before{left:-14px;top:-4px}.finale .fst::after{right:-12px;bottom:-2px;animation-delay:-.3s}
+@keyframes fstTw{50%{filter:brightness(1.6)}}
+@keyframes fstStar{50%{opacity:0;transform:scale(.4)}}
 @keyframes finIn{0%{transform:scale(2.2);opacity:0}8%{transform:scale(.9);opacity:1}14%{transform:scale(1.05)}20%{transform:scale(1)}85%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
 @keyframes finHue{0%{color:var(--gold)}33%{color:#fff}66%{color:#ff8a00}}
-@media (prefers-reduced-motion:reduce){.finale,.finale b{animation:none}}
+@media (prefers-reduced-motion:reduce){.finale,.finale b,.finale .fst,.finale .fst::before,.finale .fst::after{animation:none}}
 /* SHOW TIME: the finale line "N층 돌파!" stays up the whole time (live) and its number climbs with every floor smashed */
 .finale.low{top:40%}
 .finale.live{animation:none}
@@ -423,14 +440,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .pmenu{width:calc(100% - 16px);max-width:260px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .cutin{position:absolute;inset:0;display:flex;align-items:center;pointer-events:none;z-index:2;overflow:hidden}
 .cutin[hidden]{display:none}
-/* phone turned sideways: the game is portrait-only, so cover it and ask to turn back (game pauses underneath) */
-.rotate{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--void);text-align:center;padding:16px}
-.rotate b{font-family:var(--f-display);font-weight:400;font-size:22px;color:var(--gold)}
-.rotate span{font-family:var(--f-display);font-size:13px;color:var(--muted)}
-.rotate i{width:34px;height:56px;box-shadow:0 0 0 4px var(--gold);position:relative;animation:turnback 1.6s steps(4) infinite}
-.rotate i::after{content:"";position:absolute;left:12px;bottom:5px;width:10px;height:4px;background:var(--gold)}
-@keyframes turnback{0%,30%{transform:rotate(-90deg)}70%,100%{transform:rotate(0)}}
-@media (orientation:landscape) and (max-height:540px) and (pointer:coarse){.rotate{display:flex}}
+/* portrait only: the phone is asked to stay upright (manifest + screen.orientation.lock); no sideways warning, no pause */
 .cutin .band{width:100%;padding:12px 0 8px;text-align:center;
   background:linear-gradient(90deg,#c8341a,#ff7a1a 35%,#ffd04a 55%,#ff7a1a 75%,#c8341a);
   box-shadow:0 6px 0 #4a1408,0 -6px 0 #4a1408;transform:skewY(-8deg);animation:cut .5s steps(7) forwards}
@@ -448,7 +458,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
     <canvas id="c" width="144" height="256" aria-label="상남자 김주먹 게임 화면"></canvas>
     <button id="pausebtn" class="pausebtn" type="button" aria-label="일시정지" hidden></button>
     <div id="mash" class="mash" hidden>갈겨!!<small></small></div>
-    <div id="finale" class="finale" hidden><b></b><i></i></div>
+    <div id="finale" class="finale" hidden><em class="fst" aria-hidden="true">SHOW TIME</em><b></b><i></i></div>
     <div id="newsk" class="newsk" hidden><em>NEW!</em><b></b><i></i><canvas class="demo" width="120" height="64" hidden aria-hidden="true"></canvas><small>화면을 탭하면 계속</small></div>
     <div id="coach" class="newsk coach" hidden><em>HOW TO</em><b>L R 번갈아 탁탁!</b><i>두 주먹을 누르면 펀치!<br>윗층을 깨고 올라가요</i></div>
     <div id="hintbar" class="hintbar" hidden></div>
@@ -456,7 +466,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
     <div id="ov" class="ov"></div>
   </div>
 </div>
-<div id="rotate" class="rotate" aria-live="polite"><i aria-hidden="true"></i><b>폰을 세로로 돌려 주세요</b><span>세로 화면 전용 게임이에요</span></div>
+
 
 <script>
 (()=>{
@@ -859,6 +869,7 @@ const HOLD_T=.16,CHARGE_T=.9,MOVE_SPD=42;
 let ghosts=[],dashCD=0,dashT=0;
 let dashFar=false; /* the try-out has just moved on to the dash: put the next weak point on the far side */
 let shareSnap=null,shareBlob=null,shareText=''; // result share: last game frame, the ready-made card image and its message
+let vs=null,vsBeat=false,vsWon=false; /* challenge link (?f=floor&d=diff&by=name): the friend's record to beat, passed this run, passed at all this visit */
 // controls: tap the left/right half to punch with that fist, hold to walk (one scheme only; the old stick+buttons mode is gone)
 // TILT: lean the phone left/right and the boxer walks that way (on top of the thumb controls).
 // iOS asks permission once (must come from a tap); the neutral angle is taken when each game starts.
@@ -1056,7 +1067,7 @@ function newGame(){
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -1498,6 +1509,7 @@ function update(dt){
   if(mode==='pause')return; // frozen; render keeps drawing the paused frame
   if(newCard){newCard.t+=dt;if(started)tStart+=dt;return;} /* stays until a tap (accepted after NEW_SKIP) */ /* NEW! card: the world holds still */
   const real=dt;
+  if(vsOn()&&!vsBeat&&pl.level>vs.floor&&(mode==='play'||mode==='super')){vsBeat=vsWon=true;pop(W/2,pl.feet-56,'RECORD BEAT!','#ffd400',1,true);sfx.coin();vibe([40,30,90]);} /* passed the friend's floor */
   // charge: world barely slows; once it's full, time slams to a crawl for the 'kingSlow' beat, then the punch fires
   const tsTarget=kingSlowT>0?.07:(bothT>0&&mode==='play')?.85:1;
   timeScale+=(tsTarget-timeScale)*Math.min(1,real*(kingSlowT>0?18:10));
@@ -2047,8 +2059,8 @@ function drawComboFX(){
   const pal=fever>0?['#ffffff','#ffd0a0','#ff6a1a']:combo>=24?['#fff6b0','#ffd400','#ff8a00']:['#ffffff','#e6f7ff','#7ad8ff'];
   const glow=fever>0?'#ff5a1a':combo>=24?'#ffb000':'#5ac8ff';
   ctx.globalAlpha=(age>D.win?Math.max(0,1-(age-D.win)/.2):1)*.92;
-  text('COMBO',W/2,27,1,fever>0?'#ff8a1a':'#ffd400','c','#0d0a08');
-  bigDigits(String(combo),W/2,fresh?33:35,sc,pal,glow);
+  if(fever<=0)text('COMBO',W/2,22,2,'#ffd400','c','#0d0a08'); /* 2x: readable over the bricks, still clear of the number under it. In FEVER this spot says FEVER x2 (drawHUD) */
+  bigDigits(String(combo),W/2,fresh?37:39,sc,pal,glow); /* a few pixels below the COMBO / FEVER x2 label so they never touch */
   ctx.globalAlpha=1;
 }
 function drawLava(){
@@ -2087,6 +2099,7 @@ function drawHUD(){
   R(0,0,W,18,'rgba(10,6,16,.78)');R(0,18,W,1,'#3b2a52'); // slim bar: the brick's own HP bar is enough, so the top one is gone
   const hdt=Math.min(.1,Math.max(0,t-hudT));hudT=t;
   const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');
+  if(vsOn())text(vsBeat?'VS BEAT!':'VS '+vs.floor+'F',9,22,1,vsBeat?'#ffd400':'#c9c2d6'); /* challenge target under the floor count */
   text(D.tag,4+tw(fl,2)+4,8,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
   { /* SCORE, top centre: each floor is worth SC_FLOOR x difficulty and every punch banks its share (the damage it did), so the
        number ticks up with each hit and lands exactly on the ranking score when the floor breaks. Off play it shows the ranking score */
@@ -2131,11 +2144,11 @@ function drawHUD(){
   if(kingT>0&&mode==='play'){const fr=kingT/kingTmax,bw=W-40;
     const ky=H-46-GAUGE_ROW-14; // just above the fist buttons, clear of the grades up top
     R(16,ky-2,W-32,14,'rgba(13,10,8,.7)');text(kingT.toFixed(1)+'s   +'+(pl.level-showFrom)+'F',W/2,ky,1,'#ffd400','c','#0d0a08'); // time left + floors smashed
-    {const y=24,cyc=(gt%1.4); // small headline just under the top bar, no backing: a shine sweeps it and the stars twinkle
+    if(!finaleEl.classList.contains('low')){const y=24,cyc=(gt%1.4); /* small headline under the top bar, until the 'N층 돌파!' line is up (then SHOW TIME sits on top of it) */
      perfectText('SHOW TIME',W/2,y,cyc<.5?cyc:1,2,cyc>=.45);}
     R(20,ky+7,bw,3,'#2a1d38');R(20,ky+7,Math.round(bw*fr),3,'#ff8a1a');R(20,ky+7,Math.round(bw*fr),1,'#ffd400');
     ctx.globalAlpha=.35+.2*Math.sin(gt*16);ctx.strokeStyle='#ff8a1a';ctx.lineWidth=3;ctx.strokeRect(1.5,20.5,W-3,H-22);ctx.globalAlpha=1;}
-  if(fever>0&&kingT<=0){text('FEVER x2',W/2,71,1,'#ff8a1a','c','#0d0a08');
+  if(fever>0&&kingT<=0){text('FEVER x2',W/2,22,2,((gt*6)|0)%2?'#ffd04a':'#ff8a1a','c','#0d0a08'); /* 2x and flickering, in the COMBO label's spot above the count: the floating PERFECT! never reaches up here */
     ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle='#ff6a1a';ctx.lineWidth=2;ctx.strokeRect(1,20,W-2,H-21);ctx.globalAlpha=1;}
   const dist=lavaY-pl.feet;
   if(mode==='play'&&started){
@@ -2547,6 +2560,7 @@ function render(){
   for(let n=nLo;n<=nHi+1;n++){const y=-(n-1)*FH-camY;if(y>-30&&y<H+40&&n%3===1&&n<=SURF)drawTorch(n);}
   const gy=-camY;if(gy<H){const z0=ZONES[0];R(WALL,gy,IN,H,z0.wallD);for(let x=0;x<IN;x+=6)R(WALL+x,gy,5,1,z0.wall);}
   for(let n=nLo;n<=nHi;n++){const y=-n*FH-camY;if(y>-16&&y<H+2)drawSlab(slabs[n]);}
+  if(vsOn()){const y=-vs.floor*FH-camY,c=vsBeat?'#6e6480':'#ffd400';if(y>-12&&y<H+2){for(let x=WALL;x<W-WALL;x+=6)R(x,y,3,1,c);text('VS',W-WALL-2,y-7,1,c,'r');}} /* the friend's floor: a dashed line across the tower */
   drawImpactFrame();
   if(mode==='super'&&sup){
     if(sup.t<.45){R(-8,-8,W+16,H+16,'rgba(8,4,12,.6)');
@@ -2689,9 +2703,7 @@ async function fillBoard(sel,_unused,hiId,preset,mine){
 /* ---------- screens ---------- */
 const CREDIT=`<footer class="credit">© 2026 VENTO AI STUDIO</footer>`;
 function lockPortrait(){try{const o=screen.orientation;if(o&&o.lock)o.lock('portrait').catch(()=>{});}catch(e){}}
-const sideways=matchMedia('(orientation:landscape) and (max-height:540px) and (pointer:coarse)');
-const onSideways=()=>{if(sideways.matches&&ov.hidden&&(mode==='play'||mode==='super'||mode==='count'))pauseGame();};
-try{sideways.addEventListener('change',onSideways);}catch(e){sideways.addListener&&sideways.addListener(onSideways);}
+/* no rotate warning: the game just stays in portrait (lockPortrait asks the phone to hold it there where it can) */
 function startGame(){lockPortrait();ov.hidden=true;beginCountdown();} /* no nickname gate: it is asked on the result page */
 // ---- pause / restart / back to menu ----
 const pauseBtn=document.getElementById('pausebtn');
@@ -2748,8 +2760,12 @@ function startGuest(){isGuest=true;playerName='GUEST'+String(100+Math.floor(Math
   ov.hidden=true;beginCountdown();}
 // arcade boot: browsers only allow sound after a touch, so the logo waits for one, then plays with its jingle
 // pixel-art arcade button (3/4 view): red cap on a dark bezel. h = how far the cap stands up (6 = up, 0 = pushed in)
+const BTN_S=8; /* the button art is 52x29 pixels drawn 8x bigger, so the lying VENTO on its cap can be finer than one art pixel */
+let btnArt=null,ventoFlat=null;
 function drawStartButton(c,h){
-  const g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);
+  if(c.width!==52*BTN_S){c.width=52*BTN_S;c.height=29*BTN_S;}
+  if(!btnArt){btnArt=document.createElement('canvas');btnArt.width=52;btnArt.height=29;}
+  const g=btnArt.getContext('2d');g.clearRect(0,0,52,29);
   const ell=(cx,cy,rx,ry,col)=>{g.fillStyle=col;for(let y=-ry;y<=ry;y++){const w=Math.round(rx*Math.sqrt(1-(y*y)/(ry*ry)));if(w>0)g.fillRect(cx-w,cy+y,w*2+1,1);}};
   const cx=26,by=16;
   ell(cx,by+4,23,7,'#4a403a');          // floor shadow / outer bezel
@@ -2762,9 +2778,36 @@ function drawStartButton(c,h){
   ell(cx,by-h,15,5,'#ff2a2a');          // top face
   ell(cx-3,by-h-1,9,3,'#ff4d40');
   g.fillStyle='#ffb2a6';g.fillRect(cx-8,by-h-4,4,1);g.fillRect(cx-10,by-h-3,2,1); // glint
-  const VF={V:['101','101','101','101','010'],E:['111','100','110','100','111'],N:['101','111','111','101','101'],T:['111','010','010','010','010'],O:['111','101','101','101','111']};
-  const tx=cx-9,ty=by-h-1;[...'VENTO'].forEach((ch,i)=>VF[ch].forEach((row,r)=>{for(let q=0;q<3;q++)if(row[q]==='1'){g.fillStyle='#7a0a0a';g.fillRect(tx+i*4+q,ty+r+1,1,1);g.fillStyle='#ffd400';g.fillRect(tx+i*4+q,ty+r,1,1);}})); /* VENTO in yellow on the cap */
+  const out=c.getContext('2d');out.imageSmoothingEnabled=false;out.clearRect(0,0,c.width,c.height);out.drawImage(btnArt,0,0,c.width,c.height);
+  /* VENTO lying flat on the cap, facing the sky: the AI STUDIO lettering (cream face, red then deep-red drop), squashed to the cap's
+     tilt, and a little narrower at the far edge. Seen from the front, the word lies on its back */
+  const v=ventoWord();if(!v)return;
+  const S=BTN_S,dh=v.height,y0=Math.round((by-h)*S+S/2-dh/2),cxp=cx*S+S/2;
+  for(let r=0;r<dh;r+=3){const k=.88+.12*(r/dh),w=Math.round(v.width*k);out.drawImage(v,0,r,v.width,3,Math.round(cxp-w/2),y0+r,w,3);} /* one dot row at a time, the far rows a little narrower */
 }
+/* splash lettering as real pixel art: a bold arcade bitmap face (2-pixel strokes, 6 rows), a dark outline,
+   a lit top row and a two-step drop down-right, like the game logo. One canvas pixel = one dot, scaled up crisp */
+const ARC={P:['11110','11011','11011','11110','11000','11000'],U:['11011','11011','11011','11011','11011','01110'],S:['01111','11000','01110','00011','00011','11110'],
+  H:['11011','11011','11111','11011','11011','11011'],'!':['11','11','11','11','00','11'],V:['11011','11011','11011','11011','01110','00100'],
+  E:['11111','11000','11110','11000','11000','11111'],N:['11001','11101','11111','11011','11001','11001'],T:['111111','111111','001100','001100','001100','001100'],
+  O:['01110','11011','11011','11011','11011','01110'],' ':['000','000','000','000','000','000']};
+/* drop: the extrusion layers as [dx,dy,colour], far ones first (default: two steps down-right, like the logo) */
+function pixWord(txt,pal,drop){
+  drop=drop||[[2,2,pal.e2],[1,1,pal.e1]];
+  const cells=[];let x=0;for(const ch of txt){const g=ARC[ch]||ARC[' '];g.forEach((row,r)=>{for(let q=0;q<row.length;q++)if(row[q]==='1')cells.push([x+q,r]);});x+=g[0].length+1;}
+  const mx=Math.max(0,...drop.map(d=>d[0])),my=Math.max(0,...drop.map(d=>d[1]));
+  const w=x-1,c=document.createElement('canvas');c.width=w+mx+2;c.height=6+my+2;const g=c.getContext('2d'),P=(a,b,col)=>{g.fillStyle=col;g.fillRect(a,b,1,1);};
+  const solid=cells.slice();for(const [dx,dy] of drop)for(const [a,b] of cells)solid.push([a+dx,b+dy]);
+  for(const [a,b] of solid)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)P(a+1+dx,b+1+dy,pal.ink); /* outline around the face and its whole drop */
+  for(const [dx,dy,col] of drop)for(const [a,b] of cells)P(a+1+dx,b+1+dy,col);
+  for(const [a,b] of cells)P(a+1,b+1,b===0?pal.hi:b<3?pal.face:pal.lo);
+  return c;}
+/* VENTO for the button cap: the AI STUDIO colours (cream, red drop, deep-red drop) in big dots, squashed to lie on the cap */
+function ventoWord(){if(ventoFlat)return ventoFlat;
+  const src=pixWord('VENTO',{ink:'#2a0606',e2:'#4a1408',e1:'#c8341a',hi:'#ffffff',face:'#f4efe8',lo:'#d8cfc8'},[[1,4,'#4a1408'],[1,3,'#7a1c0c'],[0,2,'#c8341a'],[0,1,'#e0502a']]); /* thick block letters: their front walls show below them */
+  const SX=5,SY=3,q=document.createElement('canvas'),qg=q.getContext('2d');q.width=src.width*SX;q.height=src.height*SY;
+  qg.imageSmoothingEnabled=false;qg.drawImage(src,0,0,q.width,q.height);
+  return ventoFlat=q;}
 function animStartButton(c){
   const seq=[6,6,5,4,2,1,1,2,4,5];let i=0,run=true,forced=null;
   const tick=()=>{if(!run)return;drawStartButton(c,forced!==null?forced:seq[i++%seq.length]);setTimeout(tick,100);};
@@ -2881,7 +2924,7 @@ function logoFlash(next){
 function showSplash(){
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
-      <div class="pushcue" aria-hidden="true"><div class="pushtxt">PUSH! PUSH!</div><div class="pusharrow"></div></div>
+      <div class="pushcue" aria-hidden="true"><canvas class="pushtxt" id="pushcv" aria-hidden="true"></canvas><div class="pusharrow"></div></div>
       <button class="abtn" id="startbtn" type="button" aria-label="START"><canvas id="btncv" width="52" height="29"></canvas></button>
     </div>
     <button class="sndbtn${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}"><i aria-hidden="true"></i><span>${soundLabel()}</span></button>`;
@@ -2899,6 +2942,11 @@ function showSplash(){
     setTimeout(finish,2450);}; // long enough for the whole '클라~스' (ends ~2.1s)
   const onKey=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();play();}};
   const stopBtn=animStartButton(document.getElementById('btncv'));
+  { /* PUSH! PUSH! blinks gold / amber twice a second until the splash is gone */
+    const pc=document.getElementById('pushcv'),A=pixWord('PUSH! PUSH!',{ink:'#0d0a08',e2:'#6e2a00',e1:'#c24e00',hi:'#fff3a0',face:'#ffd400',lo:'#ffb000'}),
+      B=pixWord('PUSH! PUSH!',{ink:'#0d0a08',e2:'#4a0606',e1:'#6e0a0a',hi:'#ffd04a',face:'#ff8a00',lo:'#e05a00'});
+    pc.width=A.width;pc.height=A.height;const pg=pc.getContext('2d');let f=0;
+    const blink=()=>{if(!pc.isConnected)return;pg.clearRect(0,0,pc.width,pc.height);pg.drawImage(f++%2&&!RM?B:A,0,0);setTimeout(blink,250);};blink();}
   let pushed=false;
   document.getElementById('startbtn').addEventListener('click',e=>{e.stopPropagation();if(pushed)return;pushed=true;
     initAudio();smashStart(e.currentTarget,stopBtn,play);});
@@ -2923,6 +2971,7 @@ const pxIcon=k=>`<svg viewBox="0 0 12 12" aria-hidden="true">${PX_ICON[k].map((r
 function showTitle(){menuMusic();showOverlay(`
   <h1 class="logo ko" aria-label="상남자 김주먹: 펀치펀치 타워"><span class="lw sm"><span class="lo" aria-hidden="true">상남자</span><span class="lf">상남자</span></span><span class="lw"><span class="lo" aria-hidden="true">김주먹</span><span class="lf">김주먹</span></span></h1>
   <div class="logosub" aria-hidden="true">PUNCH PUNCH TOWER</div>
+  ${vs?'<div class="vsban" id="vsban"></div>':''}
   <div class="menu">
     <button class="btn primary" id="go" data-act="go"><i aria-hidden="true">▶</i>시작</button>
     <div class="dsel" role="group" aria-label="난이도"><button class="darr" type="button" data-act="dprev" aria-label="쉬운 난이도">◀</button><b id="dname" aria-live="polite"></b><button class="darr" type="button" data-act="dnext" aria-label="어려운 난이도">▶</button></div>
@@ -2932,11 +2981,13 @@ function showTitle(){menuMusic();showOverlay(`
   ${CREDIT}`,{go:startGame,rank:()=>showRanking(),howto:showHowto,settings:showSettings,dprev:()=>stepDiff(-1),dnext:()=>stepDiff(1)});
   syncDiff();
   const g=ovGen,onKey=e=>{if(ovGen!==g){removeEventListener('keydown',onKey);return;}
+    if(ov.hidden||mode==='play'||mode==='super'||mode==='count')return; /* the title is gone (game running): arrows are punches, not the difficulty */
     if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stepDiff(e.key==='ArrowLeft'?-1:1);}};
   addEventListener('keydown',onKey);}
 function syncDiff(){const n=ov.querySelector('#dname');if(!n)return;n.textContent=D.ko;n.className='t-'+D.key;
   ov.querySelector('[data-act="dprev"]').disabled=diffIdx<=0;ov.querySelector('[data-act="dnext"]').disabled=diffIdx>=DIFFS.length-1;
-  const bl=ov.querySelector('#bestline');if(bl)bl.innerHTML=bestLine();}
+  const bl=ov.querySelector('#bestline');if(bl)bl.innerHTML=bestLine();
+  const vb=ov.querySelector('#vsban');if(vb)vb.innerHTML=vsBanHTML();}
 function stepDiff(d){const i=clamp(diffIdx+d,0,DIFFS.length-1);if(i===diffIdx){sfx.same();return;}
   initAudio();diffIdx=i;D=DIFFS[diffIdx];try{localStorage.setItem('punchtower.diff',diffIdx);}catch(e){}sfx.select();syncDiff();}
 // settings: nickname, music / sound / tilt / hints, and 'learn the moves again'
@@ -3000,6 +3051,7 @@ function showRanking(){menuMusic();showOverlay(`
 function resultScreen(cleared){
   setTimeout(()=>{if(!ov.hidden&&mode!=='play')menuMusic();},900); // after the death sting
   const floor=pl.level,time=Math.round((cleared?clearTime:tNow)*10)/10;
+  if(vsOn()&&floor>vs.floor)vsWon=true; /* challenge passed: the title banner says so from now on */
   try{shareSnap=document.createElement('canvas');shareSnap.width=W;shareSnap.height=H;shareSnap.getContext('2d').drawImage(cv,0,0);}catch(e){shareSnap=null;}
   const en={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),name:playerName||'???',diff:D.key,floor,time};
   const head=cleared
@@ -3067,7 +3119,7 @@ function ezResult(floor,score,time){const acc=accOf(),tot=jCount.reduce((a,b)=>a
         <div class="ezacc">${acc.toFixed(1)}%</div></div>
       <div class="ezlist">${list}</div></div>
     ${cmb}
-    <div class="ezscore" style="--d:${d++}"><div class="flr"><i>FLOOR</i>${n(floor,1,'F')}</div><div><i>RANK</i><b id="ezrank">${floor>=1?'···':'-'}</b></div><div><i>TIME</i><b>${fmt(time)}</b></div><div class="tsc"><i>TOTAL SCORE</i>${n(score,7)}</div></div></div>`;}
+    <div class="ezscore" style="--d:${d++}"><div class="flr"><i>FLOOR${vsResHTML(floor)}</i>${n(floor,1,'F')}</div><div><i>RANK</i><b id="ezrank">${floor>=1?'···':'-'}</b></div><div><i>TIME</i><b>${fmt(time)}</b></div><div class="tsc"><i>TOTAL SCORE</i>${n(score,7)}</div></div></div>`;}
 function ezCount(gen){if(RM)return;ov.querySelectorAll('.ezr [data-to]').forEach((el,i)=>{const to=+el.dataset.to,pad=+el.dataset.pad,suf=el.dataset.suf||'',t0=performance.now()+120+i*90;
     el.textContent=''.padStart(pad,'0')+suf;
     const step=t=>{if(ovGen!==gen)return;const k=Math.min(1,Math.max(0,(t-t0)/520));el.textContent=String(Math.round(to*k)).padStart(pad,'0')+suf;if(k<1)requestAnimationFrame(step);};
@@ -3080,8 +3132,25 @@ function judgeBlock(){const acc=accOf();
    The score page draws a 1080x1350 pixel card (last game frame behind, logo, floor, score, rank, link) ahead of time,
    so a tap opens the phone's share sheet right away (KakaoTalk, Instagram ...). No share sheet: save the image + copy the text. */
 const SHARE_URL='https://vento-punch-tower.vercel.app/';
+/* challenge link: the shared link carries the run (floor, difficulty, name). Opening it puts '이 기록을 넘어라' on the title,
+   switches to that difficulty for this visit (not saved), draws the floor in the tower and says on the result how it went */
+function shareLink(en){const q=new URLSearchParams({f:en.floor,d:en.diff});const n=String(en.name||'');if(n&&n!=='???')q.set('by',n);return SHARE_URL+'?'+q;}
+function readVs(){try{const q=new URLSearchParams(location.search),f=parseInt(q.get('f'),10),d=q.get('d');
+  if(!(f>=1&&f<=9999)||!DIFF_KO[d])return;
+  vs={floor:f,diff:d,name:String(q.get('by')||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,NAME_MAX)||'친구'};
+  const i=DIFFS.findIndex(x=>x.key===d);if(i>=0){diffIdx=i;D=DIFFS[i];}}catch(e){vs=null;}}
+const vsOn=()=>!!vs&&D.key===vs.diff;
+function vsBanHTML(){if(!vs)return '';const nm=`<b>${esc(vs.name)}</b>`,dk=`<span class="t-${vs.diff}">${DIFF_KO[vs.diff]}</span>`,fl=`<b class="fl">${vs.floor}F</b>`;
+  if(vsWon)return `<i>CHALLENGE CLEAR!</i><p>${nm}의 ${fl} 돌파! 이제 내 기록으로 도전장을 보내 봐요</p>`;
+  if(!vsOn())return `<i>CHALLENGE</i><p>${nm}의 기록은 ${dk} ${fl} · 난이도를 ${dk}${vs.diff==='master'?'로':'으로'} 맞추면 도전 시작</p>`;
+  return `<i>도전장 도착!</i><p>${nm}의 ${dk} ${fl}를 넘어라</p>`;}
+function vsResHTML(floor){if(!vsOn())return '';const nm=esc(vs.name),f=vs.floor;
+  if(floor>f)return `<span class="vsres ok">★ ${nm} ${f}F 돌파!</span>`; /* sits under FLOOR in the score box, so the page doesn't grow */
+  if(floor===f)return `<span class="vsres">${nm} ${f}F와 동점!</span>`;
+  return `<span class="vsres">${nm} ${f}F까지 <u>${f-floor}층</u></span>`;}
 function prepShare(cleared,en,acc,rank,online){const myGen=ovGen;
-  shareText=`펀치펀치 타워 ${DIFF_KO[en.diff]} ${en.floor}층 · ${num(scoreOf(en))}점${online&&rank?` · 랭킹 ${rank}위`:''}! 나보다 높이 올라갈 수 있어? 👊\n${SHARE_URL}`;
+  const beat=vs&&en.diff===vs.diff&&en.floor>vs.floor?`${vs.name}의 ${vs.floor}층을 넘었다! `:'';
+  shareText=`${beat}펀치펀치 타워 ${DIFF_KO[en.diff]} ${en.floor}층 · ${num(scoreOf(en))}점${online&&rank?` · 랭킹 ${rank}위`:''}! 이 기록을 넘어 봐 👊\n${shareLink(en)}`;
   Promise.all([document.fonts.load('88px "PunchTowerKR"'),document.fonts.load('40px "Press Start 2P"')]).catch(()=>{}).then(()=>{
     if(myGen!==ovGen)return;const c=drawShareCard(cleared,en,acc,rank,online);
     c.toBlob(b=>{if(myGen===ovGen&&b)shareBlob=b;},'image/png');});
@@ -3124,7 +3193,7 @@ function drawShareCard(cleared,en,acc,rank,online){
   if(online&&rank)say(rank===1?'NEW RECORD! 1ST':'RANK '+ord(rank),CW/2,cy+566,40,PX,rank<=3?'#ffd400':'#9fe7ff','center','#a33f00');
   else say('TIME '+fmt(en.time),CW/2,cy+572,32,PX,'#a597b8','center',null,false);
   // call to action + link
-  say('너도 올라와 봐!',CW/2,1136,55,KR,'#ff7a1a','center','#4a1408');
+  say('이 기록을 넘어라!',CW/2,1136,55,KR,'#ff7a1a','center','#4a1408');
   say(SHARE_URL.replace(/^https:\/\/|\/$/g,''),CW/2,1240,24,PX,'#f4efe8','center',null,false);
   g.fillStyle='rgba(0,0,0,.07)';for(let y=0;y<CH;y+=6)g.fillRect(0,y,CW,2); // the cabinet scanlines
   return c;}
@@ -3151,6 +3220,7 @@ function shareSheet(){const old=ov.querySelector('.sharesheet');if(old)old.remov
   ov.appendChild(d);}
 function showOver(){resultScreen(false);}
 function showClear(){resultScreen(true);}
+readVs();
 showSplash();
 })();
 </script><script>if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));</script></body></html>
