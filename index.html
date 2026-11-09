@@ -71,6 +71,8 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
     3px 3px 0 var(--ink),-3px 3px 0 var(--ink),3px -3px 0 var(--ink),-3px -3px 0 var(--ink),
     4px 4px 0 #c24e00,5px 5px 0 #c24e00,6px 6px 0 #a33f00,7px 7px 0 var(--ink),8px 8px 0 var(--ink),9px 9px 0 var(--ink)}
 .logo .lw+.lw{font-size:1.18em}
+/* main title: a deep solid drop shadow in the logo's own orange tones, stepped down-right like a block cast */
+.logo.ko .lo{text-shadow:3px 0px 0 var(--ink),-3px 0px 0 var(--ink),0px 3px 0 var(--ink),0px -3px 0 var(--ink),3px 3px 0 var(--ink),-3px 3px 0 var(--ink),3px -3px 0 var(--ink),-3px -3px 0 var(--ink),4px 4px 0 #c24e00,5px 5px 0 #c24e00,6px 6px 0 #c24e00,7px 7px 0 #c24e00,8px 8px 0 #c24e00,9px 9px 0 #c24e00,10px 10px 0 #a33f00,11px 11px 0 #a33f00,12px 12px 0 #a33f00,13px 13px 0 #6e2a00,14px 14px 0 #6e2a00,15px 15px 0 var(--ink),16px 16px 0 var(--ink),17px 17px 0 var(--ink)}
 .hazard{width:min(100%,250px);height:8px;margin:2px auto 0;box-shadow:0 0 0 3px var(--ink);
   background:repeating-linear-gradient(-45deg,var(--gold) 0 6px,var(--ink) 6px 12px)}
 .logo::after{content:"";position:absolute;inset:-6px -4px;pointer-events:none;
@@ -131,6 +133,33 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .tail{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .tail .stat{font-size:11px;text-align:left}
 .togs{display:flex;gap:8px}
+/* title: one-line difficulty switch, then three icon buttons (ranking / how to / settings) */
+.dsel{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:10px}
+.dsel b{font-family:var(--f-display);font-weight:400;font-size:22px;line-height:1;text-align:center;text-shadow:2px 2px 0 #000}
+.dsel b.t-normal{color:var(--gold)}.dsel b.t-easy{color:#8fd18a}.dsel b.t-hard{color:#ff9a2a}.dsel b.t-master{color:#ff5a6a}
+.darr{height:40px;border:0;border-radius:0;padding:0;cursor:pointer;background:var(--ink);color:var(--gold);font-family:var(--f-pixel);font-size:20px;line-height:1;
+  box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
+.darr:hover,.darr:focus-visible{outline:none;box-shadow:0 -3px 0 0 var(--gold),0 3px 0 0 var(--gold),-3px 0 0 0 var(--gold),3px 0 0 0 var(--gold)}
+.darr:disabled{color:var(--edge);cursor:default;box-shadow:0 -3px 0 0 #2a2034,0 3px 0 0 #2a2034,-3px 0 0 0 #2a2034,3px 0 0 0 #2a2034}
+.darr:active:not(:disabled){transform:translateY(2px)}
+.menu .stat.best{text-align:center;margin-top:-8px;font-size:10px}
+.icons{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ico{display:grid;justify-items:center;gap:6px;padding:10px 0 8px;border:0;border-radius:0;cursor:pointer;background:var(--ink);color:var(--gi);font-family:var(--f-display);font-size:13px;
+  box-shadow:0 -3px 0 0 var(--gi),0 3px 0 0 var(--gi),-3px 0 0 0 var(--gi),3px 0 0 0 var(--gi),inset 0 -3px 0 0 #2a2034}
+.ico svg{width:36px;height:36px;color:var(--gold);shape-rendering:crispEdges}
+.ico:hover,.ico:focus-visible{color:var(--gold);outline:none;box-shadow:0 -3px 0 0 var(--gold),0 3px 0 0 var(--gold),-3px 0 0 0 var(--gold),3px 0 0 0 var(--gold),inset 0 -3px 0 0 #2a2034}
+.ico:active{transform:translateY(2px)}
+/* settings screen: bigger toggles in a 2x2 grid */
+.setgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.setgrid .tog{justify-content:space-between;padding:11px 12px 10px;font-size:14px;color:var(--gi)}
+.setgrid .tog b{font-size:9px;padding:3px 4px 2px}
+/* result page: nickname asked once, the first time a run goes on the board */
+.namereg{display:grid;gap:6px;width:calc(100% - 10px);max-width:340px;margin-top:2px}
+.namereg .row2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+.namereg .namebox{width:100%;max-width:none}
+.namereg .ezb{font-size:18px;padding:11px 16px 9px;color:var(--gold);text-shadow:2px 2px 0 #a33f00}
+.namereg p{margin:0;font-size:11px;color:var(--muted);text-align:left}
+.namereg p b{font-weight:400;color:var(--gold)}
 .tog{display:flex;align-items:center;gap:5px;background:none;border:0;cursor:pointer;padding:4px 6px;font-family:var(--f-display);font-size:11px;color:var(--muted);
   box-shadow:inset 0 0 0 2px var(--edge)}
 .tog b{font-weight:400;font-family:var(--f-pixel);font-size:8px;color:var(--ink);background:#9aff7a;padding:2px 3px 1px}
@@ -247,6 +276,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .ezscore div{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-family:var(--f-pixel)}
 .ezscore i{font-style:normal;font-size:10px;color:var(--muted);letter-spacing:.08em}
 .ezscore b{font-weight:400;font-size:16px;color:var(--gi);font-variant-numeric:tabular-nums}
+.ezscore .tsc b{color:#ffd04a} /* same yellow as the in-game SCORE */
 .ezscore .flr{align-items:center}.ezscore .flr i{font-size:12px;color:var(--lava-hi)}
 .ezscore .flr b{font-size:40px;line-height:1;color:var(--gold);text-shadow:3px 3px 0 #a33f00,-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink)} /* the floor reached: the number that matters */
 .ezbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:calc(100% - 10px);max-width:340px;margin-top:4px}
@@ -456,7 +486,7 @@ const DIFFS=[
  {key:'hard',  ko:'고급',  tag:'HARD',  desc:'블록이 단단하고 약점이 좁아요.',
   lava:13,grow:.78,hp:1.5,win:.38,weakW:9.9,weakMul:3.5,relocate:4,gold:50,vib:1.25},
  {key:'master',ko:'초고수',tag:'MASTER',desc:'약점을 못 맞추면 용암을 못 이겨요. 각오하세요.',
-  lava:16.9,grow:1.01,hp:2.25,win:.32,weakW:8.9,weakMul:4,  relocate:3,gold:40,vib:1.5},
+  lava:16.9,grow:1.01,hp:2.25,win:.32,weakW:8.9,weakMul:4,  relocate:3,gold:40,vib:1.5,tHalf:7}, /* tHalf: TIME bonuses halve by 7F (others 10F): perfect play ends near 1:30 */
 ];
 let diffIdx=1;
 try{const d=parseInt(localStorage.getItem('punchtower.diff'),10);if(d>=0&&d<4)diffIdx=d;}catch(e){}
@@ -820,6 +850,7 @@ const zoneOfLevel=n=>ZONES[n<=SURF?0:Math.min(ZONES.length-1,1+Math.floor((n-SUR
 const zoneAtY=y=>zoneOfLevel(Math.floor(-y/FH)+1);
 const ROOF=-TOP*FH;
 
+let hsLag=0; /* time the world sat frozen in hit-stop: the lava and FEVER clock catch up on it, and a chain of hit-stops can't freeze it for more than .25s */
 let slabs,pl,mode='title',started,lavaY,combo,lastTap,lastSide,fever,camY,shake,hitstop,parts,pops,rings,tStart,tNow,warnT,endT,clearTime,maxCombo,gt=0,tapFX,impact,impactX,impactY,zoom,weakCount,weakStreak;
 let altStreak=0,superReady=false,sup=null,superCount=0,flashO=0,flashCol='#fff3c0';
 // a press punches at once; keep holding and the boxer walks that way while ki builds; release = ki punch
@@ -975,6 +1006,8 @@ function genCracks(){const out=[];for(let k=0;k<4;k++){let x=10+Math.random()*(I
   for(let i=0;i<14;i++){p.push([x|0,y|0]);x+=(Math.random()*3-1.5);y-=Math.random()<.55?1:0;if(y<1)y=1;}out.push(p);}return out;}
 // TIME: a countdown that good smashing keeps topping up. Run out and the lava surges.
 const TIME_START=30,TIME_MAX=60,T_BREAK=1.5,T_CLEAN=1.5,T_BOSS=4,T_WEAK=.2,T_KING=1;
+/* TIME bonuses fade as you climb (x1 at 1F, x1/2 at T_HALF floors, never below T_FLOOR), so even perfect play meets the lava in the end. BOSS_REST: the lava pauses after a boss gate breaks */
+const T_HALF=10,T_FLOOR=.1,BOSS_REST=2,K_HALF=20;const tMul=()=>Math.max(T_FLOOR,1/(1+pl.level/(D.tHalf||T_HALF))),kingHoldMul=()=>Math.max(T_FLOOR,1/(1+pl.level/K_HALF)); /* SHOW TIME's lava freeze fades the same way */
 // after a KING PUNCH lands, the lava freezes for a moment
 const KING_FREEZE=1.5;let lavaHold=0;
 // (CHILL - weak hits slowing the lava - was removed; TIME bonuses already push the lava back)
@@ -982,6 +1015,7 @@ const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let burns=0,burnT=0,cloth=[]; // lava bounces taken this run, the immunity left after the last one, and burning clothes flying off
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
 let judge=null,jCount=[0,0,0,0];const JUDGE=[['PERFECT!','#e8a400','#5a3000',2],['COOOOL!','#2aa84a','#0c3a1a',2],['90%','#e0641a','#4a1a06',2],['MOVE! MOVE!','#c8341a','#4a1408',2]]; // [text, extrusion, deep extrusion, size]: VENTO-logo style, the extrusion carries the grade colour
+let hudSc=0,hudScT=0; /* SCORE shown in the HUD: rolls up toward the live score (it ticks with every punch); hudScT = how long it has been rising, for the glow */
 let dispT=0,tGains=[],gainSum=0,gainT=0,hudT=0; // TIME counter that rolls up, and the '+0.2' pops that feed it
 // TIME drives the lava: 60s banked -> x0.6, 30s (start) -> about x1, 10s -> x1.35, 0s -> TIME UP surge
 // TIME is now the honest truth: seconds until the lava reaches your feet at its current speed.
@@ -1007,8 +1041,8 @@ function makeSlab(n){
   if(n%10===0)type='boss';
   else if(!vibRun&&Math.random()<vibP)type='vibranium';
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
-  const base=10+Math.floor(Math.min(n,70)*.8);
-  const raw=type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+Math.min(n,70)*2:base;
+  const base=10+Math.floor(n*.8);
+  const raw=type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
   const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
   return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:n<SKILL_AT.walk&&!skillOn('walk')?Math.round(W/2):newWeakX(null),ww:D.weakW*WEAK_WIDEN,weakHits:0,wflash:0,wFrom:null,wT:1};
 }
@@ -1020,9 +1054,9 @@ function newGame(){
   runOpen={};newCard=null;tryK=null;practiceTo=-1;dashFar=false;brkFX=[];showBrk=0;demoPh=-1;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
-  started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;
+  started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -1108,7 +1142,7 @@ function hit(side,power){
   sfx.hit(combo,crit,s.type);
   if(charged)sfx.kipunch(power);
   if(weak){weakCount++;weakStreak++;s.weakHits++;s.wflash=1;sfx.weak(weakStreak);weakFX(s.wx,fy,dmg);
-    addTime(T_WEAK);} // (lava 'chill' removed: the time you gain already pushes the lava back)
+    addTime(T_WEAK*tMul());} // (lava 'chill' removed: the time you gain already pushes the lava back)
   else if(charged){weakStreak=0;
     rings.push({x:fx,y:fy,life:.22,max:.22,big:true,col:'#9ff4ff'});
     for(let i=0;i<6+power*10;i++){const a=-Math.PI*Math.random(),sp=60+Math.random()*90;
@@ -1130,7 +1164,7 @@ function debris(s){const y=-s.n*FH;const c=SLABC[s.type];
 function breakSlab(s){
   s.broken=true;s.hp=0;debris(s);sfx.brk(s.type);vibe(30);learn('tap');if(s.type==='vibranium')learn('vib'); /* first floor / first vibranium broken: those tips retire */
   shake=Math.max(shake,4.5);hitstop=Math.max(hitstop,.085);
-  {const clean=weakStreak>=4,t=T_BREAK+(clean?T_CLEAN:0)+(s.type==='boss'?T_BOSS:0);
+  {const clean=weakStreak>=4,t=(T_BREAK+(clean?T_CLEAN:0))*tMul()+(s.type==='boss'?T_BOSS:0);if(s.type==='boss')lavaHold=Math.max(lavaHold,BOSS_REST);
    addTime(t,(clean?'CLEAN ':'')+'+'+t.toFixed(1)+'s');}
   if(kingT>0){showBrk++;brkFX.push({n:showBrk,at:now(),x:W/2+Math.round(Math.random()*14-7),tilt:showBrk%2?1:-1});if(brkFX.length>4)brkFX.shift();
     flashO=Math.max(flashO,.3);flashCol='#ffffff';shake=Math.max(shake,7);vibe(45);
@@ -1179,7 +1213,7 @@ function doSuper(pre,cutinShown){
 // to the right - and only then does the clock start (punches wait for it)
 const SHOW_IN=.25,SHOW_BLINK=.55,SHOW_OUT=.2,SHOW_INTRO=SHOW_IN+SHOW_BLINK+SHOW_OUT;
 function startKingTime(lv,pw,cutinShown){
-  showIntro=SHOW_INTRO;showLv=lv;kingTmax=KL_KT[lv-1];kingPw=pw;lavaHold=Math.max(lavaHold,kingTmax+.6);beginShow(); // clock runs from the first frame; the title card flies over the action
+  showIntro=SHOW_INTRO;showLv=lv;kingTmax=KL_KT[lv-1];kingPw=pw;lavaHold=Math.max(lavaHold,(kingTmax+.6)*kingHoldMul());beginShow(); // clock runs from the first frame; the title card flies over the action
   sfx.superLaunch();vibe([40,30,80]); // (no cut-in here: the SHOW TIME title card is the announcement)flashO=Math.max(flashO,.5);flashCol='#ffe9a8';shake=Math.max(shake,8);
   for(let i=0;i<40;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*140,l=.5+Math.random()*.4;
     parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:i%3?'#ff8a1a':'#ffd400'});}
@@ -1449,10 +1483,11 @@ addEventListener('keydown',e=>{
   if(mode==='super'&&sup&&['arrowup','arrowdown','w','s'].includes(k)){e.preventDefault();
     if(!e.repeat){const up=k==='arrowup'||k==='w';superRub(up?-STROKE_FULL:STROKE_FULL,up?1:0);}return;}
   if(LKEYS.includes(k)||RKEYS.includes(k)){e.preventDefault();if(!e.repeat)press('k'+k,RKEYS.includes(k)?1:0);return;}
-  if(k===' '&&mode==='play'&&skillOn('dash')){let ws=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T)ws=h.side; /* desktop: walking (a fist key held) + SPACE = dash */
-    if(ws>=0){e.preventDefault();if(!e.repeat)dash(ws);return;}}
+  if(k===' '){e.preventDefault(); /* SPACE is the dash key only (never SHOW TIME): with a fist key held, even one pressed a moment ago, it dashes that way */
+    if(mode==='play'&&skillOn('dash')&&!e.repeat){let ws=-1,born=-1;for(const h of holds.values())if(!h.used&&!h.drag&&(h.born||0)>=born){born=h.born||0;ws=h.side;}
+      if(ws>=0){for(const h of holds.values())if(!h.used&&h.side===ws&&h.t<HOLD_T)h.t=HOLD_T;dash(ws);}}return;}
   if(e.repeat)return;
-  if(['arrowup','w',' '].includes(k)){e.preventDefault();doSuper();}});
+  if(['arrowup','w'].includes(k)){e.preventDefault();doSuper();}});
 addEventListener('keyup',e=>release('k'+e.key.toLowerCase()));
 addEventListener('blur',()=>{holds.clear();cardHolds.clear();});
 
@@ -1528,14 +1563,15 @@ function update(dt){
     if(kingT===0){pop(W/2,pl.feet-50,'SHOW END','#ffd400',2,true);if(KING_STYLE!=='rub'&&showBrk>0)showFinale(showBrk,0);if(AC){const t=AC.currentTime;tone(t,.25,660,330,'square',.06);}}}
   if(mode==='play'&&started&&kingT<=0&&showIntro<=0&&bothT<=0&&kingSlowT<=0)for(const k of SKILL_ORDER)if(!skillOn(k)&&tgtN()>=SKILL_AT[k]){openSkill(k);return;}
   if(mode==='play'&&started&&kingT<=0&&showIntro<=0&&bothT<=0&&kingSlowT<=0&&!vibCardShown&&!knows('vib')&&tgtN()>=practiceTo){const v=tgt();if(v&&v.type==='vibranium'&&!v.broken&&pl.jt<0){vibCardShown=true;showCard('vib','TIP',VIB_CARD[0],VIB_CARD[1],3.2);return;}}
-  if(hitstop>0){hitstop-=dt;return;}
+  if(hitstop>0){hitstop-=dt;if(hsLag<.25){hsLag+=dt;return;}}
+  const ldt=dt+hsLag;hsLag=0;
   ensureSlabs(pl.level+30);
   for(let n=Math.max(1,pl.level-2);n<=pl.level+6;n++){const s=slabs[n];
     if(s.trail===undefined)s.trail=s.hp;s.trail+=(Math.max(0,s.hp)-s.trail)*Math.min(1,dt*5); // lagging damage layer
     s.flash=Math.max(0,s.flash-dt*9);s.bump=Math.max(0,s.bump-dt*30);s.wflash=Math.max(0,s.wflash-dt*5);
     if(s.wT<1)s.wT=Math.min(1,s.wT+dt*5);}
   pl.punchT=Math.max(0,pl.punchT-dt);
-  if(fever>0)fever=Math.max(0,fever-dt);
+  if(fever>0)fever=Math.max(0,fever-ldt);
   const t=now();
   if(mode==='count')updateCountdown(dt);
   if(mode==='super'){tNow=t-tStart;updateSuper(dt);}
@@ -1551,9 +1587,9 @@ function update(dt){
       {const z=zoneOfLevel(pl.level+1);if(lastZone&&z!==lastZone){pop(W/2,pl.feet-58,z.name,'#ffd04a',2);if(AC){const t=AC.currentTime;[660,880,1320].forEach((f,i)=>tone(t+i*.07,.12,f,f,'square',.07));}}lastZone=z;}
       if(tg&&(tg.type==='boss'||tg.type==='final'))v*=.6;if(fever>0)v*=.85;
       lavaV=Math.max(1,v);
-      if(lavaHold>0){lavaHold-=dt;v=0;} // frozen right after a KING PUNCH landing
+      if(lavaHold>0){lavaHold-=ldt;v=0;} // frozen right after a KING PUNCH landing
       else if(practicing())v=0; /* walk + dash practice: the lava waits */
-      lavaY-=v*dt;lavaY=Math.min(lavaY,pl.feet+lavaCap());
+      lavaY-=v*ldt;lavaY=Math.min(lavaY,pl.feet+lavaCap());
       const dist=lavaY-pl.feet;
       timeLeft=Math.max(0,dist/lavaV)+(lavaHold>0?lavaHold:0); // TIME 0 = the lava touches you
       if(timeLeft<=3){timeBeep-=dt;if(timeBeep<=0){timeBeep=timeLeft<=1.5?.25:.5;if(AC){const t=AC.currentTime;tone(t,.06,timeLeft<=1.5?1320:990,timeLeft<=1.5?1320:990,'square',.06);}}}
@@ -2052,9 +2088,13 @@ function drawHUD(){
   const hdt=Math.min(.1,Math.max(0,t-hudT));hudT=t;
   const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');
   text(D.tag,4+tw(fl,2)+4,8,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
-  { // SCORE, top centre: the same number the ranking uses (height x difficulty)
-    const sc=scoreOf({floor:pl.level,diff:D.key});
-    text('SCORE',W/2-4,2,1,'#a597b8','c',false);text(num(sc),W/2-4,10,1,'#ffd04a','c');}
+  { /* SCORE, top centre: each floor is worth SC_FLOOR x difficulty and every punch banks its share (the damage it did), so the
+       number ticks up with each hit and lands exactly on the ranking score when the floor breaks. Off play it shows the ranking score */
+    const mul=DIFF_MUL[D.key]||1,tg=tgt(),live=mode==='play'||mode==='super'?tgtN()-1+(tg&&!tg.broken&&tg.max?clamp(1-Math.max(0,tg.hp)/tg.max,0,1):0):pl.level;
+    const goal=Math.round(live*SC_FLOOR*mul/10)*10;
+    if(goal<hudSc)hudSc=goal;else if(goal>hudSc){hudSc=Math.min(goal,hudSc+Math.max(400*mul,(goal-hudSc)*10)*hdt);hudScT=.12;}
+    hudScT=Math.max(0,hudScT-hdt);
+    text('SCORE',W/2-4,2,1,'#a597b8','c',false);text(String(Math.round(hudSc/10)*10),W/2-4,10,1,hudScT>0?'#fff6b0':'#ffd04a','c');}
   { // TIME = seconds until the lava reaches you. gains roll the number up so you can see your punches buying time
     if(timeLeft>dispT&&started)dispT=Math.min(timeLeft,dispT+Math.max(2.5,(timeLeft-dispT)*10)*hdt);else dispT=timeLeft;
     const T=dispT,low=T<=2,blink=low&&((gt*(T<=1?8:4))|0)%2,rx=W-4; // the pause button sits below the bar now, so TIME can use the corner
@@ -2569,7 +2609,8 @@ let playerName='';try{playerName=localStorage.getItem('punchtower.name')||'';}ca
 // one board for everyone: score = height + clear-time bonus, multiplied by difficulty
 const DIFF_MUL={easy:1,normal:2,hard:3,master:5};
 const DIFF_KO={easy:'초급',normal:'중급',hard:'고급',master:'초고수'};
-const scoreOf=x=>Math.round(x.floor*100*(DIFF_MUL[x.diff]||1));
+const SC_FLOOR=1000; /* points per floor before the difficulty multiplier */
+const scoreOf=x=>Math.round(x.floor*SC_FLOOR*(DIFF_MUL[x.diff]||1));
 const byRank=(a,b)=>scoreOf(b)-scoreOf(a)||a.time-b.time;
 const num=n=>n.toLocaleString('en-US');
 let netErr='';
@@ -2636,7 +2677,7 @@ function boardHTML(res,hiId,mine){
   if(mi>=LIMIT)h+=`<div class="rkgap">· · ·</div>`+rowHTML(list[mi],mi,hiId,LIMIT);
   return `<div class="ezr rkp"><div class="ezhead" style="--d:0">RANKING</div>${box}${top}${h}</div><p class="bnote">${note}</p>`;
 }
-const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 × 100 × 난이도 배율 · 같은 점수면 더 빨리 오른 사람이 위<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
+const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 × 1,000 × 난이도 배율 · 같은 점수면 더 빨리 오른 사람이 위<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
 async function fillBoard(sel,_unused,hiId,preset,mine){
   const gen=ovGen;const el=ov.querySelector(sel);if(!el)return;
   el.innerHTML='<p class="bnote blinky">LOADING…</p>';
@@ -2651,13 +2692,7 @@ function lockPortrait(){try{const o=screen.orientation;if(o&&o.lock)o.lock('port
 const sideways=matchMedia('(orientation:landscape) and (max-height:540px) and (pointer:coarse)');
 const onSideways=()=>{if(sideways.matches&&ov.hidden&&(mode==='play'||mode==='super'||mode==='count'))pauseGame();};
 try{sideways.addEventListener('change',onSideways);}catch(e){sideways.addListener&&sideways.addListener(onSideways);}
-function startGame(){lockPortrait();
-  const inp=ov.querySelector('#pname');
-  if(inp){const v=inp.value.trim().slice(0,NAME_MAX);
-    if(!v){startGuest();return;} // no name typed: just play as a guest instead of blocking the start
-    playerName=v;isGuest=false;try{localStorage.setItem('punchtower.name',v);}catch(e){}}
-  if(!playerName){showTitle();return;}
-  ov.hidden=true;beginCountdown();}
+function startGame(){lockPortrait();ov.hidden=true;beginCountdown();} /* no nickname gate: it is asked on the result page */
 // ---- pause / restart / back to menu ----
 const pauseBtn=document.getElementById('pausebtn');
 let pausedFrom=null,pausedAt=0;
@@ -2877,24 +2912,47 @@ const togHTML=(id,act,label,on)=>`<button class="tog${on?'':' off'}" type="butto
 function setTog(id,on){const b=ov.querySelector('#'+id);if(!b)return;b.classList.toggle('off',!on);b.setAttribute('aria-pressed',on);b.querySelector('b').textContent=on?'ON':'OFF';}
 // title layout: one 296px column, everything on the same left/right edges.
 // importance: START (big, full width) > ranking / how-to (medium pair) > guest, music, sound (small)
+/* tiny pixel icons (12x12, X = filled) for the title's icon buttons */
+const PX_ICON={
+  rank:['..XXXXXXXX..','XXXXXXXXXXXX','X.XXXXXXXX.X','X.XXXXXXXX.X','.XXXXXXXXXX.','..XXXXXXXX..','...XXXXXX...','.....XX.....','.....XX.....','....XXXX....','...XXXXXX...','...XXXXXX...'],
+  howto:['...XXXXXX...','..XXXXXXXX..','.XXX....XXX.','.XXX....XXX.','........XXX.','......XXXX..','.....XXXX...','.....XXX....','.....XXX....','............','.....XXX....','.....XXX....'],
+  set:['.....XX.....','..X.XXXX.X..','.XXXXXXXXXX.','..XXX..XXX..','.XXX....XXX.','XXX......XXX','XXX......XXX','.XXX....XXX.','..XXX..XXX..','.XXXXXXXXXX.','..X.XXXX.X..','.....XX.....']};
+const pxIcon=k=>`<svg viewBox="0 0 12 12" aria-hidden="true">${PX_ICON[k].map((r,y)=>[...r].map((c,x)=>c==='X'?`<rect x="${x}" y="${y}" width="1" height="1" fill="currentColor"/>`:'').join('')).join('')}</svg>`;
+// title: logo, one big START, the difficulty on one line (◀ 중급 ▶), then ranking / how to / settings as icons.
+// No nickname here: it is asked on the result page the first time a run goes on the board.
 function showTitle(){menuMusic();showOverlay(`
   <h1 class="logo ko" aria-label="상남자 김주먹: 펀치펀치 타워"><span class="lw sm"><span class="lo" aria-hidden="true">상남자</span><span class="lf">상남자</span></span><span class="lw"><span class="lo" aria-hidden="true">김주먹</span><span class="lf">김주먹</span></span></h1>
   <div class="logosub" aria-hidden="true">PUNCH PUNCH TOWER</div>
   <div class="menu">
-    <div class="sect">
-      <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="닉네임 (비우면 게스트)" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>
-      <button class="ghost guest" type="button" data-act="guest">게스트로 플레이</button>
-    </div>
-    <div class="sect"><span class="lbl">난이도</span>${diffPicker()}</div>
     <button class="btn primary" id="go" data-act="go"><i aria-hidden="true">▶</i>시작</button>
-    <div class="pair"><button class="btn2" type="button" data-act="rank">랭킹</button><button class="btn2" type="button" data-act="howto">조작법</button></div>
-    <button class="ghost guest" type="button" data-act="rehint">힌트 다시 보기</button>
-    <div class="tail">
-      <div class="stat" id="bestline">${bestLine()}</div>
-      <div class="togs">${togHTML('bgmbtn','music','음악',bgmOn)}${togHTML('sndlink','sound','소리',soundOn)}${togHTML('tiltbtn','tilt','기울기',tiltOn)}${togHTML('hintbtn','hints','힌트',hintsOn)}</div>
-    </div>
+    <div class="dsel" role="group" aria-label="난이도"><button class="darr" type="button" data-act="dprev" aria-label="쉬운 난이도">◀</button><b id="dname" aria-live="polite"></b><button class="darr" type="button" data-act="dnext" aria-label="어려운 난이도">▶</button></div>
+    <div class="stat best" id="bestline"></div>
+    <div class="icons"><button class="ico" type="button" data-act="rank">${pxIcon('rank')}<span>랭킹</span></button><button class="ico" type="button" data-act="howto">${pxIcon('howto')}<span>조작법</span></button><button class="ico" type="button" data-act="settings">${pxIcon('set')}<span>설정</span></button></div>
   </div>
-  ${CREDIT}`,{go:startGame,guest:startGuest,rank:()=>showRanking(),howto:showHowto,
+  ${CREDIT}`,{go:startGame,rank:()=>showRanking(),howto:showHowto,settings:showSettings,dprev:()=>stepDiff(-1),dnext:()=>stepDiff(1)});
+  syncDiff();
+  const g=ovGen,onKey=e=>{if(ovGen!==g){removeEventListener('keydown',onKey);return;}
+    if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stepDiff(e.key==='ArrowLeft'?-1:1);}};
+  addEventListener('keydown',onKey);}
+function syncDiff(){const n=ov.querySelector('#dname');if(!n)return;n.textContent=D.ko;n.className='t-'+D.key;
+  ov.querySelector('[data-act="dprev"]').disabled=diffIdx<=0;ov.querySelector('[data-act="dnext"]').disabled=diffIdx>=DIFFS.length-1;
+  const bl=ov.querySelector('#bestline');if(bl)bl.innerHTML=bestLine();}
+function stepDiff(d){const i=clamp(diffIdx+d,0,DIFFS.length-1);if(i===diffIdx){sfx.same();return;}
+  initAudio();diffIdx=i;D=DIFFS[diffIdx];try{localStorage.setItem('punchtower.diff',diffIdx);}catch(e){}sfx.select();syncDiff();}
+// settings: nickname, music / sound / tilt / hints, and 'learn the moves again'
+function showSettings(){menuMusic();showOverlay(`
+  <div class="eyebrow">SETTINGS</div>
+  <h2 class="big">설정</h2>
+  <div class="menu">
+    <div class="sect"><span class="lbl">닉네임</span>
+      <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="랭킹에 올라갈 이름" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>
+      <p class="ddesc">비워 두면 첫 기록을 올릴 때 물어봐요</p></div>
+    <div class="sect"><span class="lbl">소리 · 조작</span>
+      <div class="setgrid">${togHTML('bgmbtn','music','음악',bgmOn)}${togHTML('sndlink','sound','소리',soundOn)}${togHTML('tiltbtn','tilt','기울기',tiltOn)}${togHTML('hintbtn','hints','힌트',hintsOn)}</div></div>
+    <button class="btn2" type="button" data-act="rehint">힌트 다시 보기</button>
+  </div>
+  <div class="ezbtns one"><button class="ezb go" type="button" data-act="back">돌아가기</button></div>
+  ${CREDIT}`,{back:showTitle,
     rehint:()=>{learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0,vib:0,got:{}};runOpen={};saveLearned();hintsOn=true;setTog('hintbtn',true);try{localStorage.setItem('punchtower.hints','on');}catch(e){}
       sfx.select();const b=ov.querySelector('[data-act="rehint"]');if(b){b.textContent='처음부터 다시 배워요!';b.disabled=true;}},
     sound:()=>{setSound(!soundOn);setTog('sndlink',soundOn);if(soundOn){sfx.select();menuMusic();}},
@@ -2903,12 +2961,12 @@ function showTitle(){menuMusic();showOverlay(`
     tilt:()=>{const set=on=>{tiltOn=on;setTog('tiltbtn',on);try{localStorage.setItem('punchtower.tilt',on?'on':'off');}catch(e){}};
       if(tiltOn){set(false);sfx.same();return;}
       enableTilt(ok=>{set(ok);if(ok)sfx.select();else{sfx.same();const b=ov.querySelector('#tiltbtn');if(b){b.querySelector('b').textContent='불가';setTimeout(()=>setTog('tiltbtn',false),1400);}}});}});
-  const inp=ov.querySelector('#pname');
-  const clr=ov.querySelector('#nameclear');
-  inp.addEventListener('input',()=>{playerName=inp.value.trim().slice(0,NAME_MAX);clr.hidden=!inp.value;});
-  clr.addEventListener('click',e=>{e.preventDefault();inp.value='';playerName='';clr.hidden=true;
-    try{localStorage.removeItem('punchtower.name');}catch(_){}sfx.same();inp.focus();});
-  if(!playerName)setTimeout(()=>{try{inp.focus({preventScroll:true});}catch(e){}},80);}
+  const inp=ov.querySelector('#pname'),clr=ov.querySelector('#nameclear');
+  const save=()=>{const v=inp.value.trim().slice(0,NAME_MAX);playerName=v;isGuest=false;clr.hidden=!inp.value;
+    try{if(v)localStorage.setItem('punchtower.name',v);else localStorage.removeItem('punchtower.name');}catch(e){}};
+  inp.addEventListener('input',save);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
+  clr.addEventListener('click',e=>{e.preventDefault();inp.value='';save();sfx.same();inp.focus();});}
 function showHowto(){menuMusic();showOverlay(`
   <div class="eyebrow">HOW TO PLAY</div>
   <h2 class="big">조작법</h2>
@@ -2930,7 +2988,7 @@ function showHowto(){menuMusic();showOverlay(`
     <li>게임 중 위쪽 <b>II</b> 버튼으로 일시정지, 재시작, 메뉴로 갈 수 있어요</li>
     <li>탑은 끝이 없어요. 밑에서 <b>용암</b>이 올라갈수록 점점 더 빨라져요. 누가 더 높이 가나 대결!</li>
   </ul>
-  <div class="hint">PC: ← → 펀치 · 꾹 = 이동 · 양쪽 같이 꾹 = 왕펀치 · 올라갈 때 ↑ ↓ 번갈아</div>
+  <div class="hint">PC: ← → 펀치 · 꾹 = 걷기 · 걷다가 SPACE = 대시 · ↑ / 양쪽 같이 꾹 = SHOW TIME</div>
   <button class="btn" type="button" data-act="back">돌아가기</button>
   ${CREDIT}`,{back:showTitle});}
 function showRanking(){menuMusic();showOverlay(`
@@ -2948,30 +3006,48 @@ function resultScreen(cleared){
     ?`<div class="eyebrow">TOWER CLEAR · ${D.tag}</div><h2 class="big">정상 정복!</h2>`
     :`<h2 class="big over">GAME OVER</h2>`;
   /* page 1 = the whole result of this run (+ share it); page 2 = the ranking. The score goes up right away, so the share card can carry the rank */
-  const acc=accOf();en.grade=ezGrade(acc,jCount.reduce((a,b)=>a+b,0));const sub=floor>=1?submitScore(en):null;
+  const acc=accOf();en.grade=ezGrade(acc,jCount.reduce((a,b)=>a+b,0));
+  /* no nickname yet: ask for one here before the run goes on the board. Moving on without one posts it as GUEST### (never saved) */
+  const askName=floor>=1&&(!playerName||isGuest);let sub=null;
+  const post=()=>{if(sub||floor<1)return sub;en.name=playerName||'???';sub=submitScore(en);prepShare(cleared,en,acc,0,false);
+    sub.then(res=>{if(ovGen!==g1||!res)return;const r=ov.querySelector('#ezrank');if(r)r.textContent=res.rank?ord(res.rank):'-';
+      if(res.online&&res.rank)prepShare(cleared,en,acc,res.rank,true);});return sub;};
+  const next=()=>{if(performance.now()-t1<500)return; /* ignore the leftover mashing */
+    removeEventListener('keydown',nextKey);scorePage(cleared,floor,en,askName&&!sub?post:post());}; /* still nameless: page 2 asks, then posts */
   showOverlay(`${head}${ezResult(floor,scoreOf(en),time)}
     <div class="ezbtns">${floor>=1?'<button class="ezb" type="button" id="sharebtn" data-act="share">자랑하기</button>':''}<button class="ezb go" type="button" id="go" data-act="next">랭킹 보기 ▶</button></div>${CREDIT}`,
-    {share:shareResult,next:()=>{if(performance.now()-t1<500)return; /* ignore the leftover mashing */ removeEventListener('keydown',nextKey);scorePage(cleared,floor,en,sub);}});
+    {share:shareResult,next});
   const g1=ovGen,t1=performance.now();ezCount(g1);
-  const nextKey=e=>{if(ovGen!==g1){removeEventListener('keydown',nextKey);return;}if(e.key==='Enter'&&performance.now()-t1>=500){e.preventDefault();removeEventListener('keydown',nextKey);scorePage(cleared,floor,en,sub);}};
+  const nextKey=e=>{if(ovGen!==g1){removeEventListener('keydown',nextKey);return;}if(e.key==='Enter'&&performance.now()-t1>=500){e.preventDefault();next();}};
   addEventListener('keydown',nextKey);
-  if(sub){prepShare(cleared,en,acc,0,false);sub.then(res=>{if(ovGen!==g1||!res)return;const r=ov.querySelector('#ezrank');if(r)r.textContent=res.rank?ord(res.rank):'-';
-    if(res.online&&res.rank)prepShare(cleared,en,acc,res.rank,true);});}
+  if(floor>=1){if(askName)prepShare(cleared,en,acc,0,false);else post();}
 }
 function scorePage(cleared,floor,en,sub){
-  showOverlay(`<div class="rankbig" id="myrank">${floor>=1?'기록 등록 중…':'1층은 넘어야 랭킹에 올라가요'}</div>
+  /* sub is a function when the run still needs a nickname: the name box takes the rank line's place, and 등록 posts the run.
+     Leaving without a name posts it as GUEST### (never saved) so the run is not lost */
+  const ask=typeof sub==='function'?sub:null;if(ask)sub=null;
+  const top=ask?`<div class="namereg" id="namereg"><div class="row2"><label class="namebox" for="rname"><span>NAME</span><input id="rname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="닉네임"></label><button class="ezb reg" type="button" data-act="reg">등록</button></div><p>닉네임을 정하면 이 기록(<b>${floor}F</b>)이 랭킹에 올라가요</p></div>`
+    :`<div class="rankbig" id="myrank">${floor>=1?'기록 등록 중…':'1층은 넘어야 랭킹에 올라가요'}</div>`;
+  const leave=()=>{if(ask&&!sub){playerName='GUEST'+String(100+Math.floor(Math.random()*900));isGuest=true;sub=ask();}};
+  showOverlay(`${top}
   <div id="board" class="boardwrap"></div>
   <div class="ezbtns"><button class="ezb" type="button" data-act="title">처음으로</button><button class="ezb go" type="button" id="go" data-act="go">${cleared?'한 판 더':'다시 갈기기'}</button></div>
-  ${CREDIT}`,{go:startGame,title:showTitle});
+  ${CREDIT}`,{go:()=>{leave();startGame();},title:()=>{leave();showTitle();},reg:()=>reg()});
   const gen=ovGen;
-  if(!sub){fillBoard('#board');return;}
-  sub.then(res=>{
+  const show=p=>p.then(res=>{
     if(gen!==ovGen)return;
     const r=ov.querySelector('#myrank');
     if(r)r.innerHTML=res.rank===1?'<span class="blinky">★ NEW RECORD! 1ST ★</span>':res.rank&&res.rank<=3?'<span class="blinky">★ TOP 3 ★</span>':'';
     if(res.rank&&res.rank<=3)sfx.coin();
     fillBoard('#board',D.key,en.id,res);
   });
+  const reg=()=>{const inp=ov.querySelector('#rname'),box=ov.querySelector('#namereg .namebox');if(!inp||sub)return;const v=inp.value.trim().slice(0,NAME_MAX);
+    if(!v){box.classList.remove('bad');void box.offsetWidth;box.classList.add('bad');sfx.same();inp.focus();return;}
+    playerName=v;isGuest=false;try{localStorage.setItem('punchtower.name',v);}catch(e){}sfx.select();sub=ask();
+    const w=ov.querySelector('#namereg');if(w)w.outerHTML='<div class="rankbig" id="myrank">기록 등록 중…</div>';show(sub);};
+  if(ask){const inp=ov.querySelector('#rname');inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();reg();}});fillBoard('#board');return;}
+  if(!sub){fillBoard('#board');return;}
+  show(sub);
 }
 // punch-by-punch aim grades for the run, plus an accuracy (PERFECT 100 · COOOOL! 75 · 90% 40 · MOVE! 0)
 function accOf(){const tot=jCount.reduce((a,b)=>a+b,0);return tot?(jCount[0]*100+jCount[1]*75+jCount[2]*40)/tot:0;}
@@ -2991,7 +3067,7 @@ function ezResult(floor,score,time){const acc=accOf(),tot=jCount.reduce((a,b)=>a
         <div class="ezacc">${acc.toFixed(1)}%</div></div>
       <div class="ezlist">${list}</div></div>
     ${cmb}
-    <div class="ezscore" style="--d:${d++}"><div class="flr"><i>FLOOR</i>${n(floor,1,'F')}</div><div><i>RANK</i><b id="ezrank">${floor>=1?'···':'-'}</b></div><div><i>TIME</i><b>${fmt(time)}</b></div><div><i>TOTAL SCORE</i>${n(score,7)}</div></div></div>`;}
+    <div class="ezscore" style="--d:${d++}"><div class="flr"><i>FLOOR</i>${n(floor,1,'F')}</div><div><i>RANK</i><b id="ezrank">${floor>=1?'···':'-'}</b></div><div><i>TIME</i><b>${fmt(time)}</b></div><div class="tsc"><i>TOTAL SCORE</i>${n(score,7)}</div></div></div>`;}
 function ezCount(gen){if(RM)return;ov.querySelectorAll('.ezr [data-to]').forEach((el,i)=>{const to=+el.dataset.to,pad=+el.dataset.pad,suf=el.dataset.suf||'',t0=performance.now()+120+i*90;
     el.textContent=''.padStart(pad,'0')+suf;
     const step=t=>{if(ovGen!==gen)return;const k=Math.min(1,Math.max(0,(t-t0)/520));el.textContent=String(Math.round(to*k)).padStart(pad,'0')+suf;if(k<1)requestAnimationFrame(step);};
@@ -3003,7 +3079,7 @@ function judgeBlock(){const acc=accOf();
 /* ---------- result share ----------
    The score page draws a 1080x1350 pixel card (last game frame behind, logo, floor, score, rank, link) ahead of time,
    so a tap opens the phone's share sheet right away (KakaoTalk, Instagram ...). No share sheet: save the image + copy the text. */
-const SHARE_URL='https://punch-tower.vercel.app/';
+const SHARE_URL='https://vento-punch-tower.vercel.app/';
 function prepShare(cleared,en,acc,rank,online){const myGen=ovGen;
   shareText=`펀치펀치 타워 ${DIFF_KO[en.diff]} ${en.floor}층 · ${num(scoreOf(en))}점${online&&rank?` · 랭킹 ${rank}위`:''}! 나보다 높이 올라갈 수 있어? 👊\n${SHARE_URL}`;
   Promise.all([document.fonts.load('88px "PunchTowerKR"'),document.fonts.load('40px "Press Start 2P"')]).catch(()=>{}).then(()=>{
