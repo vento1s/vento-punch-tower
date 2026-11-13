@@ -3751,6 +3751,27 @@ function judgeBlock(){const acc=accOf();
    The score page draws a 1080x1350 pixel card (last game frame behind, logo, floor, score, rank, link) ahead of time,
    so a tap opens the phone's share sheet right away (KakaoTalk, Instagram ...). No share sheet: save the image + copy the text. */
 const SHARE_URL='https://vento-punch-tower.vercel.app/';
+/* KakaoTalk share card: the record image + a '바로 도전하기' button that opens the game on the challenge link.
+   Needs a Kakao Developers JavaScript key (domain vento-punch-tower.vercel.app registered for the SDK and as a web product link).
+   Empty key, no SDK or any failure: the plain share below (image to the share sheet) is used instead. */
+const KAKAO_KEY='';   // 카카오 디벨로퍼스 > 내 애플리케이션 > 앱 키 > JavaScript 키
+let kakaoP=null,kakaoImg=null,kakaoFor=null,kakaoT=0,shareEn=null;
+function kakaoReady(){if(!KAKAO_KEY)return Promise.reject(new Error('nokey'));
+  if(!kakaoP)kakaoP=new Promise((ok,no)=>{if(window.Kakao){ok();return;}const sc=document.createElement('script');
+    sc.src='https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js';sc.crossOrigin='anonymous';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);})
+    .then(()=>{if(!Kakao.isInitialized())Kakao.init(KAKAO_KEY);}).catch(e=>{kakaoP=null;throw e;});
+  return kakaoP;}
+/* the card goes up to Kakao's image server once it has settled (the ranked redraw replaces the first one), so a tap can send at once */
+function kakaoUpload(b){return kakaoReady().then(()=>Kakao.Share.uploadImage({file:[new File([b],'punch-tower.png',{type:'image/png'})]}))
+  .then(r=>{const o=r&&r.infos&&r.infos.original;if(!o||!o.url)throw new Error('upload');return {url:o.url,w:o.width,h:o.height};});}
+function kakaoPrep(b){if(!KAKAO_KEY)return;clearTimeout(kakaoT);kakaoImg=null;kakaoFor=b;
+  kakaoT=setTimeout(()=>{if(kakaoFor!==b)return;kakaoUpload(b).then(im=>{if(kakaoFor===b)kakaoImg=im;}).catch(()=>{});},1200);}
+function kakaoSend(im){const en=shareEn,link=shareLink(en),lk={mobileWebUrl:link,webUrl:link};
+  const nm=String(en.name||'')!=='???'?String(en.name):'';
+  Kakao.Share.sendDefault({objectType:'feed',
+    content:{title:`${nm?nm+'의 ':''}펀치펀치 타워 ${DIFF_KO[en.diff]} ${en.floor}층`,description:`${num(scoreOf(en))}점 · 이 기록을 넘어 봐 👊`,
+      imageUrl:im.url,imageWidth:im.w,imageHeight:im.h,link:lk},
+    buttons:[{title:'바로 도전하기',link:lk}]});}
 /* challenge link: the shared link carries the run (floor, difficulty, name). Opening it puts '이 기록을 넘어라' on the title,
    switches to that difficulty for this visit (not saved), draws the floor in the tower and says on the result how it went */
 function vsRip(){try{const old=stage.querySelector('.vsrip');if(old)old.remove();
@@ -3773,11 +3794,12 @@ function vsResHTML(floor){if(!vsOn())return '';const nm=esc(vs.name),f=vs.floor;
   if(floor===f)return `<span class="vsres">${nm} ${f}F와 동점!</span>`;
   return `<span class="vsres">${nm} ${f}F까지 <u>${f-floor}층</u></span>`;}
 function prepShare(cleared,en,acc,rank,online){const myGen=ovGen;
+  shareEn=en;
   const beat=vs&&en.diff===vs.diff&&en.floor>vs.floor?`${vs.name}의 ${vs.floor}층을 넘었다! `:'';
   shareText=`${beat}펀치펀치 타워 ${DIFF_KO[en.diff]} ${en.floor}층 · ${num(scoreOf(en))}점${online&&rank?` · 랭킹 ${rank}위`:''}! 이 기록을 넘어 봐 👊\n${shareLink(en)}`;
   Promise.all([document.fonts.load('88px "PunchTowerKR"'),document.fonts.load('40px "Press Start 2P"')]).catch(()=>{}).then(()=>{
     if(myGen!==ovGen)return;const c=drawShareCard(cleared,en,acc,rank,online);
-    c.toBlob(b=>{if(myGen===ovGen&&b)shareBlob=b;},'image/png');});
+    c.toBlob(b=>{if(myGen===ovGen&&b){shareBlob=b;kakaoPrep(b);}},'image/png');});
   if(!online)shareBlob=null;} /* the ranked redraw keeps the first card until it's ready, so a tap never finds nothing */
 function drawShareCard(cleared,en,acc,rank,online){
   const CW=1080,CH=1350,c=document.createElement('canvas');c.width=CW;c.height=CH;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
@@ -3826,6 +3848,11 @@ function copyOld(t){try{const a=document.createElement('textarea');a.value=t;a.s
 /* tap: phones with a share sheet get the card image straight into it (KakaoTalk, Instagram ...).
    Anywhere else (KakaoTalk's own browser, PC ...) the card opens big on a sheet: long-press or the button saves it, the other button copies the link. */
 function shareResult(){sfx.select();
+  if(KAKAO_KEY&&shareEn&&shareBlob){
+    if(kakaoImg&&kakaoFor===shareBlob){try{kakaoSend(kakaoImg);return;}catch(e){}}
+    else{const b=shareBlob;kakaoUpload(b).then(im=>{kakaoImg=im;kakaoFor=b;kakaoSend(im);}).catch(()=>plainShare());return;}}
+  plainShare();}
+function plainShare(){
   const file=shareBlob&&new File([shareBlob],'punch-tower.png',{type:'image/png'});
   try{if(file&&navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],text:shareText}).catch(e=>{if(!e||e.name!=='AbortError')shareSheet();});return;}}catch(e){}
   shareSheet();}
