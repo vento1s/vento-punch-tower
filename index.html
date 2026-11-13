@@ -81,6 +81,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
 .sub{font-family:var(--f-display);font-size:19px;color:var(--lava);margin:0}
 .ov[hidden]{display:none}
+#stage:has(#ov:not([hidden])) :is(.finale,.mash,.hintbar,.cutin,.newsk,.vsrip){z-index:0} /* any menu up: the in-game lettering goes behind it */
 .win{background:var(--ink);padding:12px 14px;margin:4px;box-shadow:0 0 0 2px var(--ink),0 0 0 4px var(--gi),0 0 0 6px var(--ink)}
 .rules{display:grid;gap:7px;margin:0;padding:0;list-style:none;font-size:12px;line-height:1.55;color:var(--gi);max-width:31ch;text-align:left}
 .rules li{padding-left:14px;position:relative}
@@ -149,6 +150,27 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .vsban p{margin:0;font-size:13px;line-height:1.5;color:var(--gi);word-break:keep-all}
 .vsban b{color:var(--gold);font-weight:400}.vsban b.fl{font-family:var(--f-pixel);font-size:12px}
 .ezscore .flr i .vsres{display:block;margin-top:7px;font-family:var(--f-body);font-size:12px;letter-spacing:0;color:var(--gi);white-space:nowrap}
+/* challenge beaten mid-run: the friend's letter drops in, shakes, then rips down the middle and both halves fly off (doesn't block play) */
+.vsrip{position:absolute;left:50%;top:26%;width:min(64cqw,260px);aspect-ratio:1.45;margin-left:calc(min(64cqw,260px)/-2);z-index:4;pointer-events:none}
+.vsrip .h{position:absolute;inset:0;animation:ripIn .34s steps(6) both}
+.vsrip .h.l{clip-path:polygon(0 0,53% 0,46% 11%,55% 22%,45% 34%,54% 46%,46% 58%,55% 70%,45% 82%,53% 92%,48% 100%,0 100%);animation:ripIn .34s steps(6) both,ripShake .36s steps(2) .34s both,ripL .7s cubic-bezier(.3,.1,.6,1) .72s forwards}
+.vsrip .h.r{clip-path:polygon(53% 0,100% 0,100% 100%,48% 100%,53% 92%,45% 82%,55% 70%,46% 58%,54% 46%,45% 34%,55% 22%,46% 11%);animation:ripIn .34s steps(6) both,ripShake .36s steps(2) .34s both,ripR .7s cubic-bezier(.3,.1,.6,1) .72s forwards}
+.vsrip .card{position:absolute;inset:0;box-sizing:border-box;padding:10px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  background:#f4e6c4;color:var(--ink);text-align:center;
+  box-shadow:inset 0 0 0 3px var(--ink),inset 0 0 0 6px #f4e6c4,inset 0 0 0 8px #b08a4a}
+.vsrip .card i{font-style:normal;font-family:var(--f-display);font-size:22px;letter-spacing:.2em;color:#a01030}
+.vsrip .card p{margin:0;font-size:12px;line-height:1.5;word-break:keep-all}
+.vsrip .card b{font-weight:400;font-family:var(--f-pixel);font-size:16px;color:var(--ink)}
+.vsrip .seal{position:absolute;right:10px;bottom:8px;width:26px;height:26px;background:#c8102e;color:#f4e6c4;font-size:12px;line-height:26px;transform:rotate(-12deg);
+  box-shadow:0 0 0 2px #7a0a1c}
+.vsrip .zap{position:absolute;left:50%;top:-10%;bottom:-10%;width:6px;margin-left:-3px;background:#fff;opacity:0;animation:ripZap .22s steps(2) .7s forwards;box-shadow:0 0 12px 4px #ffd400}
+@keyframes ripIn{0%{transform:scale(1.9) rotate(-8deg);opacity:0}100%{transform:scale(1) rotate(-3deg);opacity:1}}
+@keyframes ripShake{0%{transform:translate(-3px,0) rotate(-3deg)}100%{transform:translate(3px,0) rotate(-3deg)}}
+@keyframes ripL{0%{transform:rotate(-3deg)}100%{transform:translate(-75%,60%) rotate(-38deg);opacity:0}}
+@keyframes ripR{0%{transform:rotate(-3deg)}100%{transform:translate(75%,70%) rotate(34deg);opacity:0}}
+@keyframes ripZap{0%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.vsrip .h.l,.vsrip .h.r{animation:ripFade 1.2s steps(4) both}.vsrip .zap{display:none}}
+@keyframes ripFade{0%,70%{opacity:1}100%{opacity:0}}
 .vsres u{text-decoration:none;color:var(--lava-hi)}.ezscore .flr i .vsres.ok{color:var(--gold);animation:blinky 1s steps(2) infinite}
 .icons{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .ico{display:grid;justify-items:center;gap:6px;padding:10px 0 8px;border:0;border-radius:0;cursor:pointer;background:var(--ink);color:var(--gi);font-family:var(--f-display);font-size:13px;
@@ -271,7 +293,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .ezbar b{font-weight:400;padding:5px 6px 4px;background:var(--edge);color:var(--gi);font-variant-numeric:tabular-nums;flex:none}
 .ezbar i{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:1px 1px 0 #000}
 .ezbar.tot i,.ezbar.cmb i{color:var(--gi)}.ezbar.cmb i{color:#7af0ff}
-.ezbar.jp i{color:#ffd400}.ezbar.jc i{color:#5aff6a}.ezbar.j9 i{color:#ff9a3a}.ezbar.jm i{color:#ff5a6a}
+.ezbar.jp i{color:#ffd400}.ezbar.jc i{color:#5a9aff}.ezbar.j9 i{color:#ff9a3a}.ezbar.jm i{color:#ff5a6a}
 .ezmid{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:center}
 .ezlist{display:grid;gap:8px;min-width:0}
 .ezgrade{display:grid;justify-items:center;gap:8px}
@@ -289,6 +311,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .ezbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:calc(100% - 10px);max-width:340px;margin-top:4px}
 .ezbtns>button{width:auto;margin:0;min-width:0;white-space:nowrap}
 .ezbtns.one{grid-template-columns:1fr}
+.ezbtns.three .go{grid-column:1/-1;order:-1} /* ranking page: the big retry on top, home + share under it */
 /* buttons in the ranking panel's language: dark cell, purple rim; the main one gets the orange banner rim and gold dot text */
 .ezb{font-family:var(--f-display);font-size:22px;line-height:1;padding:13px 4px 11px;border:0;border-radius:0;cursor:pointer;
   background:#0e0a16;color:var(--gi);text-shadow:2px 2px 0 #000;
@@ -323,9 +346,55 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .result .total span{font-family:var(--f-pixel);font-size:18px;color:var(--gold);text-shadow:2px 2px 0 #a33f00}
 .rankbig{font-family:var(--f-pixel);font-size:11px;line-height:1.6;color:var(--gi);min-height:1.6em}
 .rankbig b{color:var(--gold);font-weight:400;font-size:16px}
+/* ranking pages stand as tall as the result panel they follow */
+.ezr.rkp{min-height:var(--resH,58cqh);align-content:start}
+.rkscroll{display:grid;gap:8px;min-width:0;align-content:start}
+.rkscroll.fit{overflow-y:auto;overscroll-behavior:contain;padding-right:2px;scrollbar-width:thin;scrollbar-color:var(--edge) transparent;-webkit-mask:linear-gradient(#000 calc(100% - 18px),transparent)}
+/* settings: the same panel as the result page - gold header plate, dark bars with a chip on the right */
+.ezr.setp{min-height:var(--resH,58cqh);align-content:start;gap:9px;grid-template-columns:minmax(0,1fr)}
+.setp .lbl{margin-top:8px;font-size:12px;color:var(--lava-hi)}
+.setp .namebox{width:100%;max-width:none;padding:9px 12px;margin:3px 0}
+.setp .namebox input{font-size:18px}
+.setp .ddesc{margin:0;text-align:left;padding-left:2px}
+.setp .setgrid{gap:10px 12px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.setp .tog{min-width:0;box-sizing:border-box}
+.setp .tog{background:#0e0a16;justify-content:space-between;padding:12px 10px 11px 12px;font-size:15px;color:var(--gi);
+  box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge)}
+.setp .tog b{font-size:10px;padding:5px 6px 4px;min-width:30px;text-align:center}
+.setp .tog:hover,.setp .tog:focus-visible{outline:none;color:var(--gold);box-shadow:0 -2px 0 0 var(--gold),0 2px 0 0 var(--gold),-2px 0 0 0 var(--gold),2px 0 0 0 var(--gold)}
+.setp .tog:active{transform:translate(1px,1px)}
+.setp .setstory{width:100%}.setp .setstory b{background:var(--gold)}
+.ezr.rkp.empty{align-content:start}.rkempty{margin:auto 0;align-self:center;text-align:center;font-size:15px;line-height:1.8;color:var(--muted)}.rkempty b{font-weight:400;color:var(--gold);font-size:18px}
+.ezr.nreg{grid-template-columns:minmax(0,1fr);align-content:center;justify-items:stretch;gap:16px;text-align:center;width:calc(100% - 10px);max-width:340px}
+.ezr.nreg .ezhead{align-self:start}
+.nrec{display:grid;gap:8px;justify-items:center;font-family:var(--f-pixel)}
+.nrec i{font-style:normal;font-family:var(--f-body);font-size:13px;color:var(--lava-hi)}
+.nrec b{font-weight:400;font-size:min(56px,15cqw);line-height:1;color:var(--gold);text-shadow:3px 3px 0 #a33f00,-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink)}
+.ezr.nreg .namebox{width:100%;max-width:none;padding:10px 12px}.ezr.nreg .namebox input{font-size:22px;width:100%}
+.ezr.nreg .ezb{font-size:22px}
+.ezr.nreg p{margin:0;font-size:12px;color:var(--muted)}
+/* hint book: tabs + the in-game card, standing still */
+.hsel{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:calc(100% - 10px);max-width:340px}
+.hsel button{font-family:var(--f-display);font-size:13px;padding:9px 0 7px;border:0;border-radius:0;cursor:pointer;background:var(--ink);color:var(--muted);
+  box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
+.hsel button[aria-selected="true"]{background:var(--gold);color:var(--ink);box-shadow:0 -3px 0 0 var(--ink),0 3px 0 0 var(--ink),-3px 0 0 0 var(--ink),3px 0 0 0 var(--ink),inset -3px -3px 0 0 var(--amber)}
+.hsel button:focus-visible{outline:3px dashed var(--gold);outline-offset:4px}
+.hsel,.hcard{flex:none}
+.hcard{width:calc(100% - 10px);max-width:340px;box-sizing:border-box;display:grid;justify-items:center;align-content:center;gap:9px;padding:14px 8px;min-height:46cqh;
+  background:rgba(13,10,8,.9);box-shadow:0 3px 0 var(--gold),0 -3px 0 var(--gold),0 7px 0 var(--ink),0 -7px 0 var(--ink)}
+.hcard em{font-style:normal;font-family:var(--f-pixel);font-size:clamp(12px,4.4cqw,16px);letter-spacing:.1em;color:var(--ink);background:var(--gold);padding:4px 7px 3px}
+.hcard b{font-family:var(--f-display);font-weight:400;font-size:clamp(24px,8.8cqw,34px);white-space:nowrap;line-height:1.05;color:#fff;text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),5px 5px 0 #c24e00}
+.hcard i{font-style:normal;white-space:pre-line;text-align:center;line-height:1.5;font-family:var(--f-display);font-size:clamp(14px,5cqw,19px);color:#7af0ff}
+.hcard canvas.demo{display:block;width:min(82%,300px);aspect-ratio:120/64;image-rendering:pixelated;image-rendering:crisp-edges;background:#0b0811;box-shadow:0 0 0 2px var(--edge)}
+.hcard canvas.demo[hidden]{display:none}
+.htips{display:grid;gap:7px;justify-items:center}.htips:empty{display:none}
+.htips span{padding:5px 10px 4px;background:rgba(13,10,8,.88);box-shadow:0 2px 0 var(--gold),0 -2px 0 var(--gold);font-family:var(--f-display);font-size:clamp(12px,4.2cqw,16px);line-height:1.2;color:var(--gold)}
+.storycap{position:absolute;left:0;right:0;top:8%;z-index:2;pointer-events:none;padding:0 12px;text-align:center;white-space:pre-line;word-break:keep-all;
+  font-family:var(--f-display);font-size:clamp(15px,5.6cqw,22px);line-height:1.45;color:#fff;
+  text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),2px 2px 0 var(--ink),-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink)}
+.storyskip{position:absolute;right:10px;bottom:10px;z-index:2;pointer-events:none;font-family:var(--f-pixel);font-size:8px;letter-spacing:.1em;color:#fff;opacity:.7;text-shadow:1px 1px 0 var(--ink);animation:blinky 1s steps(2) infinite}
 .sharesheet{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:12px;padding:16px;box-sizing:border-box;overflow-y:auto;background:var(--void)}
-.sharesheet img{display:block;width:min(100%,280px);height:auto;box-shadow:0 0 0 3px var(--gold);-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
-.sharesheet .pair{width:min(100%,280px)}
+.sharesheet img{display:block;width:min(100%,340px);height:auto;box-shadow:0 0 0 3px var(--gold);-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+.sharesheet .pair{width:min(100%,340px)}
 .btn2.sharebtn{width:calc(100% - 16px);max-width:280px;margin-top:-2px;color:var(--gold)}
 .blinky{animation:blinky 1s steps(2) infinite;color:var(--lava-hi)}
 @keyframes blinky{50%{opacity:.25}}
@@ -380,8 +449,8 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .finale i:empty{display:none}
 .finale.big b{font-size:clamp(40px,15cqw,60px)}
 /* SHOW TIME: the 'N층 돌파!' lettering, a size down, twinkling right on top of the floor count while SHOW TIME runs */
-.finale .fst{display:none;position:relative;font-style:normal;font-family:var(--f-display);font-size:clamp(24px,8.5cqw,34px);line-height:1;letter-spacing:.04em;color:var(--gold);
-  text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),2px 2px 0 var(--ink),-2px -2px 0 var(--ink),4px 4px 0 #c24e00;
+.finale .fst{display:none;position:relative;font-style:normal;font-family:var(--f-display);font-size:clamp(34px,12cqw,48px);line-height:1;letter-spacing:.02em;color:var(--gold);
+  text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px -3px 0 var(--ink),6px 6px 0 #c24e00;
   animation:finHue .3s steps(3) infinite,fstTw .6s steps(2) infinite}
 .finale.low .fst{display:block}
 .finale .fst::before,.finale .fst::after{content:"";position:absolute;width:3px;height:3px;background:#fff;
@@ -397,13 +466,14 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .finale.live{animation:none}
 .finale.live b{animation:finHue .3s steps(3) infinite}
 .finale.live.pop b{animation:scPop .16s steps(3),finHue .3s steps(3) infinite}
+.finale.live.pop .fst{animation:scPop .16s steps(3),finHue .3s steps(3) infinite,fstTw .6s steps(2) infinite}
 @keyframes scPop{0%{transform:scale(1.6) rotate(-6deg)}60%{transform:scale(.92)}100%{transform:none}}
 /* first run: while the leaf falls, the same card (tag + title + line) explains the punch, see-through so the leaf shows - nothing stops */
 .newsk.coach{top:15%;background:rgba(13,10,8,.55);box-shadow:0 2px 0 var(--gold),0 -2px 0 var(--gold);gap:8px;padding:10px 8px 12px}
 .newsk.coach b{font-size:clamp(26px,10cqw,40px)}
 .newsk.coach em{animation:none}
 /* hint bar: the sentence for whatever tip is up, just above the fists (same face and gold rim as the cards) */
-.hintbar{position:absolute;left:0;right:0;top:calc(62 / 256 * 100%);margin:0 auto;width:max-content;max-width:calc(100% - 16px);box-sizing:border-box;
+.hintbar{position:absolute;left:0;right:0;top:calc(84 / 256 * 100%);margin:0 auto;width:max-content;max-width:calc(100% - 16px);box-sizing:border-box;
   padding:5px 10px 4px;background:rgba(13,10,8,.88);box-shadow:0 2px 0 var(--gold),0 -2px 0 var(--gold);pointer-events:none;z-index:2;
   font-family:var(--f-display);font-size:clamp(12px,4.4cqw,17px);line-height:1.2;color:var(--gold);text-align:center}
 .hintbar[hidden]{display:none}
@@ -429,7 +499,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 @keyframes mashShake{50%{transform:translate(3px,-2px) scale(1.06);color:#fff}}
 @media (prefers-reduced-motion:reduce){.mash{animation:none}}
 /* pause: small pixel 'II' button in the HUD gap between the difficulty tag and the clock */
-.pausebtn{position:absolute;left:calc(129 / 144 * 100%);top:calc(22 / 256 * 100%);width:calc(14 / 144 * 100%);height:calc(14 / 256 * 100%);
+.pausebtn{position:absolute;left:calc(84 / 144 * 100%);top:calc(3 / 256 * 100%);width:calc(13 / 144 * 100%);height:calc(13 / 256 * 100%);
   z-index:4;border:0;border-radius:0;padding:0;cursor:pointer;background:rgba(13,10,8,.7);
   box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge)}
 .pausebtn[hidden]{display:none}
@@ -559,7 +629,12 @@ function noise(t,dur,freq,q,vol,type,f1){const s=AC.createBufferSource(),f=AC.cr
   g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0008,t+dur);s.connect(f);f.connect(g);g.connect(master);
   s.start(t,Math.random()*.5);s.stop(t+dur+.03);}
 const sfx={
-  hit(combo,crit,type){if(!AC)return;const t=AC.currentTime,c=Math.min(combo,80);
+  hit(combo,crit,type,mat){if(!AC)return;const t=AC.currentTime,c=Math.min(combo,80);
+    const MH={dirt:()=>noise(t,.06,380,.8,.4,'lowpass',200),gravel:()=>{noise(t,.03,4200,2,.3);noise(t+.02,.03,3000,2,.2);},  /* each material answers the punch in its own voice */
+      paving:()=>tone(t,.035,900,860,'triangle',.07),asphalt:()=>noise(t,.05,800,1,.4,'lowpass',300),rock:()=>tone(t,.07,120,55,'sine',.45),
+      ice:()=>tone(t,.06,2400+Math.random()*900,2300,'triangle',.06),cloud:()=>noise(t,.08,900,.6,.25,'lowpass',300),
+      marble:()=>tone(t,.08,1700,1690,'triangle',.05),metal:()=>{tone(t,.1,880,870,'square',.045);tone(t,.08,1760,1750,'triangle',.04);}};
+    if(mat&&MH[mat])MH[mat]();
     tone(t,.09,170,42,'sine',1);
     tone(t,.045,520+c*14,180,'square',.16);
     noise(t,.06,type==='boss'||type==='final'?3200:1500,1.1,.55);
@@ -617,13 +692,25 @@ const sfx={
     [[523,659,784],[659,784,1046],[784,1046,1318]].forEach((ch,i)=>ch.forEach(f=>tone(t+.05+i*.09,.35,f,f,'square',.06)));},
   shift(){if(!AC)return;const t=AC.currentTime;tone(t,.1,1200,2400,'triangle',.07);tone(t+.06,.1,1800,3000,'triangle',.05);},
   // the floor gives way: one fat 'PPANG!' (kick + crack + blast) then a rubble tail that suits the block
-  brk(type){if(!AC)return;const t=AC.currentTime+.035; // a hair after the punch so the two don't smear together
+  brk(type,mat){if(!AC)return;const t=AC.currentTime+.035; // a hair after the punch so the two don't smear together
     const clatter=(n,f0,f1,spread,v)=>{for(let i=0;i<n;i++){const d=.05+Math.random()*spread;noise(t+d,.03+Math.random()*.04,f0+Math.random()*(f1-f0),3,v*(1-d/(spread+.1)));}};
     tone(t,.26,190,34,'sine',1.5);                 // body kick: the 'PPANG'
     tone(t,.1,420,90,'square',.22);                // punchy mid knock
     noise(t,.025,5200,1.2,1);                      // sharp crack at the front
     noise(t,.45,2400,.6,1,'lowpass',120);          // blast that falls away
-    if(type==='stone'){tone(t,.34,110,26,'sine',1.1);noise(t+.02,.5,900,.7,.6,'lowpass',70);clatter(9,500,1300,.32,.45);}
+    const MB={ /* the plain floors break the way their material would */
+      dirt:()=>{noise(t,.4,520,.6,.7,'lowpass',90);clatter(5,250,700,.3,.4);},                                         // a dull thud, clods falling
+      gravel:()=>{clatter(18,1800,5200,.42,.32);noise(t+.05,.4,3200,1.5,.25,'bandpass',1800);},                        // a shower of pebbles
+      brick:()=>clatter(8,1100,2600,.26,.45),                                                                          // crumbly chunks
+      paving:()=>{clatter(7,850,1600,.28,.45);[0,.07,.15].forEach(d=>tone(t+d,.04,820+Math.random()*300,780,'triangle',.07));}, // hollow tiles clacking
+      asphalt:()=>{noise(t,.32,700,.7,.7,'lowpass',150);clatter(11,500,1500,.22,.42);},                                  // a gritty crunch
+      rock:()=>{tone(t,.42,82,28,'sine',1.1);clatter(5,280,900,.42,.55);noise(t+.02,.5,700,.7,.5,'lowpass',60);},        // boulders tumbling
+      ice:()=>{noise(t,.18,6500,2,.45,'bandpass',4000);for(let i=0;i<9;i++){const d=.02+Math.random()*.35,f=2200+Math.random()*3400;tone(t+d,.12+Math.random()*.15,f,f*.98,'triangle',.06);}}, // glass-like shatter
+      cloud:()=>{noise(t,.45,1100,.5,.55,'lowpass',250);tone(t,.3,260,620,'sine',.12);},                                // a soft poof
+      marble:()=>{clatter(7,1600,3600,.26,.4);tone(t,.6,1480,1470,'triangle',.06);tone(t,.5,2220,2210,'sine',.035);},     // bright chips, a ringing slab
+      metal:()=>{[1,1.93,2.81].forEach((m,i)=>tone(t,.6-i*.12,700*m,690*m,i%2?'triangle':'square',.055-i*.012));tone(t,.35,110,45,'sawtooth',.3);clatter(5,1800,4200,.3,.25);}}; // clang
+    if(mat&&MB[mat]){MB[mat]();if(type==='stone'){tone(t,.34,110,26,'sine',.9);noise(t+.02,.4,900,.7,.45,'lowpass',70);}} /* tough floors: an extra heavy body under it */
+    else if(type==='stone'){tone(t,.34,110,26,'sine',1.1);noise(t+.02,.5,900,.7,.6,'lowpass',70);clatter(9,500,1300,.32,.45);}
     else if(type==='gold'){clatter(6,1500,3200,.22,.35);[1568,2093,2637,3136].forEach((f,i)=>tone(t+.05+i*.04,.22,f,f,'triangle',.07));}
     else if(type==='vibranium'||type==='boss'||type==='final'){const b=type==='vibranium'?1:.6; // metal: clang with off-key partials that ring on
       [1,1.93,2.81,3.97].forEach((m,i)=>{tone(t,.9-i*.15,520*b*m,505*b*m,i%2?'triangle':'square',.07-i*.012);});
@@ -776,7 +863,7 @@ const PET_ATK=.05; // every fire pet trailing you adds 5% punch power
 let kingLevel=0,kingFireLv=0,kingShowLv=0,orbs=[],orbT=0; /* kingShowLv: the level SHOW TIME was fired at (the fists keep that fire until it ends) */
 const kingNeed=()=>KL_NEED[Math.min(kingLevel,KL_NEED.length-1)];
 function kingLevelUp(lv){ // a new orb pops out of the boxer and joins the tail
-  kHud.lvPop=.4;
+  kHud.lvPop=.6;
   const col=KL_COL[lv-1];orbs.push({lv,x:pl.x,y:pl.feet-10});
   flashO=.2+lv*.05;flashCol=lv>=6?'#e8c8ff':'#ffe9a8';shake=Math.max(shake,2+lv);vibe(lv>=6?[40,30,40,30,120]:20+lv*10);
   rings.push({x:pl.x,y:pl.feet-10,life:.4,max:.4,big:lv>=3,col});
@@ -792,6 +879,7 @@ function absorbOrbs(){for(const o of orbs){const col=KL_COL[o.lv-1];
   orbs=[];}
 // the tail: each orb follows the one ahead of it on a short leash, drifting out behind the boxer at shoulder height
 function drawOrbs(){
+  return; /* the pets are no longer drawn: the fire is on the boxer himself (drawKingAura) */
   if(!orbs.length)return;
   const dt=Math.min(.05,Math.max(0,gt-orbT));orbT=gt;
   const behind=pl.tx-pl.x>.5?-1:pl.tx-pl.x<-.5?1:(orbs[0].x<pl.x?-1:1);
@@ -854,6 +942,42 @@ const ZONES=[
 ];
 const SLABC={brick:['#b5523b','#6e2a20','#d97456'],stone:['#7d7f8c','#4b4d58','#a6a9b6'],gold:['#e0a82a','#8a5a0c','#ffe27a'],
  tnt:['#c42a2a','#6a1010','#ff6a50'],vibranium:['#3a2f5c','#17122b','#b7a8ff'],boss:['#5e6b78','#2c333c','#a4b5c6'],final:['#6a4a8a','#2c1c40','#e8c050']};
+/* plain floors change material as you climb: dirt -> gravel -> brick -> paving -> asphalt -> rock -> ice -> cloud -> marble -> metal.
+   Only the look, the chips and the rubble change; 'stone' floors (the tough ones, 1.6x HP) are the same material, reinforced: darker, bolted. */
+const MATS=[[7,'dirt'],[14,'gravel'],[20,'brick'],[30,'paving'],[45,'asphalt'],[58,'rock'],[70,'ice'],[82,'cloud'],[95,'marble'],[1e9,'metal']];
+const MATC={dirt:['#7a5236','#4a2e1c','#a07048'],gravel:['#6e6a66','#3e3a38','#a8a29a'],brick:SLABC.brick,paving:['#9a9aa2','#55555c','#b0524a'],
+ asphalt:['#2e2e34','#18181c','#e8e4d8'],rock:SLABC.stone,ice:['#9ad8f0','#4a8ab8','#e8fbff'],cloud:['#eef2fa','#b8c0d4','#ffffff'],
+ marble:['#e8e4ec','#9a92a8','#e0a82a'],metal:['#5a6474','#2c323c','#a4b0c0']};
+const matOf=n=>{for(const [to,m] of MATS)if(n<=to)return m;return 'metal';};
+const plain=s=>s.type==='brick'||s.type==='stone';
+const slabCol=s=>plain(s)?MATC[matOf(s.n)]:SLABC[s.type];
+function drawMat(m,x0,sy,n){const [a,b,c]=MATC[m],X1=W-WALL;if(m!=='cloud')R(x0,sy,IN,10,a);
+  if(m==='dirt'){R(x0,sy+9,IN,1,b);for(let i=0;i<46;i++){const x=x0+((hash(n,i)*IN)|0),y=sy+((hash(i,n+3)*9)|0);R(x,y,1,1,i%3?b:c);}
+    for(let i=0;i<5;i++){const x=x0+((hash(n,i+60)*(IN-3))|0),y=sy+2+((hash(i,n+61)*6)|0);R(x,y,2,1,'#8a8478');R(x,y+1,2,1,'#5e5a55');}
+    {let y=sy+3+((hash(n,9)*4)|0);for(let x=x0+((hash(n,8)*40)|0),k=0;k<26&&x<X1;k++,x++){if(hash(k,n)>.75)y+=hash(n,k)>.5?1:-1;y=Math.max(sy+1,Math.min(sy+8,y));R(x,y,1,1,'#3a2414');}}} /* a root */
+  else if(m==='gravel'){R(x0,sy,IN,10,b);const G=['#8a857e','#a8a29a','#76716b','#5e5a55'];
+    for(let y=0;y<10;y+=3)for(let x=(y%2)*2;x<IN;x+=3){const h=hash(n*7+x,y);const col=G[(h*4)|0];R(x0+x,sy+y,2,2,col);if(h>.6)R(x0+x,sy+y,1,1,c);}}
+  else if(m==='brick'){for(let row=0;row<2;row++){const y=sy+row*5;R(x0,y,IN,1,b);const off=row*6;
+      for(let x=x0-12+off;x<X1;x+=12){if(x>=x0)R(x,y,1,5,b);R(Math.max(x0,x+1),y+1,Math.min(10,X1-x-1),1,c);}}}
+  else if(m==='paving'){R(x0,sy,IN,10,b);for(let row=0;row<2;row++)for(let i=0,x=x0-(row?4:0);x<X1;i++,x+=8){const xs=Math.max(x0,x+1),w=Math.min(x+8,X1)-xs;if(w<=0)continue;
+      const red=(i+row)%2===0;R(xs,sy+row*5+1,w,4,red?c:a);R(xs,sy+row*5+1,w,1,red?'#d07a6a':'#bcbcc4');}}
+  else if(m==='asphalt'){for(let i=0;i<40;i++)R(x0+((hash(n,i)*IN)|0),sy+((hash(i,n)*10)|0),1,1,i%2?'#45454c':b);
+    for(let x=x0+((n*5)%14);x<X1;x+=14)R(x,sy+4,Math.min(8,X1-x),2,c);R(x0,sy,IN,1,'#45454c');R(x0,sy+9,IN,1,b);}
+  else if(m==='rock'){R(x0,sy,IN,10,b);for(let row=0;row<2;row++){let x=x0-((hash(n,row)*12)|0);let i=0;
+      while(x<X1){const w=12+((hash(n+row,i)*14)|0),xs=Math.max(x0,x+1),we=Math.min(x+w,X1)-xs,y=sy+row*5;if(we>0){
+        R(xs,y+1,we,4,a);R(xs+1,y,Math.max(1,we-2),1,c);R(xs,y+1,1,3,c);R(xs+1,y+4,Math.max(1,we-2),1,'#5b5d68');
+        for(let q=0;q<3;q++)R(xs+2+((hash(xs,q+row)*(we-3))|0),y+1+((hash(q,xs)*3)|0),1,1,q%2?'#5b5d68':'#9a9caa');}x+=w;i++;}}}
+  else if(m==='ice'){R(x0,sy+9,IN,1,b);for(let x=x0+((n*3)%23);x<X1;x+=23){for(let k=0;k<6&&x+k<X1;k++)R(x+k,sy+2+k,1,1,c);if(x+9<X1)R(x+9,sy+3,1,4,b);}
+    R(x0,sy,IN,2,'#f4fbff');for(let x=x0+4;x<X1;x+=9+((hash(n,x)*6)|0))R(x,sy+2,1,1+((hash(x,n)*3)|0),'#f4fbff');} /* snow cap + icicles */
+  else if(m==='cloud'){for(let x=x0;x<X1;x++){const p=(x-x0+n*5)%14,d=Math.round(2*Math.sin(p/14*Math.PI));   /* puffy top: each column starts higher on a bump */
+      R(x,sy+2-d,1,8+d,a);R(x,sy+2-d,1,1,c);}R(x0,sy+7,IN,3,b);R(x0,sy+6,IN,1,'#d4dae8');}
+  else if(m==='marble'){R(x0,sy,IN,1,c);R(x0,sy+9,IN,1,c);for(let x=x0+((n*11)%29);x<X1;x+=29)R(x,sy+1,1,8,b);
+    for(let v=0;v<3;v++){let y=sy+2+((hash(n,v)*5)|0);for(let x=x0+((hash(v,n)*80)|0),k=0;k<24&&x<X1;k++,x++){if(hash(k,n+v)>.7)y+=hash(n,k+v)>.5?1:-1;y=Math.max(sy+1,Math.min(sy+8,y));R(x,y,1,1,'#c4bccd');}}}
+  else if(m==='metal'){R(x0,sy,IN,1,c);R(x0,sy+9,IN,1,b);for(let x=x0+((n*7)%23),i=0;x<X1;x+=23,i++){R(x,sy+1,1,8,b);R(x+1,sy+1,1,8,'#7a8494');
+      R(x+3,sy+2,1,1,c);R(x+3,sy+7,1,1,c);if(x+19<X1){R(x+19,sy+2,1,1,c);R(x+19,sy+7,1,1,c);}
+      if(x+11<X1&&(i+n)%2)R(x+10,sy+4,2,2,((gt*2+i)|0)%2?'#ff3a5a':'#5aff6a');}}}
+function drawTough(x0,sy,m){if(m==='cloud'){R(x0,sy+3,IN,7,'rgba(10,6,14,.28)');R(x0,sy+9,IN,1,'#1a1620');}else{R(x0,sy,IN,10,'rgba(10,6,14,.28)');R(x0,sy,IN,1,'#1a1620');R(x0,sy+9,IN,1,'#1a1620');} /* reinforced: darker, banded, bolted */
+  for(let x=x0+6;x<W-WALL-2;x+=19){R(x,sy+4,2,2,'#c8ccd8');R(x,sy+6,2,1,'#3a3644');R(x,sy+4,1,1,'#ffffff');}}
 const TNAME={brick:'BRICK',stone:'STONE',gold:'GOLD',tnt:'TNT',vibranium:'VIBRANIUM',boss:'IRON GATE',final:'THE ROOF'};
 // 1-20 underground, 21-45 surface, 46-70 mountains, 71-95 sky, 96+ space (forever)
 const zoneOfLevel=n=>ZONES[n<=SURF?0:Math.min(ZONES.length-1,1+Math.floor((n-SURF-1)/(10*ZS)))];
@@ -901,7 +1025,7 @@ function learn(k){if(knows(k))return;learned[k]++;saveLearned();if(hint&&hint.id
    the world freezes, then the hint arrows ask for one try). A move pulled off once (learned.got) is open from 1F in
    later runs; '힌트 다시 보기' locks them all again. Same table for every difficulty. */
 const SKILL_AT={walk:5,dash:5,king:20},SKILL_ORDER=['walk','dash','king']; /* ki comes with walking; the dash opens on the same card, so 'walk + other fist' never means a plain punch first */
-const SKILL_KO={walk:['걷기 · 대시','꾹 누르면 그쪽으로 걸어요\n손을 떼면 기 펀치!\n걷다가 반대쪽을 누르면 휙 대시!'],dash:['대시','한쪽을 꾹 눌러 도움닫기!\n달리다가 반대쪽 버튼을 누르면\n휙 대시해요'],king:['SHOW TIME','양쪽 주먹을 같이 꾹 눌렀다 놓고\n양 주먹을 연타하세요!\n모든 벽돌이 약해져서\n가볍게 뚫고 지나가요']};
+const SKILL_KO={walk:['걷기 · 대시','꾹 누르면 그쪽으로 걸어요\n손을 떼면 기 펀치!\n걷다가 반대쪽을 누르면 휙 대시!'],dash:['대시','한쪽을 꾹 눌러 도움닫기!\n달리다가 반대쪽 버튼을 누르면\n휙 대시해요'],king:['SHOW TIME','양쪽 주먹을 같이 꾹 눌렀다 놓고\n양 주먹을 연타하세요!\n모든 벽돌을 가볍게\n뚫고 지나가버려요!']};
 const NEW_T=1.8,NEW_SKIP=2,PRACTICE_FLOORS=5,PRACTICE_UNTIL=10;let runOpen={},newCard=null,tryK=null,practiceTo=-1;
 const practicing=()=>mode==='play'&&practiceTo>0&&tgtN()<practiceTo; /* walk + dash practice floors (first time only, up to 10F) */const cardHolds=new Map(); /* thumbs pressed during a card: they carry on once it closes */
 if(!learned.got||typeof learned.got!=='object'){ /* first load of this version: players who already used a move (or climbed past its floor) keep it */
@@ -929,8 +1053,8 @@ function showCard(k,tag,nm,sub,dur){newCard={k,t:0,dur};hint=null;startDemo(k);
 /* ---------- move demo on the NEW card ----------
    A 120x64 pixel loop drawn on its own little canvas: the two fist buttons at the bottom get held / tapped
    (they sink, with the same gold arrow + HOLD / TAP / LET GO words as the in-game hints), and the hero above does the move. */
-const demoCv=newEl.querySelector('canvas.demo'),dg=demoCv.getContext('2d');let demoK=null,demoRAF=0,demoT0=0;
-const DEMO_LEN={walk:6.4,dash:3,king:3.6}; /* the walk card shows the walk + ki punch, then the dash */
+const demoCv=newEl.querySelector('canvas.demo');let dg=demoCv.getContext('2d'),demoK=null,demoRAF=0,demoT0=0;
+const DEMO_LEN={walk:6.4,dash:3,king:3.6,tap:2}; /* the walk card shows the walk + ki punch, then the dash */
 function startDemo(k){stopDemo();if(!DEMO_LEN[k]){demoCv.hidden=true;newEl.classList.remove('hasdemo');return;}
   demoK=k;demoT0=performance.now();demoCv.hidden=false;newEl.classList.add('hasdemo');
   const loop=()=>{if(!demoK)return;drawDemo((performance.now()-demoT0)/1000%DEMO_LEN[demoK]);demoRAF=requestAnimationFrame(loop);};loop();}
@@ -955,6 +1079,7 @@ function drawDemo(t){let k=demoK;if(k==='walk'&&t>=3.4){k='dash';t-=3.4;}const g
     else if(t<1.5){Rr=1;lbl='HOLD';hx=18+(t-.4)/1.1*36;ghost=t>.6;}
     else if(t<2.1){Rr=1;L=t<1.75?1:0;lbl='TAP';lblSide=0;const u=(t-1.5)/.6;hx=54+u*38;ghost=1;}
     else{hx=92;punch=t<2.7?1:0;}}
+  else if(k==='tap'){hx=60;wk=60;const n=(t*4)|0;L=n%2?0:1;Rr=n%2?1:0;lbl='TAP';lblSide=n%2?1:0;punch=1;} /* hint book: left, right, left, right under the weak point */
   else if(k==='king'){hx=60;
     if(t<.4){}
     else if(t<1.5){L=1;Rr=1;lbl='HOLD';lblSide=2;glow=Math.min(1,(t-.4)/1);}
@@ -966,7 +1091,7 @@ function drawDemo(t){let k=demoK;if(k==='walk'&&t>=3.4){k='dash';t-=3.4;}const g
   if(glow){g.globalAlpha=.35+.3*Math.sin(t*30);for(let y=0;y<14;y++)for(let x=-1;x<9;x++)if(BODY[y]&&(BODY[y][x]||'.')!=='.'){D(px+x-1,top+y,1,1,'#ffd400');D(px+x+1,top+y,1,1,'#ffd400');}g.globalAlpha=1;}
   spr(BODY,px,top,PAL);
   // arms: guard, or one fist shooting up to the ceiling (SHOW TIME: both, in turn, with sparks)
-  const side=k==='king'?(((t*8)|0)%2):1;
+  const side=k==='king'?(((t*8)|0)%2):k==='tap'?(((t*4)|0)%2):1;
   if(punch){const ax=side?px+7:px-1;D(ax,9,2,top+4-9,PAL.s);D(side?ax:ax-1,8,3,3,'#ffd0bd');
     D(ax-3,8,1,1,'#fff');D(ax+4,8,1,1,'#fff');D(ax,11,1,1,'#fff6b0');
     if(k!=='king'&&wk!=null&&Math.abs(hx-wk)<6&&blink){D(wk-8,0,16,9,'rgba(255,255,255,.5)');}
@@ -1025,7 +1150,7 @@ const KING_FREEZE=1.5;let lavaHold=0;
 const CHILL_HIT=.09,CHILL_DECAY=.3,CHILL_SLOW=.5;
 let burns=0,burnT=0,cloth=[]; // lava bounces taken this run, the immunity left after the last one, and burning clothes flying off
 let timeLeft=TIME_START,chill=0,timeUp=false,timeFlash=0,timeBeep=0,lastZone=null;
-let judge=null,jCount=[0,0,0,0];const JUDGE=[['PERFECT!','#e8a400','#5a3000',2],['COOOOL!','#2aa84a','#0c3a1a',2],['90%','#e0641a','#4a1a06',2],['MOVE! MOVE!','#c8341a','#4a1408',2]]; // [text, extrusion, deep extrusion, size]: VENTO-logo style, the extrusion carries the grade colour
+let judge=null,jCount=[0,0,0,0];const JUDGE=[['PERFECT!','#e8a400','#5a3000',2],['COOOOL!','#1f4ad8','#060f3a',2],['GOOD','#e0641a','#4a1a06',2],['MOVE! MOVE!','#c8341a','#4a1408',2]]; // [text, extrusion, deep extrusion, size]: VENTO-logo style, the extrusion carries the grade colour
 let hudSc=0,hudScT=0; /* SCORE shown in the HUD: rolls up toward the live score (it ticks with every punch); hudScT = how long it has been rising, for the glow */
 let dispT=0,tGains=[],gainSum=0,gainT=0,hudT=0; // TIME counter that rolls up, and the '+0.2' pops that feed it
 // TIME drives the lava: 60s banked -> x0.6, 30s (start) -> about x1, 10s -> x1.35, 0s -> TIME UP surge
@@ -1120,6 +1245,11 @@ function hit(side,power){
   const fx=fistX(side),fy=-tgtN()*FH+10;
   // weak point = the boxer's body lined up under it, hit with alternating hands
   const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
+  /* 6 punches in a row off the weak point and the combo shatters, right there */
+  if(onWeak||kingT>0||s.wT<1)offStreak=0;
+  else if(++offStreak>=OFF_BREAK){offStreak=0;if(combo>2){comboBreak={at:t,n:combo-1,dx:comboFX.dx};
+      if(AC){const a=AC.currentTime;noise(a,.18,3200,1.5,.4,'bandpass',900);tone(a,.22,700,140,'square',.07);}vibe([20,20,40]);}
+    combo=0;}
   // weak bonus: alternating hands, or a ki punch with at least a little charge
   const weak=kingT>0||(onWeak&&(alt||(charged&&power>=.3)));
   // aim judgement (4 grades) from how far the boxer is from the weak point's centre
@@ -1145,12 +1275,15 @@ function hit(side,power){
   // minimum punches per block, so it never goes down in one or two: 6 plain hits, 5 on the weak point,
   // 3 with a ki punch or during KING TIME (big blocks higher up take more anyway)
   {const minHits=kingT>0?2:charged?3:weak?5:6; /* SHOW TIME hits twice as hard, so 2 punches a block */dmg=Math.min(dmg,Math.max(1,Math.floor(s.max/minHits)));}
+  /* the last blow has to land on the weak point: mashing anywhere else wears a block down to 1, never through it */
+  if(!onWeak&&kingT<=0&&s.wT>=1&&s.hp-dmg<=0){dmg=Math.max(0,s.hp-1);
+    s.lockAt=t;} /* at 1 HP the miss just 'tings' off (WEAK ONLY), see below */
   s.hp-=dmg;s.flash=weak||charged?1:.6;s.bump=weak?4:charged?2+2*power:crit?3:1;
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;
-  const c=SLABC[s.type];
+  const c=slabCol(s);
   chip(fx,fy,c[0],crit||weak?7:3,crit||weak?120:70);chip(fx,fy,c[2],crit?3:1,90);
   if(fever>0)chip(fx,fy,'#fff',2,110);
-  sfx.hit(combo,crit,s.type);
+  sfx.hit(combo,crit,s.type,plain(s)?matOf(s.n):null);
   if(charged)sfx.kipunch(power);
   if(weak){weakCount++;weakStreak++;s.weakHits++;s.wflash=1;sfx.weak(weakStreak);weakFX(s.wx,fy,dmg);
     addTime(T_WEAK*tMul());} // (lava 'chill' removed: the time you gain already pushes the lava back)
@@ -1169,11 +1302,11 @@ function hit(side,power){
   if(weak&&weakCount%25===0){fever=5;sfx.fever();pop(popX(56),pl.feet-30,'FEVER!!','#ff7af0',2);}
   if(s.hp<=0)breakSlab(s);
 }
-function debris(s){const y=-s.n*FH;const c=SLABC[s.type];
+function debris(s){const y=-s.n*FH;const c=slabCol(s);
   for(let i=0;i<34;i++)parts.push({x:WALL+Math.random()*IN,y:y+Math.random()*10,vx:(Math.random()-.5)*160,vy:-60-Math.random()*120,life:.7+Math.random()*.6,col:[c[0],c[1],c[2]][i%3],s:Math.random()<.4?2:1,g:420});
   for(let i=0;i<10;i++)parts.push({x:WALL+Math.random()*IN,y:y+5,vx:(Math.random()-.5)*40,vy:-10-Math.random()*20,life:.6,col:'rgba(220,210,230,.5)',s:3,g:-20});}
 function breakSlab(s){
-  s.broken=true;s.hp=0;debris(s);sfx.brk(s.type);vibe(30);learn('tap');if(s.type==='vibranium')learn('vib'); /* first floor / first vibranium broken: those tips retire */
+  s.broken=true;s.hp=0;debris(s);sfx.brk(s.type,plain(s)?matOf(s.n):null);vibe(30);learn('tap');if(s.type==='vibranium')learn('vib'); /* first floor / first vibranium broken: those tips retire */
   shake=Math.max(shake,4.5);hitstop=Math.max(hitstop,.085);
   {const clean=weakStreak>=4,t=(T_BREAK+(clean?T_CLEAN:0))*tMul()+(s.type==='boss'?T_BOSS:0);if(s.type==='boss')lavaHold=Math.max(lavaHold,BOSS_REST);
    addTime(t,(clean?'CLEAN ':'')+'+'+t.toFixed(1)+'s');}
@@ -1416,7 +1549,7 @@ function lavaBurn(){
   for(let i=0;i<26;i++){const a=-Math.PI*Math.random(),sp=60+Math.random()*120,l=.4+Math.random()*.4;
     parts.push({x:pl.x+(Math.random()-.5)*8,y:pl.feet-2,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:200,fire:true});}
   // fling up through the floor above
-  const n=tgtN(),s0=slabs[n];if(s0&&!s0.broken){s0.broken=true;s0.hp=0;debris(s0);sfx.brk(s0.type);}
+  const n=tgtN(),s0=slabs[n];if(s0&&!s0.broken){s0.broken=true;s0.hp=0;debris(s0);sfx.brk(s0.type,plain(s0)?matOf(s0.n):null);}
   hopTo(n);pl.jd=.22;
   lavaY=Math.max(lavaY,pl.to+70);lavaHold=Math.max(lavaHold,.6);}
 function die(){mode='dead';endT=0;pl.vs=0;pl.fall=0;pl.spl=0;bgmStop();sfx.die();playDieVoice();vibe([60,40,120]);shake=6;
@@ -1437,7 +1570,10 @@ function dash(dirSide){
   for(let i=0;i<6;i++)parts.push({x:pl.x-d*3,y:pl.feet-1,vx:-d*(30+Math.random()*50),vy:-Math.random()*25,life:.3,col:'rgba(230,220,240,.6)',s:Math.random()<.5?2:1,g:40});
   sfx.dash();vibe(8);
 }
+let landQ=[],offStreak=0,comboBreak=null;const OFF_BREAK=6;
 function press(id,side){if(holds.has(id))return;
+  if(mode==='count'&&countT<.5){if(landQ.length<3)landQ.push(side);return;} /* pressed just before the landing: kept, punched the moment he lands */
+  if(landing())landEnd=true; /* a press snaps him out of the landing pose: never eaten */
   if(newCard&&newCard.t>=NEW_SKIP)closeCard(); /* a press after a beat skips the card AND counts as a normal press */
   if(newCard){cardHolds.set(id,side);return;}
   if(mode==='play'&&skillOn('dash'))for(const h of holds.values()){if(!h.used&&h.side!==side&&h.t>=HOLD_T){
@@ -1509,7 +1645,7 @@ function update(dt){
   if(mode==='pause')return; // frozen; render keeps drawing the paused frame
   if(newCard){newCard.t+=dt;if(started)tStart+=dt;return;} /* stays until a tap (accepted after NEW_SKIP) */ /* NEW! card: the world holds still */
   const real=dt;
-  if(vsOn()&&!vsBeat&&pl.level>vs.floor&&(mode==='play'||mode==='super')){vsBeat=vsWon=true;pop(W/2,pl.feet-56,'RECORD BEAT!','#ffd400',1,true);sfx.coin();vibe([40,30,90]);} /* passed the friend's floor */
+  if(vsOn()&&!vsBeat&&pl.level>vs.floor&&(mode==='play'||mode==='super')){vsBeat=vsWon=true;pop(W/2,pl.feet-56,'RECORD BEAT!','#ffd400',1,true);sfx.coin();vibe([40,30,90]);vsRip();} /* passed the friend's floor */
   // charge: world barely slows; once it's full, time slams to a crawl for the 'kingSlow' beat, then the punch fires
   const tsTarget=kingSlowT>0?.07:(bothT>0&&mode==='play')?.85:1;
   timeScale+=(tsTarget-timeScale)*Math.min(1,real*(kingSlowT>0?18:10));
@@ -1550,7 +1686,8 @@ function update(dt){
   }
   hum(maxC);
   // both thumbs held -> KING FIST
-  const together=hasL&&hasR&&(bothT>0||Math.abs(bornL-bornR)<=KING_SYNC); // both thumbs pressed (almost) at once
+  const held2=Math.min(now()-bornL,now()-bornR); /* both thumbs really held, not two mashing taps overlapping */
+  const together=hasL&&hasR&&(bothT>0||(Math.abs(bornL-bornR)<=KING_SYNC&&held2>=.22)); // both thumbs pressed (almost) at once and kept down
   if(superReady&&mode==='play'&&together){
     if(bothT===0)kingGrowl(true);
     bothT+=real;const k=Math.min(1,bothT/BOTH_HOLD);
@@ -1589,6 +1726,7 @@ function update(dt){
   if(mode==='super'){tNow=t-tStart;updateSuper(dt);}
   else if(mode==='play'){
     if(started)tNow=t-tStart;
+    if(landQ.length&&!landing()&&started)hit(landQ.shift()); /* the presses made during the landing, one per frame */
     if(t-lastTap>D.win)combo=0; // weak hits toward the next KING level are kept even when the chain breaks
     if(pl.reach>0&&pl.jt<0&&!alignedUnder(tgt()))hopTo(pl.level+pl.reach);
     if(started){const tg=tgt();// lava speeds up with height, and the climb itself accelerates it (×2 by floor 90, ×3 by 180)
@@ -1600,7 +1738,7 @@ function update(dt){
       if(tg&&(tg.type==='boss'||tg.type==='final'))v*=.6;if(fever>0)v*=.85;
       lavaV=Math.max(1,v);
       if(lavaHold>0){lavaHold-=ldt;v=0;} // frozen right after a KING PUNCH landing
-      else if(practicing())v=0; /* walk + dash practice: the lava waits */
+      else if(practicing()||landing())v=0; /* walk + dash practice, or he is still getting up: the lava waits */
       lavaY-=v*ldt;lavaY=Math.min(lavaY,pl.feet+lavaCap());
       const dist=lavaY-pl.feet;
       timeLeft=Math.max(0,dist/lavaV)+(lavaHold>0?lavaHold:0); // TIME 0 = the lava touches you
@@ -1816,33 +1954,56 @@ function drawTorch(n){
   const g=ctx.createRadialGradient(fx+1,y,0,fx+1,y,20);g.addColorStop(0,'rgba(255,140,40,.18)');g.addColorStop(1,'rgba(255,140,40,0)');
   ctx.fillStyle=g;ctx.fillRect(fx-20,y-20,40,40);ctx.globalCompositeOperation='source-over';
 }
+/* five crack shapes, like real cracks in concrete: ONE meandering fissure across the weak point (thick in the middle,
+   thin at the ends), sometimes with one small branch. Points are [x from -1 to 1 across the reach, row in the block 0-9]. */
+const CRACK_PAT=[
+  {m:[[-1,2],[-.55,3],[-.15,4],[.2,6],[.6,7],[1,8]]},
+  {m:[[-1,7],[-.6,6],[-.2,5],[.15,3],[.55,3],[1,1]]},
+  {m:[[-1,5],[-.6,4],[-.3,5],[0,4],[.4,6],[.7,5],[1,5]],b:[[.4,6],[.55,8],[.7,9]]},
+  {m:[[-1,1],[-.5,3],[0,5],[.5,6],[1,8]],b:[[-.5,3],[-.65,1],[-.8,0]]},
+  {m:[[-1,4],[-.4,4],[-.1,7],[.3,6],[.7,3],[1,2]]}];
+const crackY=(P,u)=>{for(let i=1;i<P.length;i++)if(u<=P[i][0]){const [x0,y0]=P[i-1],[x1,y1]=P[i];return y0+(y1-y0)*(u-x0)/(x1-x0);}return P[P.length-1][1];};
+/* five variations of the same crack: the zig-zag (one x offset per pixel row) and where the side branches split off
+   [side, row, +1 runs down / -1 runs up] */
+const WEAK_CRACKS=[
+  {z:[0,-1,-1,0,1,1,0,-1,0,1],b:[[-1,2,1],[1,7,-1]]},
+  {z:[1,1,0,-1,-1,0,1,1,0,-1],b:[[1,2,-1],[-1,6,1]]},
+  {z:[0,0,1,1,0,-1,-1,-1,0,0],b:[[-1,4,1],[1,2,-1],[1,8,-1]]},
+  {z:[-1,0,1,0,-1,0,1,0,-1,0],b:[[-1,3,-1],[1,6,1]]},
+  {z:[0,1,1,1,0,-1,-1,0,0,1],b:[[-1,7,-1],[1,3,1]]}];
 function drawWeak(s,sy){
   const e=s.wT<1?(1-Math.pow(1-s.wT,3)):1;
   const cx=s.wFrom!=null&&s.wT<1?s.wFrom+(s.wx-s.wFrom)*e:s.wx;
-  const ww=wkW(s),hw=ww/2,x0=Math.round(cx-hw),w=Math.round(ww);
-  const pulse=.5+.5*Math.sin(gt*10+s.n);
-  // glowing core under the slab
-  ctx.globalCompositeOperation='lighter';
-  const g=ctx.createRadialGradient(cx,sy+9,0,cx,sy+9,hw+8);
-  g.addColorStop(0,`rgba(255,70,90,${.35+.25*pulse+s.wflash*.5})`);g.addColorStop(1,'rgba(255,70,90,0)');
-  ctx.fillStyle=g;ctx.fillRect(cx-hw-8,sy,w+16,18);
-  ctx.globalCompositeOperation='source-over';
-  // fracture star
-  const core=s.wflash>0?'#ffffff':pulse>.5?'#ffe27a':'#ff3a5a';
-  R(x0,sy+8,w,2,'#3a0812');
-  R(x0+1,sy+8,Math.max(1,w-2),1,core);
-  R(Math.round(cx)-1,sy+3,2,6,'#3a0812');R(Math.round(cx),sy+4,1,5,core);
-  R(Math.round(cx)-3,sy+5,1,2,core);R(Math.round(cx)+2,sy+6,1,2,core);
-  R(x0,sy+8,w,2,'#3a0812');
-  R(x0+1,sy+8,Math.max(1,w-2),1,core);
-  R(Math.round(cx)-1,sy+3,2,6,'#3a0812');R(Math.round(cx),sy+4,1,5,core);
-  R(Math.round(cx)-3,sy+5,1,2,core);R(Math.round(cx)+2,sy+6,1,2,core);
-  // bracket corners
-  const bc=s.wflash>0?'#ffffff':'#ff3a5a';
-  R(x0-1,sy+10,2,1,bc);R(x0-1,sy+10,1,2,bc);R(x0+w-1,sy+10,2,1,bc);R(x0+w,sy+10,1,2,bc);
-  // pointer for the slab you're punching
-  if(s.n===tgtN()&&mode==='play'){const by=sy+14+Math.round(Math.sin(gt*8)*1.5);
-    R(Math.round(cx)-2,by,5,1,'#ff3a5a');R(Math.round(cx)-1,by+1,3,1,'#ff3a5a');R(Math.round(cx),by+2,1,1,'#ff3a5a');}
+  const ww=wkW(s),hw=ww/2,x0=Math.round(cx-hw),w=Math.round(ww),ix=Math.round(cx);
+  const pulse=.5+.5*Math.sin(gt*10+s.n),la=s.lockAt?now()-s.lockAt:9,lock=s.hp<=1&&s.lockAt,hot=la<.25;
+  /* the weak point: a thin crack of light through the block, kept inside it. Two small red arrows pinch it from above and below. */
+  /* the weak point is a crack of light splitting the block from bottom to top: a dark jagged fissure, a hot white-yellow core,
+     side branches, light spilling out of both faces. No box: only the crack glows. */
+  const core=s.wflash>0||hot?'#ffffff':pulse>.5?'#fff3a0':'#ffd04a',mid=lock?'#ff6a7a':'#ff3a5a';
+  const CP=WEAK_CRACKS[s.n%5],Z=CP.z;                                             // one of five zig-zags, picked per block
+  const glow=(.25+.2*pulse+s.wflash*.4+(lock?.25:0))*e;
+  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=glow;                     // a soft glow that hugs the crack only
+  for(let y=-2;y<12;y++){const zx=ix+(Z[Math.max(0,Math.min(9,y))]||0);R(zx-2,sy+y,5,1,'#ff3a5a');}
+  ctx.globalAlpha=glow*.6;for(let y=0;y<10;y++){const zx=ix+Z[y];R(zx-3,sy+y,7,1,'#ff5a3a');}
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+  for(let y=0;y<10;y++){const zx=ix+Z[y];R(zx-1,sy+y,3,1,'#2a0610');}            // the fissure: dark, 3 wide
+  for(let y=0;y<10;y++){const zx=ix+Z[y];R(zx,sy+y,1,1,core);if(y%3===1)R(zx+(Z[y]>0?1:-1),sy+y,1,1,mid);} // the light inside
+  const br=Math.min(4,Math.max(2,hw-1|0));                                         // branches splitting off sideways
+  for(const [side,row,dir] of CP.b){const bx=ix+Z[row];
+    for(let k=1;k<=br;k++){const y=sy+row+dir*(k>>1);if(y<sy||y>sy+9)break;R(bx+side*(k+1),y,1,1,'#2a0610');R(bx+side*(k+1),y-1,1,1,mid);}}
+  for(let k=1;k<=4;k++){ctx.globalAlpha=(1-k/5)*(.7+.3*pulse);R(ix+Z[0],sy-k,1,1,core);R(ix+Z[9],sy+9+k,1,1,core);  // light spilling out of both faces
+    if(k<3){R(ix-1,sy-k,1,1,mid);R(ix+1,sy+9+k,1,1,mid);}}
+  ctx.globalAlpha=1;
+  /* the guide: brackets on the top and bottom corners at the real edges of the weak point (wide on easy, narrow on master) */
+  const reach=hw+1,xl=Math.round(cx-reach),xr=Math.round(cx+reach),bc=s.wflash>0||hot?'#ffffff':'#ff3a5a';
+  ctx.globalAlpha=.8+.2*pulse;
+  R(xl,sy-2,3,1,bc);R(xl,sy-2,1,3,bc);R(xr-2,sy-2,3,1,bc);R(xr,sy-2,1,3,bc);
+  R(xl,sy+11,3,1,bc);R(xl,sy+9,1,3,bc);R(xr-2,sy+11,3,1,bc);R(xr,sy+9,1,3,bc);
+  ctx.globalAlpha=1;
+  if(lock&&s.n===tgtN()&&mode==='play'&&((gt*6)|0)%2)text('FINISH!',clamp(ix,WALL+16,W-WALL-16),sy-16,1,'#ffffff','c','#3a0812'); /* worn down to 1: only the weak point finishes it */
+  if(s.n===tgtN()&&mode==='play'){const b=Math.round(Math.sin(gt*8)*1.5),ay=sy-6+b,uy=sy+12-b;
+    R(ix-2,ay,5,1,'#ff3a5a');R(ix-1,ay+1,3,1,'#ff3a5a');R(ix,ay+2,1,1,'#ff3a5a');   // above, pointing down
+    R(ix,uy,1,1,'#ff3a5a');R(ix-1,uy+1,3,1,'#ff3a5a');R(ix-2,uy+2,5,1,'#ff3a5a');}  // below, pointing up
 }
 function drawSlab(s){
   const sy=Math.round(-s.n*FH-camY-s.bump);if(sy>H||sy<-14)return;
@@ -1850,9 +2011,11 @@ function drawSlab(s){
   if(s.broken){
     for(let x=0;x<IN;x+=2){const h=(hash(s.n,x)*3)|0;R(x0+x,sy+h,2,10-h,z.wallD);if(hash(x,s.n)>.8)R(x0+x,sy+h,2,1,z.wallL);}
     R(x0,sy+9,IN,1,'rgba(0,0,0,.4)');return;}
-  const [a,b,c]=SLABC[s.type];
-  R(x0,sy,IN,10,a);
-  if(s.type==='brick'){for(let row=0;row<2;row++){const y=sy+row*5;R(x0,y,IN,1,b);const off=row*6;
+  const [a,b,c]=slabCol(s);
+  if(plain(s)){drawMat(matOf(s.n),x0,sy,s.n);if(s.type==='stone')drawTough(x0,sy,matOf(s.n));}
+  else R(x0,sy,IN,10,a);
+  if(plain(s)){}
+  else if(s.type==='brick'){for(let row=0;row<2;row++){const y=sy+row*5;R(x0,y,IN,1,b);const off=row*6;
       for(let x=x0-12+off;x<W-WALL;x+=12){if(x>=x0)R(x,y,1,5,b);R(Math.max(x0,x+1),y+1,Math.min(10,W-WALL-x-1),1,c);}}}
   else if(s.type==='stone'){R(x0,sy,IN,1,c);R(x0,sy+9,IN,1,b);for(let x=x0+((s.n*7)%29);x<W-WALL;x+=29)R(x,sy,1,10,b);
     for(let i=0;i<24;i++){R(x0+hash(s.n,i)*IN,sy+1+hash(i,s.n)*8,1,1,i%2?b:c);}}
@@ -1943,6 +2106,7 @@ function aura(rows,px,top,col,alpha){ctx.globalAlpha=alpha;
   ctx.globalAlpha=1;}
 function drawPlayer(){
   if(mode==='super'&&sup){drawSuperPlayer();return;}
+  if(mode==='count'||landing()){drawDrop();return;} // the START drop, see drawDrop
   const hop=pl.punchT>0?3*(pl.punchT/PUNCH):0;
   let feet=pl.feet;if(pl.jt>=0)feet-=Math.sin(Math.PI*pl.jt)*10;
   const px=Math.round(pl.x)-4,top=Math.round(feet-14-hop-camY+pl.sink);
@@ -1998,23 +2162,29 @@ function drawPlayer(){
     const n=c>=1?3:c>=.5?2:c>=.15?1:0;for(let i=0;i<3;i++)R(Math.round(pl.x)-4+i*3,top+16,2,1,i<n?'#7af0ff':'rgba(122,240,255,.2)');}
 }
 function drawJudge(){ // aim grade in the VENTO logo style, floating on the floor above the one you're punching
-  if(!judge||mode!=='play')return;const age=now()-judge.at;if(age>.55)return;
+  if(!judge||mode!=='play'||kingT>0)return;const age=now()-judge.at;if(age>.55)return;
   const [txt,e1,e2,sc]=JUDGE[judge.g],pop=age<.07;
   ctx.globalAlpha=age>.4?1-(age-.4)/.15:1;
   const y=Math.round(-(judge.n+1)*FH+FH/2-camY-sc*2.5-Math.min(1,age/.4)*4)-(pop?2:0);
-  if(judge.g===0){perfectText(txt,W/2,y-6,age);perfectText('200%',W/2,y+14,age-.05,2,true);}else logoText(txt,W/2,y,sc,e1,e2,pop);ctx.globalAlpha=1;}
+  if(judge.g===0){perfectText(txt,W/2,y-6,age);perfectText('200%',W/2,y+14,age-.05,2,true);}
+  else{const b=judge.g===3?2:3,ty=y-(b===3?6:2),P=JUDGE_PAL[judge.g];perfectText(txt,W/2,ty,age,b,true,P);perfectText(['','100%','90%','0%'][judge.g],W/2,ty+b*5+5,age-.05,2,true,P);} /* the score under each grade, like PERFECT's 200% */ /* the other grades: the same block letters, in their own colours, without the stars */ctx.globalAlpha=1;}
 // PERFECT gets the deluxe version of the logo style: bigger, a gold face with fine stripes and a bright top
 // edge, a deep three-step extrusion, one white shine sweeping across, and pixel stars popping at the corners
-function perfectText(s,cx,y,age,base,quiet){
+const PERF_PAL={ex:['#5a2000','#a83a0a','#e07a10'],f:['#ffd400','#f0b000'],top:'#fff6b0'};
+const JUDGE_PAL=[PERF_PAL,{ex:['#060f3a','#0f2a8a','#1f4ad8'],f:['#5a9aff','#3a6aff'],top:'#cfe2ff'},
+  {ex:['#4a1a06','#8a3a0a','#d8641a'],f:['#ffb050','#ff8a2a'],top:'#fff0c8'},{ex:['#4a0a08','#8a1c10','#c8341a'],f:['#ff6a5a','#e8443a'],top:'#ffd8d0'}];
+function perfectText(s,cx,y,age,base,quiet,pal){
+  pal=pal||PERF_PAL;
   if(age<0)return;base=base||3;
   const sc=age<.06?base+1:base,x=Math.round(cx-tw(s,sc)/2),cells=[];y=Math.round(y-(sc-base)*3);
   const BOLD={P:'111101111100100',R:'111101110101101'}; // squarer P/R so they don't read as F at this size
   for(let i=0;i<s.length;i++){const g=BOLD[s[i]]||F[s[i]]||F[' '];for(let p=0;p<15;p++)if(g[p]==='1')cells.push([x+(i*4+p%3)*sc,y+((p/3)|0)*sc,p<3||g[p-3]!=='1']);}
-  [['#5a2000',3],['#a83a0a',2],['#e07a10',1]].forEach(([c,o])=>{ctx.fillStyle=c;for(const [px,py] of cells)ctx.fillRect(px+o,py+o,sc,sc);});
+  [[pal.ex[0],3],[pal.ex[1],2],[pal.ex[2],1]].forEach(([c,o])=>{ctx.fillStyle=c;for(const [px,py] of cells)ctx.fillRect(px+o,py+o,sc,sc);});
   const shine=age>.04&&age<.34?x-10+(tw(s,sc)+20)*((age-.04)/.3):-999;          // one white glint sweeping left to right
   for(const [px,py,top] of cells)for(let j=0;j<sc;j++){
-    let c=j%2?'#f0b000':'#ffd400';if(top&&j===0)c='#fff6b0';
-    for(let i=0;i<sc;i++){const d=px+i-(shine-(py+j-y)*.6);ctx.fillStyle=Math.abs(d)<2.5?'#ffffff':c;ctx.fillRect(px+i,py+j,1,1);}}
+    let c=j%2?pal.f[1]:pal.f[0];if(top&&j===0)c=pal.top;
+    const d0=px-(shine-(py+j-y)*.6);if(d0>2.5||d0+sc<-2.5){ctx.fillStyle=c;ctx.fillRect(px,py+j,sc,1);continue;} /* no shine here: one rect for the row */
+    for(let i=0;i<sc;i++){const d=d0+i;ctx.fillStyle=Math.abs(d)<2.5?'#ffffff':c;ctx.fillRect(px+i,py+j,1,1);}}
   if(!quiet&&age<.45){const k=Math.min(1,age/.12),w=tw(s,sc);                              // corner stars: pop out, then shrink away
     [[x-5,y-3],[x+w+4,y-3],[x-3,y+18],[x+w+2,y+18]].forEach(([sx,sy],n)=>{const r=Math.round((n%2?3:2)*(age<.25?k:1-(age-.25)/.2));
       if(r<=0)return;ctx.fillStyle='#fff6b0';ctx.fillRect(sx-r,sy,r*2+1,1);ctx.fillRect(sx,sy-r,1,r*2+1);ctx.fillStyle='#ffffff';ctx.fillRect(sx,sy,1,1);});}}
@@ -2042,25 +2212,39 @@ function drawBreakFX(){if(!brkFX.length||mode!=='play')return;const t=now(),b=br
 const BIGD={'0':'11111100011000110001100011000111111','1':'01100001000010000100001000010001110','2':'11111000010000111111100001000011111',
   '3':'11111000010000111111000010000111111','4':'10001100011000111111000010000100001','5':'11111100001000011111000010000111111',
   '6':'11111100001000011111100011000111111','7':'11111100010000100001000010000100001','8':'11111100011000111111100011000111111',
-  '9':'11111100011000111111000010000111111'};
+  '9':'11111100011000111111000010000111111',
+  /* letters in the same 5x7 block face, so COMBO and FEVER x2 match the count under them */
+  C:'11111100001000010000100001000011111',O:'11111100011000110001100011000111111',M:'10001110111010110101100011000110001',B:'11110100011000111110100011000111110',
+  F:'11111100001000011110100001000010000',E:'11111100001000011110100001000011111',V:'10001100011000110001100010101000100',R:'11110100011000111110101001001010001',
+  x:'00000000001000101010001000101010001'};
+Object.assign(BIGD,{A:'01110100011000111111100011000110001',K:'10001100101010011000101001001010001'}); /* for BREAK */
 function bigDigits(str,cx,y,sc,pal,glow){const gap=2*sc,w=str.length*(5*sc+gap)-gap,x0=Math.round(cx-w/2),cells=[];
   for(let i=0;i<str.length;i++){const g=BIGD[str[i]];if(!g)continue;for(let p=0;p<35;p++)if(g[p]==='1')cells.push([x0+i*(5*sc+gap)+(p%5)*sc,y+((p/5)|0)*sc]);}
   const a=ctx.globalAlpha;
-  ctx.globalAlpha=a*.22;ctx.fillStyle=glow;for(const [px,py] of cells)ctx.fillRect(px-2,py-2,sc+4,sc+4);   // soft glow
+  if(glow){ctx.globalAlpha=a*.22;ctx.fillStyle=glow;for(const [px,py] of cells)ctx.fillRect(px-2,py-2,sc+4,sc+4);}   // soft glow (labels go without)
   ctx.globalAlpha=a;ctx.fillStyle='#0d0a08';for(const [px,py] of cells)ctx.fillRect(px-1,py-1,sc+2,sc+2);  // dark rim
   const hT=7*sc;
   for(const [px,py] of cells)for(let j=0;j<sc;j++){const k=(py+j-y)/hT;ctx.fillStyle=k<.18?pal[0]:k<.55?pal[1]:pal[2];ctx.fillRect(px,py+j,sc,1);
     if((py+j)%2){ctx.globalAlpha=a*.25;ctx.fillStyle='#000';ctx.fillRect(px,py+j,sc,1);ctx.globalAlpha=a;}}   // scanlines
 }
+function drawComboBreak(){ /* the number that just broke: it cracks in half, the halves fall apart and fade, red */
+  if(!comboBreak||mode!=='play')return;const a=now()-comboBreak.at;if(a>.6){comboBreak=null;return;}
+  const pal=['#ffd0d0','#ff5a5a','#8a1010'],s=String(comboBreak.n),cx=W/2+comboBreak.dx*.3,y=47,fall=a*a*120,sp=a*26;
+  ctx.globalAlpha=Math.max(0,1-a/.6);
+  ctx.save();ctx.beginPath();ctx.rect(0,0,cx,H);ctx.clip();ctx.translate(-sp,fall);bigDigits(s,cx,y,4,pal,null);ctx.restore();
+  ctx.save();ctx.beginPath();ctx.rect(cx,0,W,H);ctx.clip();ctx.translate(sp,fall*1.2);bigDigits(s,cx,y,4,pal,null);ctx.restore();
+  if(a<.25)bigDigits('BREAK',W/2,26,2,['#ffffff','#ff8a8a','#ff3a3a'],null);
+  ctx.globalAlpha=1;}
 function drawComboFX(){
+  drawComboBreak();if(comboBreak&&now()-comboBreak.at<.3)return; /* let the break be seen on its own */
   if(mode!=='play'||combo<2||kingT>0)return; // SHOW TIME has its own headline
   const t=now(),age=t-comboFX.at;if(age>D.win+.2)return;
   const fresh=age<.06,sc=fresh?5:4;
   const pal=fever>0?['#ffffff','#ffd0a0','#ff6a1a']:combo>=24?['#fff6b0','#ffd400','#ff8a00']:['#ffffff','#e6f7ff','#7ad8ff'];
   const glow=fever>0?'#ff5a1a':combo>=24?'#ffb000':'#5ac8ff';
   ctx.globalAlpha=(age>D.win?Math.max(0,1-(age-D.win)/.2):1)*.92;
-  if(fever<=0)text('COMBO',W/2,22,2,'#ffd400','c','#0d0a08'); /* 2x: readable over the bricks, still clear of the number under it. In FEVER this spot says FEVER x2 (drawHUD) */
-  bigDigits(String(combo),W/2,fresh?37:39,sc,pal,glow); /* a few pixels below the COMBO / FEVER x2 label so they never touch */
+  if(fever<=0)bigDigits('COMBO',W/2,26,2,pal,null); /* 2x: readable over the bricks, still clear of the number under it. In FEVER this spot says FEVER x2 (drawHUD) */
+  bigDigits(String(combo),W/2,fresh?45:47,sc,pal,glow); /* a few pixels below the COMBO / FEVER x2 label so they never touch */
   ctx.globalAlpha=1;
 }
 function drawLava(){
@@ -2099,7 +2283,7 @@ function drawHUD(){
   R(0,0,W,18,'rgba(10,6,16,.78)');R(0,18,W,1,'#3b2a52'); // slim bar: the brick's own HP bar is enough, so the top one is gone
   const hdt=Math.min(.1,Math.max(0,t-hudT));hudT=t;
   const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');
-  if(vsOn())text(vsBeat?'VS BEAT!':'VS '+vs.floor+'F',9,22,1,vsBeat?'#ffd400':'#c9c2d6'); /* challenge target under the floor count */
+  if(vsOn())text(vsBeat?'VS BEAT!':'VS '+vs.floor+'F',9,fever>0&&kingT<=0?43:22,1,vsBeat?'#ffd400':'#c9c2d6','l','#0d0a08'); /* steps down out of the way of the wide FEVER x2 label */ /* challenge target under the floor count */
   text(D.tag,4+tw(fl,2)+4,8,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
   { /* SCORE, top centre: each floor is worth SC_FLOOR x difficulty and every punch banks its share (the damage it did), so the
        number ticks up with each hit and lands exactly on the ranking score when the floor breaks. Off play it shows the ranking score */
@@ -2120,10 +2304,10 @@ function drawHUD(){
     // '+0.2' pops float up into the counter, and a running total sits just under it
     gainT=Math.max(0,gainT-hdt);
     for(const g of tGains){g.a+=hdt;const k=g.a/.55;if(k>=1)continue;
-      ctx.globalAlpha=1-k*k;text('+'+g.v.toFixed(1)+'s',W-36+g.x,Math.round(34-k*14),1,'#9aff7a','c');} /* left of the pause button */
+      ctx.globalAlpha=1-k*k;text('+'+g.v.toFixed(1)+'s',W-22+g.x*.5,Math.round(40-k*10),1,'#9aff7a','c');} /* left of the pause button */
     ctx.globalAlpha=1;tGains=tGains.filter(g=>g.a<.55);
     if(gainT>0&&gainSum>=.05){ctx.globalAlpha=Math.min(1,gainT*3);
-      const tx='+'+gainSum.toFixed(1)+'s',gx=W-19;R(gx-tw(tx,1)-3,20,tw(tx,1)+4,8,'rgba(10,6,16,.7)');text(tx,gx-1,21,1,'#9aff7a','r');ctx.globalAlpha=1;}}
+      const tx='+'+gainSum.toFixed(1)+'s',gx=W-3;R(gx-tw(tx,1)-3,20,tw(tx,1)+4,8,'rgba(10,6,16,.7)');text(tx,gx-1,21,1,'#9aff7a','r');ctx.globalAlpha=1;}}
   if(tiltOn&&(mode==='play'||mode==='count')){ // tilt meter: a bubble that slides the way you lean
     const cx=W/2,y=21,tw2=36;R(cx-tw2/2-1,y-1,tw2+2,4,'rgba(10,6,16,.75)');R(cx,y-2,1,6,'#5a4a6a');
     if(tiltG==null){if(((gt*3)|0)%2)text('NO TILT',cx,y+5,1,'#ff3a5a','c',false);}
@@ -2135,6 +2319,7 @@ function drawHUD(){
    {const top=Math.round(24+162*(1-room));for(let y=top;y<186;y++){const k=(y-24)/162;   // blue up high -> yellow -> red near the lava
       const c=k<.5?[94+(255-94)*k*2,148+(208-148)*k*2,184+(74-184)*k*2]:[255,208+(58-208)*(k-.5)*2,74+(90-74)*(k-.5)*2];
       R(3,y,3,1,`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`);}}R(3,186,3,4,'#ff7a1a');}
+  {const hide=showIntro>0&&mode==='play'?'hidden':'';if(finaleEl.style.visibility!==hide)finaleEl.style.visibility=hide;} /* the slide-in banner says SHOW TIME first; the 'N층 돌파!' block waits for it */
   if(showIntro>0&&mode==='play'){const e=SHOW_INTRO-showIntro,cy=H/2-26;let x=W/2,vis=true;
     if(e<SHOW_IN){const k=e/SHOW_IN;x=-70+(W/2+70)*(1-(1-k)*(1-k));}                       // slide in, easing out
     else if(e<SHOW_IN+SHOW_BLINK)vis=(((e-SHOW_IN)/(SHOW_BLINK/6))|0)%2===0;                 // blink-blink-blink
@@ -2148,7 +2333,7 @@ function drawHUD(){
      perfectText('SHOW TIME',W/2,y,cyc<.5?cyc:1,2,cyc>=.45);}
     R(20,ky+7,bw,3,'#2a1d38');R(20,ky+7,Math.round(bw*fr),3,'#ff8a1a');R(20,ky+7,Math.round(bw*fr),1,'#ffd400');
     ctx.globalAlpha=.35+.2*Math.sin(gt*16);ctx.strokeStyle='#ff8a1a';ctx.lineWidth=3;ctx.strokeRect(1.5,20.5,W-3,H-22);ctx.globalAlpha=1;}
-  if(fever>0&&kingT<=0){text('FEVER x2',W/2,22,2,((gt*6)|0)%2?'#ffd04a':'#ff8a1a','c','#0d0a08'); /* 2x and flickering, in the COMBO label's spot above the count: the floating PERFECT! never reaches up here */
+  if(fever>0&&kingT<=0){bigDigits('FEVER x2',W/2,26,2,((gt*6)|0)%2?['#ffffff','#ffd0a0','#ff6a1a']:['#fff6b0','#ffd400','#ff8a00'],null); /* 2x and flickering, in the COMBO label's spot above the count: the floating PERFECT! never reaches up here */
     ctx.globalAlpha=.25+.15*Math.sin(gt*20);ctx.strokeStyle='#ff6a1a';ctx.lineWidth=2;ctx.strokeRect(1,20,W-2,H-21);ctx.globalAlpha=1;}
   const dist=lavaY-pl.feet;
   if(mode==='play'&&started){
@@ -2192,8 +2377,8 @@ function hudFlames(cx,topY,w,n){for(let i=0;i<n;i++){const x=cx+(Math.random()-.
   R(x,topY-h,2+(k>.6?1:0),2+(k>.6?1:0),FIREPAL(k));}}
 // dash button: while one fist is held to walk, the other button turns into the hero mid-dash (leaning forward,
 // headband streaming) with cyan afterimages flowing off behind him - the same ghosts you see when you really dash
-/* the hero facing you, upper body, fists up in guard; the headband tail flies back */
-const DASH_FRONT=["....kkkk....","...kkkkkk...","...rrrrrr...","...ssssss...","...sesses...","ss.ssssss.ss","ss..ssss..ss",".g.gggggg.g.",".ggggGGgggg.","...gggggg...","...bbbbbb..."];
+/* the hero facing you, upper body, standing at ease; the headband tail flies back */
+const DASH_FRONT=["....kkkk....","...kkkkkk...","...rrrrrr...","...ssssss...","...sesses...","...ssssss...","....ssss....","..gggggggg..",".gggggGGggg.",".gg.gggg.gg.",".ss.bbbb.ss."]; /* standing at ease: arms down at his sides */
 const DASH_PAL={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:'#f4efe8',G:'#c4bccd',b:'#1e1a24',d:'#3a2a24'};
 const DASH_GHOST={};for(const k in DASH_PAL)DASH_GHOST[k]='#7af0ff';
 const DASH_INK={};for(const k in DASH_PAL)DASH_INK[k]='#1a0a06';
@@ -2214,26 +2399,59 @@ function fistEdge(SP){let e=FIST_EDGE.get(SP);if(e)return e;const w=SP[0].length
   for(let r=0;r<SP.length;r++){const row=SP[r];lt.push(row.search(/[^.]/));let q=-1;for(let c=w-1;c>=0;c--)if(row[c]!=='.'){q=c;break;}rt.push(q);}
   e={top,lt,rt};FIST_EDGE.set(SP,e);return e;}
 const FIRE_BUF=new Map(),FIRE_M=12,FIRE_T=46; /* per fist: a heat grid (margin each side, room above) */
-function fistFire(SP,x0,y0,lv,front){const w=SP[0].length,fh=Math.min(SP.length,34),GW=w+FIRE_M*2,GH=FIRE_T+fh;
-  let F=FIRE_BUF.get(SP);if(!F){F={h:new Float32Array(GW*GH),t:-1};FIRE_BUF.set(SP,F);}const h=F.h;
-  if(!front&&F.t!==gt){F.t=gt; /* one step per frame: the fist itself is the heat source, heat rises, drifts sideways and cools */
-    for(let y=0;y<fh;y++){const row=SP[y];for(let c=0;c<w;c++)if(row[c]!=='.')h[(FIRE_T+y)*GW+FIRE_M+c]=.86+Math.random()*.14;}
-    const dec=.15-lv*.017;
-    for(let y=1;y<GH;y++)for(let x=0;x<GW;x++){const v=h[y*GW+x],r=(Math.random()*3)|0,dx=Math.min(GW-1,Math.max(0,x-r+1));
-      h[(y-1)*GW+dx]=Math.max(0,v-(r&1?dec:dec*.5)*(.85+Math.random()*.3));}}
-  const gx=x0-FIRE_M,gy=y0-FIRE_T;
-  if(!front){ /* behind: everything that burns outside the fist */
-    for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const v=h[y*GW+x];if(v<.1)continue;
-      const fy=y-FIRE_T,fc=x-FIRE_M;if(fy>=0&&fy<fh&&fc>=0&&fc<w&&SP[fy][fc]!=='.')continue;
-      ctx.globalAlpha=v<.25?v*3.2:1;R(gx+x,gy+y,1,1,FIREPAL(v*.82));} /* mostly orange and yellow, white only at the hottest */
-    ctx.globalAlpha=1;return;}
-  /* in front: tongues of the blaze licking over the knuckles, and a hot glow on the fist */
-  ctx.globalAlpha=(.1+.03*lv)*(.85+.15*Math.sin(gt*22));
-  for(let r=0;r<fh;r++){const row=SP[r];for(let c=0;c<w;c++)if(row[c]!=='.')R(x0+c,y0+r,1,1,r<fh*.5?'#ffb000':'#ff6a1a');}
-  const lick=Math.min(fh,6+lv*2);
-  for(let y=0;y<lick;y++)for(let c=0;c<w;c++){if(SP[y][c]==='.')continue;const v=h[(FIRE_T+y-3)*GW+FIRE_M+c]*(1-y/lick);if(v<.45)continue;
-    ctx.globalAlpha=.5*(v-.4);R(x0+c,y0+y,1,1,FIREPAL(.55+v*.4));}
-  ctx.globalAlpha=1;}
+/* the KING fist fire, hot-rod style (think the flames on a Harley tank): a row of smooth flame tongues swept up off the knuckles,
+   each with a dark red outline, red body, orange, then a yellow core low down. They sway and stretch, never break into sparks.
+   Small on purpose: LV1 a low lick, LV5 about a third of the fist's height above it. */
+const FIST_TOP=new Map();
+function fistTop(SP){let e=FIST_TOP.get(SP);if(e)return e;const w=SP[0].length;e=[];for(let c=0;c<w;c++){let r=0;while(r<SP.length&&SP[r][c]==='.')r++;e.push(r);}FIST_TOP.set(SP,e);return e;}
+/* the KING fist fire: the same living fire as on the boxer, a heat field where the knuckles and the upper sides of the fist
+   are the source, heat rises, sways and cools. Painted with hard pixel colours (no faint specks, so it never reads as sparks)
+   into a small buffer and drawn with one drawImage. Kept small: LV1 a low burn on the knuckles, LV5 about a third of the fist. */
+const FIRE_RGB={};const fireRGB=k=>{const hx=FIREPAL(k);return FIRE_RGB[hx]||(FIRE_RGB[hx]=[parseInt(hx.slice(1,3),16),parseInt(hx.slice(3,5),16),parseInt(hx.slice(5,7),16)]);};
+function fistFire(SP,x0,y0,lv,front){
+  const w=SP[0].length,h=SP.length,top=fistTop(SP),L=Math.min(5,Math.max(1,lv)),M=8,T=20,GW=w+M*2,GH=T+h;
+  if(front){ctx.globalAlpha=(.08+.025*L)*(.85+.15*Math.sin(gt*18));ctx.drawImage(sprCanvas(SP,null,'#ff9a2a'),x0,y0);ctx.globalAlpha=1;return;}
+  let F=FIRE_BUF.get(SP);
+  if(!F){const cv=document.createElement('canvas');cv.width=GW;cv.height=GH;const g=cv.getContext('2d');
+    const side=[];for(let r=0;r<h;r++){const row=SP[r];side.push([row.search(/[^.]/),row.length-1-[...row].reverse().join('').search(/[^.]/)]);}
+    F={h:new Float32Array(GW*GH),t:-1,cv,g,img:g.createImageData(GW,GH),side};FIRE_BUF.set(SP,F);}
+  const H=F.h;
+  if(F.t!==gt){F.t=gt;const heat=.42+.06*L,dec=.36-.045*L,sp=L-1;
+    for(let c=0;c<w;c++){const r0=top[c];if(r0>=h)continue;for(let r=r0;r<Math.min(h,r0+2);r++)H[(T+r)*GW+M+c]=heat+Math.random()*.15;} /* the knuckles */
+    const sideTo=Math.round(h*(.25+.08*L));
+    for(let r=0;r<sideTo;r++){const [lt,rt]=F.side[r];if(lt<0)continue;for(let s=0;s<=sp;s++){                                     /* the upper sides, wider each level */
+        H[(T+r)*GW+M+lt-s]=heat-s*.04+Math.random()*.12;H[(T+r)*GW+M+rt+s]=heat-s*.04+Math.random()*.12;}}
+    for(let y=1;y<GH;y++)for(let x=0;x<GW;x++){const v=H[y*GW+x],r=(Math.random()*3)|0,dx=Math.min(GW-1,Math.max(0,x-r+1));
+      H[(y-1)*GW+dx]=Math.max(0,v-(r&1?dec:dec*.55)*(.85+Math.random()*.3));}
+    for(let y=T;y<GH;y++)for(let x=0;x<GW;x++){const c=x-M,r=y-T;if(c>=0&&c<w&&SP[r][c]!=='.')continue;if(r>sideTo+2)H[y*GW+x]*=.6;}} /* no fire hanging under the fist */
+  const P=F.img.data;P.fill(0);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const v=H[y*GW+x];if(v<.2)continue;const c=x-M,r=y-T;if(r>=0&&c>=0&&c<w&&SP[r][c]!=='.')continue;
+    const [R_,G_,B_]=fireRGB(v*.85),o=(y*GW+x)*4;P[o]=R_;P[o+1]=G_;P[o+2]=B_;P[o+3]=255;}
+  F.g.putImageData(F.img,0,0);ctx.drawImage(F.cv,x0-M,y0-T);
+}
+/* ki: an aura that hugs the whole fist (not a disc): a distance field around the fist silhouette, grown with the charge,
+   flickering and flowing upward like heat, white-hot at the skin, cyan, then a soft blue edge */
+const kiField=[];
+setTimeout(()=>{try{kiAura(0,-99,-99,0);kiAura(1,-99,-99,0);}catch(e){}},1500); /* build both fields early, off the first charge */
+function kiAura(sd,x0,y0,ch){const SP=FIST_SP[sd],w=SP[0].length,h=SP.length,M=8;
+  if(!kiField[sd]){const fw=w+M*2,fh=h+M*2,d=new Float32Array(fw*fh).fill(99),pts=[];
+    const on=(r,c)=>r>=0&&r<h&&c>=0&&c<w&&SP[r][c]!=='.';
+    for(let r=0;r<h;r++)for(let c=0;c<w;c++)if(on(r,c)&&!(on(r-1,c)&&on(r+1,c)&&on(r,c-1)&&on(r,c+1)))pts.push([c+M,r+M]); /* outline pixels only: the nearest skin is always on the outline */
+    for(let y=0;y<fh;y++)for(let x=0;x<fw;x++){let m=99;for(const [px,py] of pts){const v=Math.hypot(x-px,(y-py)*(y<py?.7:1.3));if(v<m)m=v;}d[y*fw+x]=m;} /* reaches further upward than down */
+    const cv=document.createElement('canvas');cv.width=fw;cv.height=fh;const g=cv.getContext('2d');kiField[sd]={fw,fh,d,cv,g,img:g.createImageData(fw,fh)};}
+  if(ch<=0)return;
+  const K=kiField[sd],{fw,fh,d}=K,Rk=2.5+ch*6.5,full=ch>=.99,pulse=full?.15*Math.sin(gt*20):0,P=K.img.data;
+  P.fill(0); /* painted into a small pixel buffer, then one drawImage: no per-pixel canvas calls */
+  for(let y=0;y<fh;y++)for(let x=0;x<fw;x++){const v=d[y*fw+x];if(v<.5||v>Rk+1)continue;
+    const n=hash(x,((y+gt*26)|0)),edge=Rk*(.6+.4*n)+pulse*Rk;if(v>edge)continue;
+    const k=v/edge,a=Math.min(1,(1-k)*(.6+.5*ch)),o=(y*fw+x)*4;
+    if(k<.3){P[o]=230;P[o+1]=253;P[o+2]=255;}else if(k<.65){P[o]=122;P[o+1]=240;P[o+2]=255;}else{P[o]=42;P[o+1]=154;P[o+2]=216;}P[o+3]=a*255;}
+  K.g.putImageData(K.img,0,0);ctx.drawImage(K.cv,x0-M,y0-M);}
+const SPR_CACHE=new Map();
+function sprCanvas(SP,pal,solid){let m=SPR_CACHE.get(SP);if(!m){m=new Map();SPR_CACHE.set(SP,m);}const key=solid||pal;let c=m.get(key);if(c)return c;
+  const w=SP[0].length,h=SP.length;c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+  for(let r=0;r<h;r++){const row=SP[r];for(let q=0;q<w;q++){const ch=row[q];if(ch==='.')continue;g.fillStyle=solid||pal[ch];g.fillRect(q,r,1,1);}}
+  m.set(key,c);return c;}
 function drawClassicFists(){
   // which side (if any) is walking: then the other button becomes a dash shoe pointing that way
   let walkSide=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T&&mode==='play')walkSide=h.side;
@@ -2250,12 +2468,12 @@ function drawClassicFists(){
     const lit=mode==='play'&&fireLv>=1&&fireLv<6&&(showing||(superReady&&kingT<=0));
     if(lit){ctx.globalAlpha=1;fistFire(SP,x0,y0,fireLv,false);} // KING ready: the whole fist burns, bigger every level
     ctx.globalAlpha=hit||held?1:.88;
-    if(charge>0){ctx.globalAlpha=.2+.35*charge;pxDisc(x0+w*sc/2,y0+16,15+charge*3,'#7af0ff');ctx.globalAlpha=1;}
+    if(charge>0)kiAura(sd,x0,y0,charge);
     // dark silhouette behind so the fist reads over bright lava
     const ga=ctx.globalAlpha;ctx.globalAlpha=ga*.55;
-    for(let r=0;r<SP.length;r++){const row=SP[r];for(let c=0;c<w;c++){const ch=row[c];if(ch!=='.')R(x0+c*sc+2,y0+r*sc+2,sc,sc,'#1a0a06');}}
+    ctx.drawImage(sprCanvas(SP,null,'#1a0a06'),x0+2,y0+2);   /* cached: one drawImage each, not ~3000 fillRects */
     ctx.globalAlpha=ga;
-    for(let r=0;r<SP.length;r++){const row=SP[r];for(let c=0;c<w;c++){const ch=row[c];if(ch!=='.')R(x0+c*sc,y0+r*sc,sc,sc,pal[ch]);}}
+    ctx.drawImage(sprCanvas(SP,pal),x0,y0);
     if(lit){ctx.globalAlpha=1;fistFire(SP,x0,y0,fireLv,true);}
     if(hit){ctx.globalAlpha=.8;for(let k=0;k<3;k++)R(x0+6+k*10,y0-6-(k%2)*2,2,4,'#fff3a0');}  // little speed ticks above the fist
     if(mashOpen()){ctx.globalAlpha=1;hudFlames(x0+w*sc/2,y0+14,w*sc*.9,26);hudFlames(x0+w*sc/2,y0+4,w*sc*.6,12);}
@@ -2269,7 +2487,7 @@ function drawLavaFalls(){
   let el,fade=1,tail=-12;
   if(mode==='count')el=LEAF_T-countT;else if(mode==='play'&&started&&tNow<1.4){el=LEAF_T+tNow;fade=1-tNow/1.4;tail=-12+tNow*tNow*260;}else return;
   if(RM)return;const t=el-.05;if(t<=0)return;
-  const bottom=Math.min(H,pl.feet-camY+4),head=-8+(bottom+8)*Math.pow(Math.min(1,t/1.75),1.6);
+  const bottom=Math.min(H,pl.feet-camY+4),head=-8+(bottom+8)*Math.pow(Math.min(1,t/1.45),1.4); /* the lava pours down first, almost to the floor, before he drops */
   ctx.globalAlpha=fade*.9;
   // glow running ahead of the surface
   const g=ctx.createLinearGradient(0,head,0,head+40);g.addColorStop(0,'rgba(255,90,20,.35)');g.addColorStop(1,'rgba(255,90,20,0)');
@@ -2283,23 +2501,63 @@ function drawLavaFalls(){
   if(head>=bottom-1){if(Math.random()<.7)parts.push({x:WALL+Math.random()*IN,y:camY+bottom-2,vx:(Math.random()-.5)*50,vy:-30-Math.random()*50,life:.4,col:Math.random()<.5?'#ffd04a':'#ff8a1a',s:1,g:240});}
   else if(Math.random()<.4)parts.push({x:WALL+Math.random()*IN,y:camY+head,vx:0,vy:50,life:.25,col:'#ffd04a',s:1,g:200});   // drips off the surface
   ctx.globalAlpha=1;}
-// leaf path: sways side to side on the way down and comes to rest just beside the boxer
-const leafX=k=>{const end=clamp(pl.x+14,WALL+6,W-WALL-6);return (W/2+(end-W/2)*k)+Math.sin(k*Math.PI*3.2)*22*(1-k*.85);};
-function drawLeaf(x,y,frame,mirror){const rows=frame,w=rows[0].length,sc=2; // drawn 2x so it reads at phone size
-  for(let r=0;r<rows.length;r++){const row=rows[r];for(let c=0;c<w;c++){const ch=row[mirror?w-1-c:c];if(ch!=='.')R(Math.round(x)-7+c*sc,Math.round(y)-12+r*sc,sc,sc,LEAF_PAL[ch]);}}}
+// the boxer's START drop: he falls from above the screen with his arms up, the shadow on the floor grows as he nears,
+// then he lands crouched and plants both fists on the floor
+/* the superhero landing: one fist planted on the floor, the other drawn back at the chest, one knee down, head low */
+const LAND=["....kkkk.....","...kkkkkk....","...rrrrrrrr..","...ssssss.r..","...sesses....","....ssss.....",
+  "..gggggggss..",".sgGGgggGss..",".sgggggggS...",".s.bbbbbb....",".s.ggg.gggg..","sss.gg..gggd.","SSS.dd..ggddd"];
+const DROP_PAL={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:'#f4efe8',G:'#c4bccd',b:'#1e1a24',d:'#3a2a24',u:'#e8344a'};
+function drawDrop(){
+  const floorY=pl.feet-camY,px=Math.round(pl.x)-4;
+  if(mode==='count'){
+    const el=LEAF_T-countT,u=clamp((el-DROP_AT)/(LEAF_T-DROP_AT),0,1),feet=-20+(floorY+20)*(.35*u+.65*u*u), /* already moving as he enters: he shows up on 3, while the lava is still finishing */top=Math.round(feet-14); /* he drops in a beat after the lava starts, and falls much faster */   /* free fall: y = g t^2, slow at the top, fastest at the floor */
+    ctx.globalAlpha=.15+.35*u;R(px-Math.round(u*3),Math.round(floorY)+1,8+Math.round(u*6),1,'#0d0a08');ctx.globalAlpha=1;
+    if(u>.45){ctx.globalAlpha=Math.min(.6,(u-.45)*1.6);const L=Math.round(6+u*u*22);R(px+1,top-L-2,1,L,'#fff3e0');R(px+6,top-L+2,1,L-4,'#fff3e0');R(px-2,top-L+6,1,L-8,'#fff3e0');ctx.globalAlpha=1;} /* speed streaks once he is really dropping */
+    sprite(bodyRows(),px,top,DROP_PAL,false);
+    R(px-1,top+2,2,5,DROP_PAL.s);R(px+7,top+2,2,5,DROP_PAL.s);   // arms up while falling
+    R(px-2,top-7,4,4,DROP_PAL.s);R(px+6,top-7,4,4,DROP_PAL.s);
+  } else { /* touchdown: superhero landing, sinking a pixel deeper on the hit, then holding it */
+    const fx=Math.round(pl.x);
+    if(tNow<.5)sprite(LAND,fx-6,Math.round(floorY)-13+(tNow<.08?1:0),DROP_PAL,false);                            // planted: the hit, then holding it
+    else if(tNow<.74){sprite(BODY.slice(0,11).concat([".gg..gg.",".dd..dd."]),fx-4,Math.round(floorY)-13,DROP_PAL,false);  // pushing up: still crouched
+      R(fx-5,Math.round(floorY)-6,2,3,DROP_PAL.s);R(fx+3,Math.round(floorY)-6,2,3,DROP_PAL.s);}
+    else sprite(BODY,fx-4,Math.round(floorY)-14-(tNow<.8?1:0),DROP_PAL,false);                                      // up, a little lift as he straightens
+  }
+}
+// the ground breaks where he lands: drawn into the ground layer itself (so it shakes with the world and sits under him):
+// a crater, two slabs of floor heaved up and tilted on either side, and fissures running along and down into the ground,
+// dark inside with a lit lower lip and lava light deep in the ones near the impact
+let gcrack=null;
+const LAND_REC=.95; /* after the touchdown he stays down, rises slowly, and only then can be moved */
+let landEnd=false;
+const landing=()=>mode==='play'&&started&&!!gcrack&&!landEnd&&tNow<LAND_REC; /* the landing pose: it breaks the moment you press */
+function makeGroundCrack(x){const F=[];
+  const spec=[[-1,.08,30],[1,.06,34],[-1,.45,13],[1,.5,12],[-1,1.1,7],[1,1.3,7],[-1,.2,16],[1,.25,18]];
+  for(const [sd,sl,len] of spec){const pts=[];let px=x+sd*(sl<.3?9:3),py=sl<.3?0:2;const L=len*(.75+Math.random()*.5);
+    for(let s=0;s<L;s++){px+=sd;py+=sl+(Math.random()-.5)*.9;if(py<0)py=0;pts.push([px,py,Math.max(1,Math.round(2.6*(1-s/L)))]);}
+    F.push(pts);}
+  return {x,t:gt,F};}
+function drawGroundCrack(gy){if(!gcrack)return;
+  const z0=ZONES[0],el=gt-gcrack.t,k=Math.min(1,el/.16),x0=Math.round(gcrack.x),fl=((gt*10)|0)%2;
+  for(const f of gcrack.F){const n=Math.ceil(f.length*k);                       // fissures
+    for(let i=0;i<n;i++){const [x,y,w]=f[i],yy=Math.round(gy+y),hot=i<n*.35&&y>1;
+      R(x,yy,1,w,'#0d0a08');R(x,yy+w,1,1,z0.wallL);if(hot&&w>1)R(x,yy+1,1,1,fl?'#ff8a1a':'#c8341a');}}
+  const H=Math.round(3*Math.min(1,el/.08))-(el>.08&&el<.16?1:0);                // the slabs heave up, then settle a little
+  for(const sd of [-1,1])for(let i=0;i<8;i++){const x=x0+sd*(3+i),r=Math.round(H*(1-i/8));
+    if(r>0)R(x,gy-r+3,1,r,'#0d0a08');                                            // the dark gap under the tilted slab
+    R(x,gy-r,1,1,z0.wallL);R(x,gy-r+1,1,2,z0.wall);R(x,gy-r+3,1,1,z0.wallD);}    // the slab: lit top, body, shadowed underside
+  for(let dx=-2;dx<=2;dx++){const d=3-Math.abs(dx);R(x0+dx,gy,1,d+1,'#0d0a08');if(d>1)R(x0+dx,gy+d-1,1,1,fl?'#ffb03a':'#ff7410');} // the crater
+}
 function drawCountdown(){
-  if(mode==='count'){const k=clamp(1-countT/LEAF_T,0,1),ground=pl.feet-camY-3,y=-6+(ground+6)*(k*k*.35+k*.65);
-    const x=leafX(k),sway=Math.cos(k*Math.PI*3.2);
-    // its shadow on the floor grows as it gets close
-    ctx.globalAlpha=.15+.35*k;R(Math.round(x)-2-Math.round(k*2),Math.round(ground)+3,4+Math.round(k*4),1,'#0d0a08');ctx.globalAlpha=1;
-    if(Math.abs(sway)<.35)drawLeaf(x,y,LEAF_FLAT,false);else drawLeaf(x,y,LEAF_TILT,sway<0);
-    // quiet "READY" while it falls; each beep flashes it
+  if(mode==='count'){ // quiet "READY" while he falls; each beep flashes it
     const since=LEAF_BEEPS.reduce((m,b)=>(LEAF_T-countT)>=b?(LEAF_T-countT)-b:m,9),hot=since<.15;
-    if(!coaching())text('READY',W/2,66,2,hot?'#ffffff':'#a597b8','c','#0d0a08');} /* first run: the caption takes READY's place */
-  else if(mode==='play'&&started&&tNow<1.2&&leafLand){ // the leaf lies where it landed for a moment
-    ctx.globalAlpha=Math.max(0,1-tNow/1.2);drawLeaf(leafLand.x,leafLand.y-camY-3,LEAF_FLAT,false);ctx.globalAlpha=1;}
-  if(mode==='play'&&started&&tNow<.7){const sc=tNow<.1?5:4;
-    ctx.globalAlpha=tNow<.45?1:Math.max(0,1-(tNow-.45)/.25);
+    const el=LEAF_T-countT,n=LEAF_BEEPS.filter(b=>el>=b).length;
+    if(n===0){if(!coaching())text('READY',W/2,66,2,'#a597b8','c','#0d0a08');} /* the lava pours: READY */
+    else{const age=el-LEAF_BEEPS[n-1],sc=age<.06?8:6;ctx.globalAlpha=age<.25?1:Math.max(.25,1-(age-.25)/.15);  /* 3, 2, 1: one quick punch-in each */
+      bigDigits(String(4-n),W/2,62-(sc-6)*3,sc,n===3?['#fff6b0','#ffd400','#ff8a00']:['#ffffff','#e6f7ff','#7ad8ff'],n===3?'#ffb000':'#5ac8ff');ctx.globalAlpha=1;}}
+  const st=tNow; /* START! right on the landing */
+  if(mode==='play'&&started&&st>=0&&st<.7){const sc=st<.1?5:4;
+    ctx.globalAlpha=st<.45?1:Math.max(0,1-(st-.45)/.25);
     text('START!',W/2,70-(sc-4)*3,sc,'#ffd400','c','#0d0a08');ctx.globalAlpha=1;}
 }
 function drawSlowMo(){
@@ -2325,16 +2583,12 @@ function drawShield(){
 function drawKingCharge(){
   if(!(bothT>0&&mode==='play'))return;
   const k=Math.min(1,bothT/BOTH_HOLD),x=pl.x,y=pl.feet-8-camY;
-  ctx.globalAlpha=.45*k;R(0,0,W,H,'#0d0a08');ctx.globalAlpha=1;
   ctx.globalCompositeOperation='lighter';
   const g=ctx.createRadialGradient(x,y,0,x,y,14+k*22);
   g.addColorStop(0,`rgba(255,200,80,${.55*k+.2})`);g.addColorStop(.5,`rgba(255,120,30,${.35*k+.1})`);g.addColorStop(1,'rgba(255,80,20,0)');
   ctx.fillStyle=g;ctx.fillRect(x-40,y-40,80,80);ctx.globalCompositeOperation='source-over';
   // a ring that tightens onto the boxer as the charge completes
   pxRing(x,y,Math.round(30-22*k),k>.85&&((gt*30)|0)%2?'#ffffff':'#ffd400');
-  const txt=kingLevel>=6?'SHOW MAX!':'SHOW LV'+kingLevel,tw0=tw(txt,2);
-  R(W/2-tw0/2-4,46,tw0+8,16,'#0d0a08');R(W/2-tw0/2-4,59,(tw0+8)*k,3,'#ff8a00');
-  text(txt,W/2,49,2,k>.85&&((gt*20)|0)%2?'#ffffff':'#ffd400','c',false);
 }
 let mashShown=false;const mashEl=document.getElementById('mash');
 function syncMash(){const on=mashOpen();if(on!==mashShown){mashShown=on;mashEl.hidden=!on;
@@ -2362,29 +2616,26 @@ function drawLv6Vignette(){
   const pul=.5+.12*Math.sin(gt*4);
   const vg=ctx.createRadialGradient(W/2,H*.55,H*.28,W/2,H*.55,H*.75);
   vg.addColorStop(0,'rgba(10,30,90,0)');vg.addColorStop(1,`rgba(10,30,90,${pul})`);ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);}
+/* KING fire on the boxer himself: his silhouette is the heat source, heat rises, sways and cools. Each level burns hotter and taller
+   (LV1: a flicker round him; LV5: flames well over his head); LV6 burns blue. Drawn behind him. */
+const HF={h:null,t:-1},HF_M=11,HF_T=26;
 function drawKingAura(){
-  if(!(superReady&&kingLevel>0)||mode==='title'||mode==='dead'||mode==='super')return;
-  const lv=Math.min(6,kingLevel),blue=lv>=6,ah=AURA_H[lv-1],aw=AURA_W[lv-1];
+  if(!(kingLevel>0)||mode==='title'||mode==='dead'||mode==='super')return;
+  const lv=Math.min(6,kingLevel),blue=lv>=6,rows=bodyRows(),w=8,bh=rows.length,GW=w+HF_M*2,GH=HF_T+bh;
+  if(!HF.h)HF.h=new Float32Array(GW*GH);const h=HF.h;
+  if(HF.t!==gt){HF.t=gt;const heat=.42+.07*Math.min(5,lv),dec=.3-Math.min(5,lv)*.036;
+    const sp=Math.round((Math.min(5,lv)-1)*1.6);   /* LV1: just his outline; each level the flames start further out to the sides (LV5: 6px) */
+    for(let y=0;y<bh;y++){const row=rows[y];let lt=-1,rt=-1;for(let c=0;c<w;c++)if(row[c]&&row[c]!=='.'){if(lt<0)lt=c;rt=c;}if(lt<0)continue;
+      const s=y<3?Math.min(sp,1):sp;for(let c=lt-s;c<=rt+s;c++){const out=c<lt?lt-c:c>rt?c-rt:0;h[(HF_T+y)*GW+HF_M+c]=(heat-out*.03)+Math.random()*.16;}}
+    for(let y=1;y<GH;y++)for(let x=0;x<GW;x++){const v=h[y*GW+x],r=(Math.random()*3)|0,dx=Math.min(GW-1,Math.max(0,x-r+1));
+      h[(y-1)*GW+dx]=Math.max(0,v-(r&1?dec:dec*.55)*(.85+Math.random()*.3));}
+    for(let x=0;x<GW;x++)h[(GH-1)*GW+x]*=.5;}
   let feet=pl.feet;if(pl.jt>=0)feet-=Math.sin(Math.PI*pl.jt)*10;
-  const cx=pl.x,fy=Math.round(feet-camY);
-  const OUT=blue?'#2a6aff':'#ffa200',MID=blue?'#7af0ff':'#ffe14a',IN=blue?'#e8fbff':'#fff8c8';
-  ctx.globalCompositeOperation='lighter';
-  const g=ctx.createRadialGradient(cx,fy-ah*.45,0,cx,fy-ah*.45,aw*2.2);g.addColorStop(0,blue?'rgba(90,170,255,.35)':'rgba(255,200,60,.3)');g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=g;ctx.fillRect(cx-aw*2.2,fy-ah*.45-aw*2.2,aw*4.4,aw*4.4);ctx.globalCompositeOperation='source-over';
-  const half=r=>Math.sin(Math.PI*(.18+.82*r)); // egg profile: some width at the soles, widest around the waist, a point on top
-  const flick=(row,k)=>(hash(row+k*31,(gt*(16+lv*2))|0)-.5)*1.6;
-  ctx.globalAlpha=.6;
-  for(let row=0;row<=ah;row++){const r=row/ah,y=fy-row,hw=aw*half(r)+flick(row,1);if(hw<.5)continue;R(Math.round(cx-hw),y,Math.round(hw*2)+1,1,OUT);}
-  ctx.globalAlpha=.55;
-  for(let row=0;row<=ah-2;row++){const r=row/ah,y=fy-row,hw=(aw-2)*half(r)+flick(row,2)*.6;if(hw<.5)continue;R(Math.round(cx-hw),y,Math.round(hw*2)+1,1,MID);}
-  ctx.globalAlpha=.5;
-  for(let row=0;row<=ah-5;row++){const r=row/ah,y=fy-row,hw=(aw-4)*half(r);if(hw<.5)continue;R(Math.round(cx-hw),y,Math.round(hw*2)+1,1,IN);}
-  // energy streaks running up the shell
-  ctx.globalAlpha=.9;
-  for(let k=0;k<2+lv;k++){const sx=Math.round(cx+(hash(k,7)-.5)*aw*1.6),ph=((gt*(1.6+lv*.15)+hash(k,9))%1),sy=Math.round(fy-ph*ah);
-    R(sx,sy-2,1,3,IN);}
+  const gx=Math.round(pl.x)-4-HF_M,gy=Math.round(feet-camY)-bh-HF_T;
+  const BL=k=>k>.7?'#e8fbff':k>.45?'#7af0ff':k>.22?'#2a8aff':'#1a3ac8';
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const v=h[y*GW+x];if(v<.1)continue;ctx.globalAlpha=v<.22?v*4:1;R(gx+x,gy+y,1,1,blue?BL(v):FIREPAL(v*.85));}
   ctx.globalAlpha=1;
-  if(Math.random()<.2+lv*.1)parts.push({x:cx+(Math.random()-.5)*aw,y:feet-ah+2,vx:(Math.random()-.5)*6,vy:-18-Math.random()*14,life:.25,col:blue?'#bff6ff':'#fff1a0',s:1,g:0}); // sparks off the tip
+  if(Math.random()<.1+lv*.06)parts.push({x:pl.x+(Math.random()-.5)*8,y:feet-bh-4-lv*2,vx:(Math.random()-.5)*8,vy:-20-Math.random()*16,life:.3,col:blue?'#bff6ff':'#ffd04a',s:1,g:0}); // embers off the tips
 }
 // KING slot, one row: "LV n" on the left, 10 tall cells filling left to right toward the next level on the right
 // BIG KING GAUGE along the bottom edge: LV1..LV5 stack up in ONE row (nothing resets on level-up), 9 cells per level,
@@ -2415,16 +2666,24 @@ function drawBigGauge(){
     else if(i===filled&&kingLevel<5&&((gt*6)|0)%2)col='#5a4a6a';                 // the next cell blinks
     R(sx,sy,cw,ch,col);if(col!=='#2a1d38'&&col!=='#5a4a6a')R(sx,sy,cw,1,'rgba(255,255,255,.45)');}
   // the labels: dim outline of the text, then the lit colour rising from the bottom as their stretch fills
-  kHud.lvPop=Math.max(0,(kHud.lvPop||0)-1/60);const pa=.4-kHud.lvPop;
+  kHud.lvPop=Math.max(0,(kHud.lvPop||0)-1/60);const pa=.6-kHud.lvPop;
+  if(kHud.lastFill!==filled){if(kHud.lastFill!=null&&filled>kHud.lastFill)kHud.cellPop=.18;kHud.lastFill=filled;}kHud.cellPop=Math.max(0,(kHud.cellPop||0)-1/60);
   for(let g=0;g<6;g++){
     const fr=g<5?(blue>=(g+1)*GAUGE_PER?1:clamp((filled-g*GAUGE_PER)/GAUGE_PER,0,1)):maxFr;
     const isBlue=g===5||blue>=(g+1)*GAUGE_PER,lit=isBlue?'#7af0ff':KL_GCOL[g];
     const justNow=kHud.lvPop>0&&(g<5?kingLevel===g+1:kingLevel>=6);              // the level you just reached hops
-    const hop=!justNow?0:pa<.05?-2:pa<.13?-4:pa<.21?-2:pa<.27?1:0;if(kingLevel>=6)continue; // at MAX the strip becomes a MAXIMUM sign
-    const ty=base-LH+hop,tx=labX[g];
+    if(kingLevel>=6)continue; // at MAX the strip becomes a MAXIMUM sign
+    const ty=base-LH,tx=labX[g],lcx=tx+lw[g]/2,lcy=ty+LH/2,growing=g===Math.min(4,kingLevel)&&kHud.cellPop>0;
+    const sc=justNow?1+1.15*Math.exp(-pa*7)*Math.cos(pa*24):growing?1+.3*(kHud.cellPop/.18):1;   /* chewy: big, under, settle */
+    ctx.save();if(sc!==1){ctx.translate(lcx,lcy);ctx.scale(sc,sc);ctx.translate(-lcx,-lcy);}
     textTall(labs[g],tx,ty,'#3b2a52');
     if(fr>0){const fh=Math.max(1,Math.round(LH*fr));ctx.save();ctx.beginPath();ctx.rect(tx-1,ty+LH-fh,lw[g]+2,fh);ctx.clip();
-      textTall(labs[g],tx,ty,justNow&&pa<.13?'#ffffff':lit);ctx.restore();}
+      textTall(labs[g],tx,ty,justNow&&pa<.08?'#ffffff':lit);ctx.restore();}
+    if(justNow&&pa<.45){const sx=tx-4+(lw[g]+8)*(pa/.45);ctx.save();ctx.beginPath();ctx.rect(sx,ty-1,3,LH+2);ctx.clip();textTall(labs[g],tx,ty,'#ffffff');ctx.restore();} // a shine sweeping across
+    ctx.restore();
+    if(justNow&&pa<.5){const a=1-pa/.5,r=Math.round(4+pa*22);ctx.globalAlpha=a;                         // a sparkle burst round it
+      for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1],[0,-1.3]]){const px=Math.round(lcx+dx*r),py=Math.round(lcy+dy*r*.6);R(px-1,py,3,1,'#fff6c0');R(px,py-1,1,3,'#fff6c0');}
+      ctx.globalAlpha=1;}
     if(fr>=1&&g<5&&kingLevel===g+1){R(tx,base+1,lw[g],1,lit);}}   // underline the level you're on
   if(kingLevel>=6){ // MAX: 'MAXIMUM' runs along the whole strip like a scrolling sign over the blue cells
     ctx.save();ctx.beginPath();ctx.rect(0,H-GAUGE_ROW,W,GAUGE_ROW);ctx.clip();
@@ -2479,8 +2738,10 @@ function drawHint(){
   const tap=(sd,t)=>{down(fx(sd),fy-6+bob);label(t||'TAP',fx(sd));};
   const hold=(sd,t)=>{side(fx(sd)+(sd?8:-8),fy-4+bob,sd?1:-1);label(t||'HOLD',fx(sd));};
   const toWeak=()=>{const s=tgt();return s&&s.wx>pl.x+2?1:s&&s.wx<pl.x-2?0:lastSide===0?1:0;};
-  if(coaching()){const sd=tapFX[0]>=tapFX[1]?0:1;down(fx(sd),fy-6);label(sd?'R':'L',fx(sd));return;} // the leaf: fists demo L R L R
-  if(mode==='play'&&started&&!knows('tap'))showHint('tap'); // the very first run: tap a fist = punch the floor above
+  const hitMark=()=>{const s=tgt();if(!s||s.broken)return;const hw=wkW(s)/2,right=s.wx<W/2+8,ay=Math.round(-s.n*FH-camY-s.bump)+7,ax=Math.round(right?s.wx+hw+9:s.wx-hw-9)+(right?bob:-bob);
+    side(ax,ay,right?-1:1);text('HIT!',right?ax+8:ax-8,ay-4,2,col,right?undefined:'r','#0d0a08');}; /* this red mark is what to punch */
+  if(coaching()){const sd=tapFX[0]>=tapFX[1]?0:1;down(fx(sd),fy-6);label(sd?'R':'L',fx(sd));hitMark();return;} // the leaf: fists demo L R L R
+  if(mode==='play'&&started&&!knows('tap')){showHint('tap');if(hintsOn)hitMark();} // the very first run: tap a fist = punch the floor above
   if(dashFar&&tryK==='dash'&&mode==='play'){const s=tgt();if(s&&s.practice){dashFar=false;}else if(s&&!s.broken&&s.hp===s.max){const h=wkW(s)/2;s.wFrom=null;s.wT=1;s.wx=Math.round(pl.x<W/2?W-WALL-4-h:WALL+4+h);dashFar=false;}}
   if(tryK&&tryK!=='king'&&mode==='play')showHint(tryK); // a move that just opened: the arrows stay until it's done once
   if(superReady&&kingLevel>=1)showHint('king'); // stays up until the first KING PUNCH
@@ -2558,7 +2819,7 @@ function render(){
   for(let n=nLo;n<=nHi;n++){
     const y=-n*FH-camY;if(y>-10&&y<H)text(String(n),WALL-2,y-8,1,zoneOfLevel(n).wallL,'r',false);}
   for(let n=nLo;n<=nHi+1;n++){const y=-(n-1)*FH-camY;if(y>-30&&y<H+40&&n%3===1&&n<=SURF)drawTorch(n);}
-  const gy=-camY;if(gy<H){const z0=ZONES[0];R(WALL,gy,IN,H,z0.wallD);for(let x=0;x<IN;x+=6)R(WALL+x,gy,5,1,z0.wall);}
+  const gy=-camY;if(gy<H){const z0=ZONES[0];R(WALL,gy,IN,H,z0.wallD);for(let x=0;x<IN;x+=6)R(WALL+x,gy,5,1,z0.wall);drawGroundCrack(gy);}
   for(let n=nLo;n<=nHi;n++){const y=-n*FH-camY;if(y>-16&&y<H+2)drawSlab(slabs[n]);}
   if(vsOn()){const y=-vs.floor*FH-camY,c=vsBeat?'#6e6480':'#ffd400';if(y>-12&&y<H+2){for(let x=WALL;x<W-WALL;x+=6)R(x,y,3,1,c);text('VS',W-WALL-2,y-7,1,c,'r');}} /* the friend's floor: a dashed line across the tower */
   drawImpactFrame();
@@ -2682,14 +2943,14 @@ function myBoxHTML(list,mi,label){const x=list[mi],g=gradeOf(x),d=dKey(x);
 function boardHTML(res,hiId,mine){
   const list=res.list||[];
   const note=res.saveErr?`전체 랭킹 · 이번 기록은 서버 저장 실패 (${esc(res.saveErr)})`:res.online?'전체 플레이어 랭킹':(ONLINE?`온라인 연결 실패${netErr?' ('+esc(netErr)+')':''} · 이 기기 기록만 보여요`:'이 기기에 저장된 랭킹');
-  if(!list.length)return `<p class="bnote">아직 기록이 없어요. 첫 1위를 차지하세요!</p><p class="bnote">${note}</p>`;
+  if(!list.length)return `<div class="ezr rkp empty"><div class="ezhead" style="--d:0">RANKING</div><p class="rkempty">아직 기록이 없어요<br><b>첫 1위를 차지하세요!</b></p></div><p class="bnote">${note}</p>`;
   if(!hiId&&mine){const ids=new Set(localBoard().map(x=>x.id));const f=list.find(x=>ids.has(x.id));if(f)hiId=f.id;}
   const mi=hiId?list.findIndex(x=>x.id===hiId):-1;
   const box=mi>=0?myBoxHTML(list,mi,mine?'MY BEST':'YOUR RANK'):'';
   const top=list.slice(0,3).map((x,i)=>topHTML(x,i,hiId)).join('');
   let h=list.slice(3,LIMIT).map((x,i)=>rowHTML(x,i+3,hiId,i+5)).join('');
   if(mi>=LIMIT)h+=`<div class="rkgap">· · ·</div>`+rowHTML(list[mi],mi,hiId,LIMIT);
-  return `<div class="ezr rkp"><div class="ezhead" style="--d:0">RANKING</div>${box}${top}${h}</div><p class="bnote">${note}</p>`;
+  return `<div class="ezr rkp"><div class="ezhead" style="--d:0">RANKING</div>${box}<div class="rkscroll">${top}${h}</div></div><p class="bnote">${note}</p>`;
 }
 const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 × 1,000 × 난이도 배율 · 같은 점수면 더 빨리 오른 사람이 위<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
 async function fillBoard(sel,_unused,hiId,preset,mine){
@@ -2697,8 +2958,14 @@ async function fillBoard(sel,_unused,hiId,preset,mine){
   el.innerHTML='<p class="bnote blinky">LOADING…</p>';
   const res=preset||await getTop();
   if(gen!==ovGen)return;
-  el.innerHTML=boardHTML(res,hiId,mine);
+  el.innerHTML=boardHTML(res,hiId,mine);fitBoard();
 }
+/* the board never pushes the buttons off the screen: if the page is too tall, only the list of rows shrinks and scrolls inside the panel */
+function fitBoard(){const p=ov.querySelector('.ezr.rkp:not(.nreg)'),sc=p&&p.querySelector('.rkscroll');if(!sc)return;
+  p.style.minHeight='';sc.style.maxHeight='';
+  const over=ov.scrollHeight-ov.clientHeight;
+  if(over>0){p.style.minHeight='0';const over2=ov.scrollHeight-ov.clientHeight;sc.style.maxHeight=Math.max(110,sc.clientHeight-over2-6)+'px';sc.classList.add('fit');}}
+addEventListener('resize',()=>{if(!ov.hidden)fitBoard();});
 
 /* ---------- screens ---------- */
 const CREDIT=`<footer class="credit">© 2026 VENTO AI STUDIO</footer>`;
@@ -2735,24 +3002,22 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&ov.hidden&
 // every run opens with 3-2-1-GO; the clock and the lava start on GO
 // quick arcade call: "LET'S" (0.55s) -> "START!" and you're playing
 let countT=0,countShown=0;
-// START ritual: a single autumn leaf drifts down from the sky while it beeps "ti... ti... ti..." and the instant it
-// touches the floor: "TIII!" + START. LEAF_T is the whole fall; BEEPS are when the short beeps land.
-const LEAF_FAST=1.3,LEAF_T=2.4/LEAF_FAST,LEAF_BEEPS=[.6,1.2,1.8].map(t=>t/LEAF_FAST); // 30% quicker fall, beeps keep the same rhythm
+// START ritual: the boxer drops out of the sky (like the story) while it beeps "ti... ti... ti..." and the instant he
+// touches the floor he plants both fists, the floor cracks, "TIII!" + START. LEAF_T is the whole fall; BEEPS are when the short beeps land.
+const LEAF_T=2.4,DROP_AT=.85,LEAF_BEEPS=[1.25,1.6,1.95]; /* the lava pours down first; as it nearly reaches the floor he drops in on a fast 3-2-1 and lands on GO */
 const LETS_T=LEAF_T;
-const LEAF_FLAT=["...o...",".o.O.o.",".oOOOo.","ooOrOoo",".oOOOo.","...s...","...s..."];
-const LEAF_TILT=["....oo.","..oOOo.",".oOrOo.","oOrOo..","oOOo...",".s.....","s......"];
-const LEAF_PAL={o:'#e8541a',O:'#ff8a2a',r:'#b8360c',s:'#6a3a18'};
 let leafBeeps=0,leafLand=null;
-function beginCountdown(){newGame();for(const v of BURN_VOICES)clipDecode(v);mode='count';countT=LETS_T;countShown=0;leafBeeps=0;bgmStop();holds.clear();}
+function beginCountdown(){newGame();gcrack=null;landQ=[];landEnd=false;offStreak=0;comboBreak=null;for(const v of BURN_VOICES)clipDecode(v);mode='count';countT=LETS_T;countShown=0;leafBeeps=0;bgmStop();holds.clear();}
 function updateCountdown(dt){
   countT-=dt;const el=LEAF_T-countT;
   while(leafBeeps<LEAF_BEEPS.length&&el>=LEAF_BEEPS[leafBeeps]){leafBeeps++;sfx.count(false);vibe(8);} // ti... ti... ti...
   if(coaching()){const ph=Math.floor(el/.3);demoPh=ph;if(el-ph*.3<.14)tapFX[ph%2]=1;} /* the fists show it: left, right, left, right */
-  if(countT<=0){leafLand={x:leafX(1),y:pl.feet};sfx.count(true);vibe(25);mode='play';started=true;tStart=now();lastTap=-9;bgmStart();     // TIII! the leaf lands
-    if(AC){const t=AC.currentTime; // 'pasak': a dry leaf crunching -- a cluster of tiny bright crackles
-      [0,.018,.034,.055,.08,.11].forEach((d,i)=>noise(t+d,.035+Math.random()*.02,2600+Math.random()*2800,1.4,.32-i*.035,'bandpass'));
-      noise(t,.12,1400,.7,.12,'highpass');}
-    for(let i=0;i<8;i++)parts.push({x:leafLand.x+(Math.random()-.5)*6,y:pl.feet-1,vx:(Math.random()-.5)*40,vy:-10-Math.random()*20,life:.4,col:'rgba(230,220,200,.6)',s:1,g:60});}
+  if(countT<=0){leafLand={x:pl.x,y:pl.feet};gcrack=makeGroundCrack(pl.x);sfx.count(true);vibe([70,30,140]);shake=Math.max(shake,12);hitstop=Math.max(hitstop,.07);flashO=Math.max(flashO,.35);flashCol='#fff3c0';
+    mode='play';started=true;tStart=now();lastTap=-9;bgmStart();     // TIII! the fists hit the floor
+    if(AC){const t=AC.currentTime;sfx.boom();noise(t,.12,2200,1.2,.45,'bandpass');noise(t+.03,.2,1200,.8,.3,'highpass');   // the floor splits: a dry crack and a rumble
+      [0,.04,.09].forEach(d=>noise(t+d,.05,3000+Math.random()*1500,1.3,.25,'bandpass'));}
+    {const z0=ZONES[0];for(let i=0;i<14;i++){const sd=i%2?1:-1;parts.push({x:leafLand.x+sd*(2+Math.random()*8),y:pl.feet-2,vx:sd*(20+Math.random()*50),vy:-40-Math.random()*50,life:.7,col:[z0.wall,z0.wallL,z0.wallD][i%3],s:i%4?1:2,g:220});} /* rubble */
+      for(let i=0;i<12;i++){const sd=i%2?1:-1;parts.push({x:leafLand.x+sd*(8+Math.random()*5),y:pl.feet-1-Math.random()*2,vx:sd*(30+Math.random()*35),vy:-3-Math.random()*6,life:.55,col:'rgba(214,200,180,.38)',s:2,g:-6});}}} /* dust rolling out */
 }
 // guest: a throwaway name like GUEST417, never saved as this device's nickname
 let isGuest=false;
@@ -2762,17 +3027,24 @@ function startGuest(){isGuest=true;playerName='GUEST'+String(100+Math.floor(Math
 // pixel-art arcade button (3/4 view): red cap on a dark bezel. h = how far the cap stands up (6 = up, 0 = pushed in)
 const BTN_S=8; /* the button art is 52x29 pixels drawn 8x bigger, so the lying VENTO on its cap can be finer than one art pixel */
 let btnArt=null,ventoFlat=null;
-function drawStartButton(c,h){
+function drawStartButton(c,h,broken,capOnly){
   if(c.width!==52*BTN_S){c.width=52*BTN_S;c.height=29*BTN_S;}
   if(!btnArt){btnArt=document.createElement('canvas');btnArt.width=52;btnArt.height=29;}
   const g=btnArt.getContext('2d');g.clearRect(0,0,52,29);
   const ell=(cx,cy,rx,ry,col)=>{g.fillStyle=col;for(let y=-ry;y<=ry;y++){const w=Math.round(rx*Math.sqrt(1-(y*y)/(ry*ry)));if(w>0)g.fillRect(cx-w,cy+y,w*2+1,1);}};
   const cx=26,by=16;
+  if(!capOnly){                         // (capOnly: just the cap, for the pieces that fly off)
   ell(cx,by+4,23,7,'#4a403a');          // floor shadow / outer bezel
   ell(cx,by+2,20,6,'#2a2420');          // bezel ring
   ell(cx,by+1,17,5,'#5c5450');          // bezel lip
   ell(cx,by,16,5,'#1a1512');            // hole
+  }
   // cap side (cylinder) from the hole up to the top face
+  if(broken){ /* the cap is gone: a cracked, empty socket with a few red stumps left in it */
+    g.fillStyle='#0a0706';[[cx-14,by-1,9,1],[cx-6,by-2,1,3],[cx-5,by+1,7,1],[cx+2,by-3,1,4],[cx+3,by,9,1],[cx+11,by+1,1,3],[cx-10,by+2,1,2],[cx-20,by+3,6,1],[cx+15,by+4,6,1],[cx-2,by+6,1,3]].forEach(r=>g.fillRect(...r));
+    g.fillStyle='#7a0a0a';[[cx-12,by+2,3,2],[cx+8,by+2,4,2],[cx-3,by+3,2,1]].forEach(r=>g.fillRect(...r));
+    g.fillStyle='#b81010';[[cx-12,by+1,2,1],[cx+9,by+1,2,1]].forEach(r=>g.fillRect(...r));
+    const o2=c.getContext('2d');o2.imageSmoothingEnabled=false;o2.clearRect(0,0,c.width,c.height);o2.drawImage(btnArt,0,0,c.width,c.height);return;}
   for(let k=0;k<=h;k++){ell(cx,by-k,15,5,k<2?'#7a0a0a':'#b81010');}
   for(let k=1;k<=h;k++){g.fillStyle='#d81e1e';const y=by-k+4;g.fillRect(cx+2,y,12,1);} // lit right side of the wall
   ell(cx,by-h,15,5,'#ff2a2a');          // top face
@@ -2798,13 +3070,13 @@ function pixWord(txt,pal,drop){
   const mx=Math.max(0,...drop.map(d=>d[0])),my=Math.max(0,...drop.map(d=>d[1]));
   const w=x-1,c=document.createElement('canvas');c.width=w+mx+2;c.height=6+my+2;const g=c.getContext('2d'),P=(a,b,col)=>{g.fillStyle=col;g.fillRect(a,b,1,1);};
   const solid=cells.slice();for(const [dx,dy] of drop)for(const [a,b] of cells)solid.push([a+dx,b+dy]);
-  for(const [a,b] of solid)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)P(a+1+dx,b+1+dy,pal.ink); /* outline around the face and its whole drop */
+  if(pal.ink)for(const [a,b] of solid)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)P(a+1+dx,b+1+dy,pal.ink); /* outline around the face and its whole drop (none when ink is null) */
   for(const [dx,dy,col] of drop)for(const [a,b] of cells)P(a+1+dx,b+1+dy,col);
   for(const [a,b] of cells)P(a+1,b+1,b===0?pal.hi:b<3?pal.face:pal.lo);
   return c;}
 /* VENTO for the button cap: the AI STUDIO colours (cream, red drop, deep-red drop) in big dots, squashed to lie on the cap */
 function ventoWord(){if(ventoFlat)return ventoFlat;
-  const src=pixWord('VENTO',{ink:'#2a0606',e2:'#4a1408',e1:'#c8341a',hi:'#ffffff',face:'#f4efe8',lo:'#d8cfc8'},[[1,4,'#4a1408'],[1,3,'#7a1c0c'],[0,2,'#c8341a'],[0,1,'#e0502a']]); /* thick block letters: their front walls show below them */
+  const src=pixWord('VENTO',{ink:null,e2:'#6e2a00',e1:'#c24e00',hi:'#fff3a0',face:'#ffd400',lo:'#ffb000'},[[1,4,'#6e2a00'],[1,3,'#a33f00'],[0,2,'#c24e00'],[0,1,'#e07a00']]); /* thick block letters: their front walls show below them */
   const SX=5,SY=3,q=document.createElement('canvas'),qg=q.getContext('2d');q.width=src.width*SX;q.height=src.height*SY;
   qg.imageSmoothingEnabled=false;qg.drawImage(src,0,0,q.width,q.height);
   return ventoFlat=q;}
@@ -2813,6 +3085,52 @@ function animStartButton(c){
   const tick=()=>{if(!run)return;drawStartButton(c,forced!==null?forced:seq[i++%seq.length]);setTimeout(tick,100);};
   tick();
   return pressNow=>{if(pressNow){forced=0;drawStartButton(c,0);}else run=false;};
+}
+// the ground splits where the fist hit: packed earth, seen at an angle, tears open along a few long jagged chasms that run from
+// the impact to the edges of the screen, with thinner cracks branching off. Each chasm opens as it races outward: you see its
+// far wall (lit, earthy) and darkness below, a pale crumbling upper lip, a shadowed lower lip, and the ground heaved up beside it.
+// A crater where the fist landed, clods and dust thrown out. Lit softly from the impact so the far ground falls into the dark.
+function crackFloor(btn,orc){
+  const br=btn.getBoundingClientRect(),Q=4,PW=Math.ceil(orc.width/Q),PH=Math.ceil(orc.height/Q),N=PW*PH;
+  const cv=document.createElement('canvas');cv.width=PW;cv.height=PH;
+  Object.assign(cv.style,{position:'absolute',left:'0',top:'0',width:PW*Q+'px',height:PH*Q+'px',pointerEvents:'none',zIndex:3,imageRendering:'pixelated'});
+  ov.appendChild(cv);
+  const g=cv.getContext('2d'),ox=(br.left-orc.left+br.width/2)/Q,oy=(br.top-orc.top+br.height*.62)/Q;
+  const fz=(x,y)=>{const dy=y-oy;return Math.hypot(x-ox,dy<0?dy/.6:dy/1.25);},RM=Math.max(fz(0,0),fz(PW,0),fz(0,PH),fz(PW,PH));
+  /* the chasms: random walks out from the impact; every sample stamps its width into the pixels around it */
+  const W_=new Float32Array(N),Dd=new Float32Array(N).fill(99),OY=new Float32Array(N),SA=new Float32Array(N);let maxS=1;
+  const stamp=(x,y,w,s)=>{const r=Math.ceil(w+3);for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const px=Math.round(x)+dx,py=Math.round(y)+dy;
+      if(px<0||py<0||px>=PW||py>=PH)continue;const p=py*PW+px,d=Math.hypot(px+.5-x,(py+.5-y)*1.25);if(d-w<Dd[p]-W_[p]){Dd[p]=d;W_[p]=w;OY[p]=py+.5-y;SA[p]=s;}}};
+  const walk=(x,y,a0,wm,s,depth)=>{let a=a0,L=0;const steps=[];
+    while(x>-4&&x<PW+4&&y>-4&&y<PH+4&&L<400){a+=(Math.random()-.5)*.5;a=a0+Math.max(-.55,Math.min(.55,a-a0));
+      x+=Math.cos(a);y+=Math.sin(a)*(Math.sin(a)<0?.6:1.1);L++;steps.push([x,y]);}
+    steps.forEach(([sx,sy],i)=>{const k=i/steps.length,w=wm*Math.pow(1-k,.7)+.45;stamp(sx,sy,w,s+i);if(s+i>maxS)maxS=s+i;
+      if(depth<1&&i>8&&Math.random()<.035)walk(sx,sy,a0+(Math.random()<.5?-1:1)*(.6+Math.random()*.6),w*.55,s+i,depth+1);});};
+  const MAIN=6+(Math.random()*2|0);for(let i=0;i<MAIN;i++)walk(ox,oy,(i/MAIN)*Math.PI*2+(Math.random()-.5)*.5,2.6+Math.random()*1.4,0,0);
+  const img=g.createImageData(PW,PH),D=img.data,put=(p,r,gg,b)=>{D[p*4]=r;D[p*4+1]=gg;D[p*4+2]=b;D[p*4+3]=255;};
+  const base=new Float32Array(N*3),FD=new Float32Array(N);   /* packed earth: grainy brown-grey with pebbles, lit from the impact */
+  for(let y=0;y<PH;y++)for(let x=0;x<PW;x++){const p=y*PW+x,n=hash(x,y),m=hash(x>>1,(y>>1)+40),fd=fz(x+.5,y+.5);FD[p]=fd;
+    const L=Math.max(.12,Math.min(1,1.15-fd/(RM*.7)));let r=58+n*16+m*10,gg=49+n*13+m*8,b=42+n*10+m*6;if(n>.94){r+=34;gg+=30;b+=26;}else if(n<.05){r-=18;gg-=16;b-=14;}
+    base[p*3]=r*L;base[p*3+1]=gg*L;base[p*3+2]=b*L;}
+  const t0=performance.now(),bits=[];let last=t0;
+  for(let i=0;i<26;i++){const a=Math.random()*Math.PI*2,v=20+Math.random()*60;bits.push({x:ox,y:oy,vx:Math.cos(a)*v,vy:Math.sin(a)*v*.7-30,z:0,vz:30+Math.random()*50,l:.9+Math.random()*.5,c:i%4?'#4a3a2e':'#7a6450',s:i%3?1:2});}
+  for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2;bits.push({x:ox+Math.cos(a)*3,y:oy+Math.sin(a)*2,vx:Math.cos(a)*14,vy:Math.sin(a)*8-4,dust:1,l:1+Math.random()*.6,s:3});}
+  const draw=()=>{if(!cv.isConnected)return;const now=performance.now(),el=(now-t0)/1000,dt=Math.min(.05,(now-last)/1000);last=now;
+    const prop=maxS*(1-Math.pow(1-Math.min(1,el/.45),2)),open=1-Math.pow(1-Math.min(1,el/.6),3),cr=6*Math.min(1,el/.12);
+    for(let p=0;p<N;p++){let r=base[p*3],gg=base[p*3+1],b=base[p*3+2];const w=W_[p]*open,d=Dd[p],oyv=OY[p],on=SA[p]<=prop&&w>0;
+      if(on&&d<w){const rel=oyv/Math.max(.6,w);                                   // inside the chasm
+        if(rel<-.15){const k=(-rel-.15)/.85;r=30+70*k;gg=24+54*k;b=20+40*k;const L=Math.max(.25,1.1-FD[p]/(RM*.7));r*=L;gg*=L;b*=L;} // the far wall
+        else{r=7;gg=5;b=6;}}                                                      // the dark below
+      else if(on&&d<w+1.3){if(oyv<0){r=Math.min(255,r*1.7+18);gg=Math.min(255,gg*1.65+15);b=Math.min(255,b*1.6+12);}else{r*=.4;gg*=.4;b*=.4;}} // lips
+      else if(on&&d<w+3.5){const f=oyv<0?1.15:.82;r*=f;gg*=f;b*=f;}             // the ground heaved beside it
+      const fd=FD[p];if(fd<cr){const k=fd/cr;r=12+30*k*k;gg=10+24*k*k;b=9+18*k*k;}else if(fd<cr+1.4&&cr>0){r=Math.min(255,r*1.5+10);gg=Math.min(255,gg*1.45+8);b=Math.min(255,b*1.4+6);} // the crater and its rim
+      put(p,r|0,gg|0,b|0);}
+    g.putImageData(img,0,0);
+    for(let i=bits.length-1;i>=0;i--){const s=bits[i];s.l-=dt;if(s.l<=0){bits.splice(i,1);continue;}s.x+=s.vx*dt;s.y+=s.vy*dt;
+      if(s.dust){s.vx*=.95;s.vy*=.95;g.globalAlpha=Math.min(.45,s.l*.4);g.fillStyle='#a89a8a';g.fillRect(Math.round(s.x-1),Math.round(s.y-1),s.s,s.s);g.globalAlpha=1;continue;}
+      s.z+=s.vz*dt;s.vz-=160*dt;if(s.z<0){s.z=0;s.vz*=-.3;s.vx*=.6;s.vy*=.6;}g.fillStyle=s.c;g.fillRect(Math.round(s.x),Math.round(s.y-s.z),s.s,s.s);}
+    requestAnimationFrame(draw);};
+  draw();
 }
 // PUSH: a giant fist drops out of the sky and smashes the arcade button to bits
 function fistCanvas(armH){ // the in-game cartoon fist turned knuckles-down, its bare forearm widening toward the elbow, up off the screen
@@ -2867,23 +3185,34 @@ function smashStart(btn,stopBtn,next){
   setTimeout(()=>{fc.animate([{transform:Y(top)},{transform:Y(0)}],{duration:T_SLAM,easing:'cubic-bezier(.6,0,1,.4)',fill:'forwards'});
     if(AC){const t=AC.currentTime;noise(t,.18,600,.7,.35,'bandpass',3200);tone(t,.18,900,200,'sawtooth',.12);}},T_IN+T_WIND); // whoosh
   setTimeout(()=>{ // impact
-    stopBtn(false);btn.style.visibility='hidden';if(cue)cue.style.visibility='hidden';
+    stopBtn(false);if(cue)cue.style.visibility='hidden';
+    let capURL='';try{const cc=document.createElement('canvas');drawStartButton(cc,1,false,true);capURL=cc.toDataURL();}catch(e){}
+    btn.style.visibility='hidden'; /* the whole button (cap and base) is gone: nothing is left but the cracks in the floor */
+    crackFloor(btn,orc);
     sfx.boom();vibe([50,30,90]);
     ov.animate([{transform:'translate(0,0)'},{transform:'translate(-9px,7px)'},{transform:'translate(8px,-6px)'},{transform:'translate(-5px,4px)'},{transform:'translate(0,0)'}],{duration:320});
     const fl=document.createElement('div');Object.assign(fl.style,{position:'absolute',inset:0,background:'#fff3c0',zIndex:6,pointerEvents:'none'});
     ov.appendChild(fl);fl.animate([{opacity:.85},{opacity:0}],{duration:260,fill:'forwards'});
-    // shards of the button fly everywhere
-    const cols=['#e8344a','#ff6a7a','#8a1020','#c8c0d0','#4a4458','#ffd400'],cx=br.left-orc.left+br.width/2,cy=br.top-orc.top+br.height*.6;
-    for(let i=0;i<34;i++){const d=document.createElement('div'),sz=(6+Math.random()*14)|0,a=-Math.PI*Math.random()-(Math.random()<.25?0:0),sp=180+Math.random()*420;
-      Object.assign(d.style,{position:'absolute',left:(cx+(Math.random()-.5)*br.width*.8)+'px',top:(cy+(Math.random()-.5)*br.height*.5)+'px',
-        width:sz+'px',height:sz+'px',background:cols[i%cols.length],zIndex:4,pointerEvents:'none'});
-      ov.appendChild(d);const vx=Math.cos(a)*sp*(Math.random()<.5?-1:1),vy=Math.sin(a)*sp;
-      d.animate([{transform:'translate(0,0) rotate(0deg)',opacity:1},{transform:`translate(${vx*.9}px,${vy*.5+520}px) rotate(${(Math.random()-.5)*720}deg)`,opacity:.9}],
-        {duration:900+Math.random()*300,easing:'cubic-bezier(.2,.6,.6,1)',fill:'forwards'});}
+    // the button itself breaks: its own picture is cut into jagged chunks that burst out from under the fist and tumble down
+    const cx=br.left-orc.left+br.width/2,cy=br.top-orc.top+br.height*.52,GX=5,GY=4,cw=br.width/GX,ch=br.height/GY;
+    if(capURL)for(let gy=0;gy<GY;gy++)for(let gx=0;gx<GX;gx++){
+      const px=(gx+.5)/GX-.5,py=(gy+.5)/GY-.52;if((px*px)/(.36*.36)+(py*py)/(.4*.4)>1)continue; /* only cells that hold a piece of the cap */
+      const d=document.createElement('div'),j=()=>(8+Math.random()*30|0)+'%',k=()=>(62+Math.random()*30|0)+'%';
+      Object.assign(d.style,{position:'absolute',left:(br.left-orc.left+gx*cw)+'px',top:(br.top-orc.top+gy*ch)+'px',width:cw+'px',height:ch+'px',
+        backgroundImage:`url(${capURL})`,backgroundSize:`${br.width}px ${br.height}px`,backgroundPosition:`${-gx*cw}px ${-gy*ch}px`,imageRendering:'pixelated',
+        clipPath:`polygon(${j()} ${j()},${k()} ${j()},100% ${k()},${k()} 100%,${j()} ${k()},0 ${j()})`,zIndex:4,pointerEvents:'none'});
+      ov.appendChild(d);const out=180+Math.random()*260,vx=px*2*out+(Math.random()-.5)*80,up=-(150+Math.random()*230)*(1-Math.abs(px)),rot=(Math.random()-.5)*900,T=900+Math.random()*350;
+      d.animate([{transform:'translate(0,0) rotate(0deg)',offset:0},{transform:`translate(${vx*.45}px,${up}px) rotate(${rot*.4}deg)`,offset:.32,easing:'cubic-bezier(.4,0,.9,.5)'},
+        {transform:`translate(${vx}px,${up+640}px) rotate(${rot}deg)`,offset:1}],{duration:T,easing:'cubic-bezier(.1,.7,.4,1)',fill:'forwards'});}
+    for(let i=0;i<12;i++){const d=document.createElement('div'),sz=(3+Math.random()*4)|0,a=-Math.PI*Math.random(),sp=140+Math.random()*300; /* crumbs, in the button's own reds and greys */
+      Object.assign(d.style,{position:'absolute',left:(cx+(Math.random()-.5)*br.width*.6)+'px',top:(cy+(Math.random()-.5)*br.height*.3)+'px',
+        width:sz+'px',height:sz+'px',background:['#ff2a2a','#b81010','#7a0a0a','#5c5450','#2a2420'][i%5],zIndex:4,pointerEvents:'none'});
+      ov.appendChild(d);
+      d.animate([{transform:'translate(0,0)'},{transform:`translate(${Math.cos(a)*sp}px,${Math.sin(a)*sp*.6+460}px)`}],{duration:700+Math.random()*300,easing:'cubic-bezier(.2,.6,.6,1)',fill:'forwards'});}
     // dust ring on the floor
     fc.animate([{transform:'translateY(0)'},{transform:'translateY(-14px)'},{transform:'translateY(0)'}],{duration:260});
     setTimeout(()=>{fc.animate([{opacity:1},{opacity:0}],{duration:200,fill:'forwards'});},420);
-    setTimeout(next,700);
+    setTimeout(next,1300);
   },IMPACT);}
 // leaving the studio logo: the letters punch forward, a white flash bursts open behind them,
 // and the title fades in out of the glare
@@ -2921,6 +3250,275 @@ function logoFlash(next){
     if(!swapped&&e>=GROW-10){swapped=true;next();}
     if(fade<1)requestAnimationFrame(frame);else cv.remove();};
   requestAnimationFrame(frame);}
+/* ---------- opening story (first visit; replay from settings) ----------
+   A meadow: Kim Jumeok trains on a giant boulder while his wife reads and the kids run about. The ground splits and he
+   drops into the pit under the tower: the climb is the way back to them. Drawn on its own 144x256 canvas; a tap skips it. */
+const STORY_KEY='punchtower.story';let storyOn=false;
+function storySeen(){try{return localStorage.getItem(STORY_KEY)==='1';}catch(e){return false;}}
+function playStory(done){
+  /* an old 2D-game cutscene: black bars, a typed caption. 1) seen from behind, he pounds a rock wall that fills the screen
+     2) the ground rumbles and splits 3) he drops down a shaft past veins and falls of lava 4) he lands at the foot of the tower */
+  if(storyOn)return;storyOn=true;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;cv.id='storycv';
+  Object.assign(cv.style,{position:'absolute',inset:'0',width:'100%',height:'100%',imageRendering:'pixelated',zIndex:'2',background:'#000',cursor:'pointer'});
+  const cap=document.createElement('div');cap.className='storycap';Object.assign(cap.style,{top:'auto',bottom:'2%'});
+  const sk=document.createElement('div');sk.className='storyskip';sk.textContent='TAP ▸ SKIP';Object.assign(sk.style,{bottom:'auto',top:'10px'});
+  stage.append(cv,cap,sk);
+  const c=cv.getContext('2d');let shx=0,shy=0,E=0;
+  const P=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x+shx),Math.round(y+shy),Math.round(w),Math.round(h));};
+  const S=(rows,x,y,pal,sc,mir)=>{for(let r=0;r<rows.length;r++){const row=rows[r],w=row.length;for(let q=0;q<w;q++){const ch=row[mir?w-1-q:q],col=pal[ch];if(col)P(x+q*sc,y+r*sc,sc,sc,col);}}};
+  const HP={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:'#f4efe8',G:'#c4bccd',b:'#1e1a24',d:'#3a2a24'};
+  const BACK=["...kkkkkk...","..kkkkkkkk..","..rrrrrrrr..","..kkkkkkkk..","...kkkkkk...","....sSSs....","..sssSSsss..","..sssSSsss..","..sssSSsss..","...ssSSss...","...bbbbbb...","...gggggg...","...ggGGgg...","...gg..gg...","...gg..gg...","...dd..dd..."];
+  const WIFE=["..hhhhh.",".hhhhhhh",".sssshhh",".essshhh",".sssshhh","..ss.hh.",".pppppp.","wwpppppp","wwsppppp","..pppppp","pppppppp","pp......","ss......","kk......"];
+  const WIFE_UP=["..hhhhh.",".hhhhhhh",".sssshhh",".essshhh",".sssshhh","..ss.hh.",".pppppp.","spppppps","spppppps","..pppp..","..pppp..","..pppp..","..s..s..","..k..k.."];
+  const WP={h:'#5a2a1a',s:'#f2b68a',e:'#1a1020',p:'#e86a9a',w:'#f4efe8',k:'#2a1a14'};
+  const KID=[".hhhh.","hhhhhh",".ssss.","sesses",".ssss.",".tttt.","tttttt",".tttt."];
+  const K1={h:'#2a1a14',s:'#f2b68a',e:'#1a1020',t:'#3a8aff'},K2={h:'#7a3a1a',s:'#f2b68a',e:'#1a1020',t:'#ffd400'};
+  const TOP=20,BOT=220,WY=186,GY=207,CX=72,FY=198;           /* bars, foot of the wall, his feet, centre, the tower floor */
+  const TALK=2.2,GO=3.7,PT=[4.1,4.6,5.1,5.55,6.0,6.4,6.8],T1=7.3,T2=8.7,T3=9.7,T4=13.1,END=T4+3.9; /* her complaint, his answer, the blows, the rumble, the split, the fall, the landing */
+  /* the rock wall, painted once: big rough blocks, lit top-left, dark toward the foot */
+  const wall=document.createElement('canvas');wall.width=W;wall.height=WY-TOP;{const w=wall.getContext('2d'),cols=['#7c7886','#6a6674','#5e5a68','#8a8694','#726e7c'];
+    for(let r=0,y=0;y<wall.height;r++){const h=10+(hash(r,7)*8|0);let x=-(hash(r,3)*20|0);
+      while(x<W){const bw=14+(hash(r,x+50)*22|0);w.fillStyle=cols[(hash(x+9,r)*cols.length)|0];w.fillRect(x,y,bw,h);
+        w.fillStyle='rgba(255,255,255,.16)';w.fillRect(x,y,bw,1);w.fillRect(x,y,1,h);
+        w.fillStyle='rgba(20,14,30,.6)';w.fillRect(x,y+h-1,bw,1);w.fillRect(x+bw-1,y,1,h);
+        for(let i=0;i<3;i++){w.fillStyle=i%2?'rgba(20,14,30,.35)':'rgba(255,255,255,.13)';w.fillRect(x+2+(hash(x,r*9+i)*(bw-4)|0),y+2+(hash(x+1,r*5+i)*(h-4)|0),2,1);}
+        x+=bw;}
+      y+=h;}
+    const sh=w.createLinearGradient(0,0,0,wall.height);sh.addColorStop(0,'rgba(10,6,20,.5)');sh.addColorStop(.3,'rgba(10,6,20,0)');sh.addColorStop(1,'rgba(10,6,20,.45)');w.fillStyle=sh;w.fillRect(0,0,W,wall.height);}
+  const wcr=[];for(let i=0;i<11;i++){const a=-Math.PI*(i+.5)/11+(hash(i,31)-.5)*.3,pts=[];let x=CX,y=150;
+    for(let s=0;s<40;s++){x+=Math.cos(a)*3+(hash(i,s)-.5)*3;y+=Math.sin(a)*3+(hash(s,i+40)-.5)*3;if(y<TOP||y>WY-2||x<0||x>W)break;pts.push([x,y]);}wcr.push(pts);}
+  let capFull='',capAt=0;
+  const snd=f=>{try{if(AC&&soundOn)f(AC.currentTime);}catch(e){}};
+  const say=t=>{if(capFull!==t){capFull=t;capAt=E;}const n=Math.min(t.length,Math.floor((E-capAt)*26)+1),s=t.slice(0,n); /* typed out, with a blip */
+    if(cap.textContent!==s){cap.textContent=s;if(n<t.length&&n%2===0)snd(tt=>tone(tt,.025,740,740,'square',.025));}};
+  const cues={},once=(k,f)=>{if(!cues[k]){cues[k]=1;try{f();}catch(e){}}};
+  const t0=performance.now();let ended=false,lastN=0,chips=[],dust=[];
+  const end=()=>{if(ended)return;ended=true;storyOn=false;try{localStorage.setItem(STORY_KEY,'1');}catch(e){}
+    removeEventListener('keydown',onKey);cap.remove();sk.remove();
+    try{cv.animate([{opacity:1},{opacity:0}],{duration:280,fill:'forwards'});}catch(e){}setTimeout(()=>cv.remove(),290);done();};
+  const onKey=e=>{if(performance.now()-t0<500)return;if(e.key==='Enter'||e.key===' '||e.key==='Escape'){e.preventDefault();end();}};
+  cv.addEventListener('pointerdown',e=>{e.stopPropagation();if(performance.now()-t0>500)end();});addEventListener('keydown',onKey);
+  const kid=(pal,x,y,dir,run)=>{const bob=run?Math.round(Math.abs(Math.sin(E*14))*2):0,fr=run?((E*9)|0)%2:0;
+    S(KID,x,y-16-bob,pal,2,dir<0);if(fr){P(x+2,y-bob,2,4,'#2a2a44');P(x+8,y-bob,2,2,'#2a2a44');}else{P(x+3,y-bob,2,2,'#2a2a44');P(x+7,y-bob,2,4,'#2a2a44');}};
+  const bang=(x,y)=>{P(x-1,y-1,4,11,'#0d0a08');P(x,y,2,6,'#ffd400');P(x,y+7,2,2,'#ffd400');};
+  /* him from behind (3x): pose 'idle' | 'punch' (one fist driven into the wall) | 'up' (arms thrown up) */
+  const hero=(top,pose,side)=>{const x0=CX-18,fl=((E*8)|0)%2;S(BACK,x0,top,HP,3);
+    P(x0+27,top+6,6,3,HP.r);P(x0+31,top+8+fl*2,5,3,HP.r); /* headband tails */
+    for(const sd of [0,1]){const ax=sd?x0+30:x0;
+      if(pose==='punch'&&sd===side){P(ax,top+4,6,16,HP.s);P(ax+(sd?4:0),top+4,2,16,HP.S);P(ax-2,top-6,10,10,'#ffd0bd');P(ax-2,top+2,10,2,HP.S);}
+      else if(pose==='up'){P(ax,top-6,6,26,HP.s);P(ax+(sd?4:0),top-6,2,26,HP.S);P(ax-1,top-14,8,8,'#ffd0bd');}
+      else{P(ax,top+18,6,13,HP.s);P(ax+(sd?4:0),top+18,2,13,HP.S);P(ax-1,top+29,8,7,'#ffd0bd');}}};
+  const front=(x,y,fl,armsUp)=>{S(BODY,x,y,HP,3,fl);  /* him from the front (3x), for the fall and the landing */
+    if(armsUp){P(x-4,y-10+(fl?4:0),5,18,HP.s);P(x-5,y-16+(fl?4:0),7,7,'#ffd0bd');P(x+23,y-10+(fl?0:4),5,18,HP.s);P(x+22,y-16+(fl?0:4),7,7,'#ffd0bd');}};
+  const lavaRow=(y,amp)=>{for(let x=0;x<W;x++){const w=Math.round(Math.sin(x*.28+E*4)*amp+Math.sin(x*.09-E*2.2)*amp),yy=y+w;P(x,yy,1,2,'#ffe27a');P(x,yy+2,1,4,'#ff8a1a');P(x,yy+6,1,BOT-yy,'#c8341a');}};
+  const frame=now=>{if(ended)return;const e=E=(now-t0)/1000,dt=1/60;c.clearRect(0,0,W,H);shx=shy=0;
+    if(e<T3){ /* ---------- 1-3: the wall, the rumble, the split ---------- */
+      let n=0;while(n<PT.length&&PT[n]<=e)n++;
+      const since=n?e-PT[n-1]:9,calm=e<T1,side=(n+1)%2,punching=calm&&since<.16;
+      if(n!==lastN){lastN=n;const big=n===PT.length;snd(t=>{noise(t,.09,420,.9,big?.5:.34,'bandpass');tone(t,.1,big?120:150,50,'square',big?.16:.1);noise(t,.2,90,.7,big?.5:.3,'lowpass');});vibe(big?40:14);
+        for(let i=0;i<7;i++)chips.push({x:CX+(side?16:-16)+(Math.random()-.5)*8,y:150,vx:(Math.random()-.5)*90,vy:-20-Math.random()*60,l:.7});}
+      if(calm&&since<.24){const a=(1-since/.24)*(2.5+n*.45);shx=(Math.random()-.5)*a*2;shy=(Math.random()-.5)*a*2;}   /* every blow rattles the screen */
+      else if(e>=T1&&e<T2){const k=(e-T1)/(T2-T1);shx=(Math.random()-.5)*(1.5+k*4);shy=(Math.random()-.5)*(1+k*3);}
+      else if(e>=T2){shx=(Math.random()-.5)*5;shy=(Math.random()-.5)*4;}
+      c.drawImage(wall,Math.round(shx),Math.round(TOP+shy));
+      {const show=calm?n*5:99,wd=calm?1:2;for(const pts of wcr){const m=Math.min(pts.length,show);for(let j=0;j<m;j++){const [x,y]=pts[j];P(x,y,wd+1,wd+1,'#1a1424');if(j){const [x0,y0]=pts[j-1];P((x+x0)/2,(y+y0)/2,wd+1,wd+1,'#1a1424');}}}
+        if(n){P(CX-5,146,10,8,'#1a1424');P(CX-3,144,6,12,'#1a1424');}}
+      if(punching){const fx=CX+(side?16:-16),fy=152;c.globalAlpha=1-since/.16;P(fx-12,fy-1,24,3,'#fff');P(fx-1,fy-12,3,24,'#fff');for(const d of [-1,1])for(const q of [-1,1]){P(fx+d*6-1,fy+q*6-1,3,3,'#fff');P(fx+d*10,fy+q*10,2,2,'#ffe27a');}c.globalAlpha=1;}
+      /* the meadow at the foot of the wall */
+      P(0,WY,W,BOT-WY,'#58b848');P(0,WY,W,3,'#2f7a2a');P(0,WY+3,W,1,'#7ad060');
+      for(let i=0;i<40;i++){const x=hash(i,1)*W,y=WY+6+hash(i,2)*(BOT-WY-8);P(x,y,2,1,'#3f9a38');if(i%7===0)P(x+3,y-1,1,1,i%14?'#ffffff':'#ffd400');}
+      c.globalAlpha=.3;P(0,WY,W,BOT-WY,'#0a0620');c.globalAlpha=1; /* the wall keeps the whole yard in shade... */
+      {const sw=calm?0:Math.round(Math.sin(e*30)*2),ly=176;  /* ...so the washing never dries: it hangs there dripping */
+        P(102,ly-2,2,32,'#6e4420');P(139,ly-2,2,32,'#6e4420');P(102,ly,39,1,'#e8e0d0');
+        P(107+sw,ly+1,9,9,'#f4efe8');P(105+sw,ly+1,13,3,'#f4efe8');P(107+sw,ly+9,9,1,'#c4bccd');
+        P(119+sw,ly+1,7,11,'#3a8aff');P(119+sw,ly+11,7,1,'#2a5ad0');
+        P(129+sw,ly+1,8,8,'#ffd400');P(129+sw,ly+8,8,1,'#d8a800');
+        for(const [dx,ph] of [[111,0],[122,.4],[133,.75]]){const u=(e*1.1+ph)%1;if(u<.7)P(dx,ly+13+u*22,1,2,'#9ad8ff');}}
+      /* his wife on her chair, reading (she jumps up when the ground shakes) */
+      {const wx=6,gy=206;P(wx+4,gy-10,14,3,'#8a5a2a');P(wx+5,gy-7,2,8,'#6e4420');P(wx+15,gy-7,2,8,'#6e4420');P(wx+16,gy-30,3,21,'#6e4420');
+        if(calm){S(WIFE,wx,gy-27,WP,2);if(((e/1.3)|0)%2)P(wx,gy-13,2,2,'#c4bccd');}else{S(WIFE_UP,wx+2,gy-30,WP,2);if(((e*6)|0)%2)bang(wx+9,gy-44);}}
+      /* the ground gives way under him */
+      if(e>=T1){const k=Math.min(1,(e-T1)/(T2-T1)),len=Math.round(k*76);for(let i=0;i<len;i++)for(const d of [-1,1]){const x=CX+d*i,y=GY+1+Math.round(Math.sin(i*.9)*2+(i%5===0?1:0));P(x,y,1,2+(i<20?1:0),'#1a1020');}
+        for(let b2=0;b2<4;b2++){const bl=Math.round(k*14);for(let i=0;i<bl;i++)P(CX+(b2-1.5)*22+i*(b2%2?1:-1),GY+3+i,1,2,'#1a1020');}}
+      let hy=0;
+      if(e>=T2){const k=Math.min(1,(e-T2)/.3);
+        for(let y=196;y<BOT;y++){const d=(y-196)/(BOT-196),hw=k*(15+d*40)+(hash(y,5)*5-2.5)*k;
+          P(CX-hw,y,hw*2,1,d<.18?'#6a4a2a':d<.42?'#0b0811':d<.62?'#3a0a06':d<.82?'#8a1c10':(((e*12)|0)%2?'#d8401a':'#c8341a'));P(CX-hw-1,y,2,1,'#2f7a2a');P(CX+hw-1,y,2,1,'#2f7a2a');}
+        once('split',()=>{sfx.boom();vibe([60,30,120]);});
+        if(e>T2+.2){const tt=e-T2-.2;hy=420*tt*tt;once('fall',()=>snd(t=>tone(t,1.6,1100,170,'sine',.09)));}}
+      hero(GY-48+hy,punching?'punch':e>=T2?'up':(e>=TALK&&e<GO)?'punch':'idle',(e>=TALK&&e<GO)?1:side); /* 'leave it to me': one fist goes up */
+      if(!calm&&e<T2&&((e*6)|0)%2)bang(CX,GY-66);
+      /* the children run about in front, and freeze */
+      {const ek=Math.min(e,T1),u=(ek*42)%240,x=u<120?8+u:8+240-u,dir=u<120?1:-1,u2=((ek-.4)*42+240)%240,x2=u2<120?8+u2:8+240-u2,d2=u2<120?1:-1;
+        kid(K1,x,215,calm?dir:(CX<x?-1:1),calm);kid(K2,x2,218,calm?d2:(CX<x2?-1:1),calm);
+        if(!calm&&((e*6)|0)%2){bang(x+5,186);bang(x2+5,189);}}
+      chips=chips.filter(p=>(p.l-=dt)>0);for(const p of chips){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=260*dt;P(p.x,p.y,2,2,p.l>.35?'#b4b4c0':'#62626e');}
+      if(e>=T1&&Math.random()<.5)chips.push({x:Math.random()*W,y:TOP,vx:0,vy:40,l:.9}); /* grit shaken off the wall */
+      if(e<TALK)say('아내: 여보, 저 암벽 때문에\n빨래가 안 말라.');
+      else if(e<GO)say('김주먹: …맡겨.');
+      else if(calm)say(e<PT[4]?'해를 가리는 벽이라면\n부수면 된다.':'벽에 금이 간다!\n조금만 더!');
+      else if(e<T2){say('쿠구구구구…\n어? 벽이 아니라 땅이?!');once('rumble',()=>{snd(t=>{noise(t,1.6,70,.6,.6,'lowpass');tone(t,1.6,52,34,'sawtooth',.14);});vibe([80,40,80,40,140]);});}
+      else say('땅이 먼저 갈라졌다!');
+      if(e>T3-.14){c.globalAlpha=Math.min(1,(e-(T3-.14))/.14);c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
+    } else if(e<T4){ /* ---------- 4: down the shaft, past the lava ---------- */
+      const tt=e-T3,k=tt/(T4-T3),sc=tt*120+tt*tt*75; /* the shaft rushes past faster and faster: he is falling, not floating */
+      shx=(Math.random()-.5)*1.5;
+      const bg=c.createLinearGradient(0,TOP,0,BOT);bg.addColorStop(0,'#0e0812');bg.addColorStop(.6,'#1c0a10');bg.addColorStop(1,k>.3?'#5a1408':'#2a0c0a');c.fillStyle=bg;c.fillRect(0,TOP,W,BOT-TOP);
+      for(let i=0;i<10;i++){const x=34+hash(i,2)*76,y=TOP+((i*47+sc*.35)%(BOT-TOP));P(x,BOT-(y-TOP),3,2,'#241420');} /* far rock, sliding by slowly */
+      for(let y=TOP;y<BOT;y++){const yw=Math.floor(y+sc),blk=yw>>3,
+          xl=24+Math.round(6*Math.sin(yw*.045)+5*hash(blk,1)),xr=W-24-Math.round(6*Math.sin(yw*.05+2)+5*hash(blk,2));
+        P(0,y,xl,1,blk%2?'#3a2a34':'#33242e');P(xr,y,W-xr,1,blk%2?'#33242e':'#3a2a34');
+        P(xl-2,y,2,1,k>.3?'#a04a2a':'#5a4654');P(xr,y,2,1,k>.3?'#a04a2a':'#5a4654');
+        if((yw&7)===7){P(0,y,xl-2,1,'#1c1220');P(xr+2,y,W-xr-2,1,'#1c1220');}
+        const v=yw>>6;if(hash(v,11)>.35){const o=yw&63,zx=4+Math.round(hash(v,12)*10+Math.sin(o*.4)*3+o*.12);if(o<52)P(zx,y,2,1,(yw>>1)%2?'#ff8a1a':'#ffd04a');}       /* veins of lava in the left wall */
+        if(hash(v,21)>.35){const o=yw&63,zx=W-6-Math.round(hash(v,22)*10+Math.sin(o*.35)*3+o*.1);if(o<52)P(zx,y,2,1,(yw>>1)%2?'#ffd04a':'#ff8a1a');}
+        const f=yw>>8;if(hash(f,41)>.3){P(xl,y,4,1,hash(yw>>1,((e*20)|0))>.5?'#ff8a1a':'#c8341a');if(hash(yw,7)>.8)P(xl+1,y,1,1,'#ffe27a');}                     /* lava pouring down the walls */
+        if(hash(f,51)>.45){P(xr-4,y,4,1,hash(yw>>1,((e*20)|0)+3)>.5?'#ff8a1a':'#c8341a');if(hash(yw,9)>.8)P(xr-2,y,1,1,'#ffe27a');}}
+      {const gg=c.createLinearGradient(0,BOT-110,0,BOT);gg.addColorStop(0,'rgba(255,90,20,0)');gg.addColorStop(1,`rgba(255,110,30,${.15+.55*k})`);c.fillStyle=gg;c.fillRect(0,BOT-110,W,110);} /* the glow from below grows */
+      for(let i=0;i<16;i++){const x=28+hash(i,61)*88,y=BOT-((e*(70+hash(i,62)*90)+i*37)%(BOT-TOP));P(x+Math.sin(e*3+i)*3,y,1,1,i%3?'#ff8a1a':'#ffe27a');} /* embers */
+      for(let i=0;i<7;i++){const x=34+hash(i,((e*20)|0))*76;P(x,TOP+hash(i,71+((e*20)|0))*150,1,12+hash(i,4)*18,'rgba(255,255,255,.35)');}                 /* speed lines */
+      const fl=((e*10)|0)%2===1,x=CX-12+Math.round(Math.sin(e*7)*5),y=92+Math.round(Math.sin(e*5)*6);
+      front(x,y,fl,true);P(x+10,y-8,4,8,HP.r);P(x+11,y-15+(fl?2:0),3,7,HP.r); /* headband streaming up */
+      if(k>.62)lavaRow(BOT-Math.round((k-.62)/.38*46),1.6); /* and there it is: the lava itself */
+      say(tt<1.5?'으아아아아아아!':'저 아래… 용암이다!');
+      if(tt<.18){c.globalAlpha=1-tt/.18;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
+      if(e>T4-.12){c.globalAlpha=Math.min(1,(e-(T4-.12))/.12);c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
+    } else { /* ---------- 5: the foot of the tower ---------- */
+      const tt=e-T4,DROP=.32,landed=tt>=DROP,since=tt-DROP;
+      if(landed&&since<.3){shx=(Math.random()-.5)*6*(1-since/.3);shy=(Math.random()-.5)*6*(1-since/.3);}
+      P(0,TOP,W,BOT-TOP,'#150d1e');
+      for(let y=TOP;y<FY;y+=8)for(const x0 of [0,W-18]){P(x0,y,18,7,'#3b2a52');P(x0+((y/8|0)%2?5:12),y,1,7,'#231733');P(x0,y+7,18,1,'#231733');}
+      c.globalAlpha=.1;P(CX-14,TOP,28,FY-TOP,'#bfe8ff');c.globalAlpha=1; /* light from the hole far above */
+      lavaRow(FY+12,1.2);                                              /* the lava, just under the floor */
+      {const gg=c.createLinearGradient(0,FY-70,0,FY);gg.addColorStop(0,'rgba(255,90,20,0)');gg.addColorStop(1,'rgba(255,110,30,.3)');c.fillStyle=gg;c.fillRect(0,FY-70,W,70);}
+      if(!landed){P(0,FY,W,9,'#2a2034');P(0,FY,W,2,'#4a3866');for(let x=0;x<W;x+=12)P(x+((x/12|0)%2?3:8),FY+2,1,7,'#1c1426');}
+      else{const gw=Math.min(3,Math.floor(since*24)),GAPS=[-5,5,-17,16,-33,31,-55,52],fl=((e*10)|0)%2;   /* the floor slab breaks into pieces: lava shows through the gaps, the middle sinks */
+        for(let x=0;x<W;x++){const dx=x-CX;let g=99;for(const q of GAPS)g=Math.min(g,Math.abs(dx-q));
+          if(g<gw*(Math.abs(dx)<20?1:.6)){P(x,FY,1,12,fl?'#ff8a1a':'#ff7410');P(x,FY+Math.min(4,since*20|0),1,1,'#ffe27a');continue;}
+          const ad=Math.abs(dx),dy=Math.min(Math.round(since*30),ad<5?3:ad<17?Math.round(2.4*(1-(ad-5)/12)):0);
+          P(x,FY+dy,1,9,'#2a2034');P(x,FY+dy,1,2,g<gw+1.5?'#c8643a':'#4a3866');if(g<gw+1.5)P(x,FY+dy+2,1,7,'#4a2420');
+          if(dy)P(x,FY,1,dy,'#0d0a08');if(x%12===((x/12|0)%2?3:8))P(x,FY+dy+2,1,7,'#1c1426');}}
+      if(landed){once('land',()=>{sfx.boom();vibe([60,30,90]);snd(t=>{noise(t,.12,2200,1.2,.4,'bandpass');});for(let i=0;i<16;i++)dust.push({x:CX+(Math.random()-.5)*24,y:FY-1,vx:(Math.random()-.5)*90,vy:-10-Math.random()*50,l:.7});});
+        }
+      const x=CX-12;
+      if(!landed){const u=tt/DROP;front(x,TOP-50+(FY-42-(TOP-50))*u*u,false,true);}
+      else if(since<1.5)S(LAND,CX-20,FY-39+(since<.08?3:0),HP,3); /* the superhero landing */
+      else{front(x,FY-42,false,false);P(x-4,FY-22,5,10,HP.s);P(x-5,FY-13,7,7,'#ffd0bd');P(x+23,FY-44,5,24,HP.s);P(x+21,FY-54,9,10,'#ffd0bd');P(x+19,FY-58,2,3,'#fff');P(x+31,FY-58,2,3,'#fff');} /* a fist to the sky */
+      dust=dust.filter(p=>(p.l-=dt)>0);for(const p of dust){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=60*dt;c.globalAlpha=Math.min(1,p.l*2);P(p.x,p.y,2,2,'#c9c2d6');c.globalAlpha=1;}
+      say(!landed?'':since<1.1?'쿵!!':'빨래 걷기 전에는 돌아간다.\n위로 뚫고 올라간다!');
+      if(tt<.15){c.globalAlpha=1-tt/.15;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
+    }
+    c.fillStyle='#000';c.fillRect(0,0,W,TOP);c.fillRect(0,BOT,W,H-BOT); /* the black bars */
+    if(e>=END){end();return;}
+    requestAnimationFrame(frame);};
+  requestAnimationFrame(frame);}
+/* chapter 2, shown once after the first run that reaches the surface (floor 20): he bursts out of the ground, the family is there,
+   the washing is finally dry - and a giant pterosaur carries the family off, washing line and all, up along the tower */
+const STORY2_KEY='punchtower.story2';
+function story2Seen(){try{return localStorage.getItem(STORY2_KEY)==='1';}catch(e){return false;}}
+function playStory2(done){
+  if(storyOn)return;storyOn=true;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;cv.id='storycv';
+  Object.assign(cv.style,{position:'absolute',inset:'0',width:'100%',height:'100%',imageRendering:'pixelated',zIndex:'40',background:'#000',cursor:'pointer'});
+  const cap=document.createElement('div');cap.className='storycap';Object.assign(cap.style,{top:'auto',bottom:'2%',zIndex:'41'});
+  const sk=document.createElement('div');sk.className='storyskip';sk.textContent='TAP ▸ SKIP';Object.assign(sk.style,{bottom:'auto',top:'10px',zIndex:'41'});
+  stage.append(cv,cap,sk);
+  const c=cv.getContext('2d');let shx=0,shy=0,E=0;
+  const P=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x+shx),Math.round(y+shy),Math.round(w),Math.round(h));};
+  const S=(rows,x,y,pal,sc,mir)=>{for(let r=0;r<rows.length;r++){const row=rows[r],w=row.length;for(let q=0;q<w;q++){const ch=row[mir?w-1-q:q],col=pal[ch];if(col)P(x+q*sc,y+r*sc,sc,sc,col);}}};
+  const HP={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:'#f4efe8',G:'#c4bccd',b:'#1e1a24',d:'#3a2a24'};
+  const WIFE_UP=["..hhhhh.",".hhhhhhh",".sssshhh",".essshhh",".sssshhh","..ss.hh.",".pppppp.","spppppps","spppppps","..pppp..","..pppp..","..pppp..","..s..s..","..k..k.."];
+  const WP={h:'#5a2a1a',s:'#f2b68a',e:'#1a1020',p:'#e86a9a',w:'#f4efe8',k:'#2a1a14'};
+  const KID=[".hhhh.","hhhhhh",".ssss.","sesses",".ssss.",".tttt.","tttttt",".tttt."];
+  const K1={h:'#2a1a14',s:'#f2b68a',e:'#1a1020',t:'#3a8aff'},K2={h:'#7a3a1a',s:'#f2b68a',e:'#1a1020',t:'#ffd400'};
+  const TOP=20,BOT=220,GY=198,HX=74;
+  const A=2.3,B=5.6,C=7.2,GRAB=8.1,D=10.0,END=14.2; /* out of the ground | reunion | the shadow | the swoop, the grab | alone */
+  let capFull='',capAt=0;
+  const snd=f=>{try{if(AC&&soundOn)f(AC.currentTime);}catch(e){}};
+  const say=t=>{if(capFull!==t){capFull=t;capAt=E;}const n=Math.min(t.length,Math.floor((E-capAt)*26)+1),s=t.slice(0,n);
+    if(cap.textContent!==s){cap.textContent=s;if(n<t.length&&n%2===0)snd(tt=>tone(tt,.025,740,740,'square',.025));}};
+  const cues={},once=(k,f)=>{if(!cues[k]){cues[k]=1;try{f();}catch(e){}}};
+  const t0=performance.now();let ended=false,bits=[];
+  const end=()=>{if(ended)return;ended=true;storyOn=false;try{localStorage.setItem(STORY2_KEY,'1');}catch(e){}
+    removeEventListener('keydown',onKey);cap.remove();sk.remove();
+    try{cv.animate([{opacity:1},{opacity:0}],{duration:280,fill:'forwards'});}catch(e){}setTimeout(()=>cv.remove(),290);done();};
+  const onKey=e=>{if(performance.now()-t0<500)return;if(e.key==='Enter'||e.key===' '||e.key==='Escape'){e.preventDefault();e.stopPropagation();end();}};
+  cv.addEventListener('pointerdown',e=>{e.stopPropagation();if(performance.now()-t0>500)end();});addEventListener('keydown',onKey,true);
+  const kid=(pal,x,y,dir,run)=>{const bob=run?Math.round(Math.abs(Math.sin(E*14))*2):0,fr=run?((E*9)|0)%2:0;
+    S(KID,x,y-16-bob,pal,2,dir<0);if(fr){P(x+2,y-bob,2,4,'#2a2a44');P(x+8,y-bob,2,2,'#2a2a44');}else{P(x+3,y-bob,2,2,'#2a2a44');P(x+7,y-bob,2,4,'#2a2a44');}};
+  const bang=(x,y)=>{P(x-1,y-1,4,11,'#0d0a08');P(x,y,2,6,'#ffd400');P(x,y+7,2,2,'#ffd400');};
+  const heart=(x,y)=>{P(x,y,2,2,'#ff5a8a');P(x+3,y,2,2,'#ff5a8a');P(x,y+2,5,2,'#ff5a8a');P(x+1,y+4,3,1,'#ff5a8a');P(x+2,y+5,1,1,'#ff5a8a');};
+  const front=(x,y,pose)=>{S(BODY,x,y,HP,3);
+    if(pose==='up'){for(const ax of [x-4,x+23]){P(ax,y-10,5,30,HP.s);P(ax-1,y-17,7,7,'#ffd0bd');}}
+    else if(pose==='fist'){P(x-4,y+20,5,10,HP.s);P(x-5,y+29,7,7,'#ffd0bd');P(x+23,y-2,5,24,HP.s);P(x+21,y-12,9,10,'#ffd0bd');}
+    else for(const ax of [x-4,x+23]){P(ax,y+20,5,10,HP.s);P(ax-1,y+29,7,7,'#ffd0bd');}};
+  const laundry=(x,y,sw)=>{P(x,y,40,1,'#e8e0d0');P(x+5+sw,y+1,9,9,'#f4efe8');P(x+3+sw,y+1,13,3,'#f4efe8');P(x+17+sw,y+1,7,11,'#3a8aff');P(x+27+sw,y+1,8,8,'#ffd400');};
+  /* the pterosaur (2x), flying left: long beak, red crest, big leathery wings beating */
+  const ptero=(x,y,up)=>{const G='#3f9a58',Dk='#2a6e44',Q=(dx,dy,w,h,col)=>P(x+dx*2,y+dy*2,w*2,h*2,col);
+    if(up){Q(-5,-13,13,11,Dk);Q(-2,-21,9,8,Dk);Q(2,-27,5,6,Dk);Q(-5,-13,13,1,'#5ac878');}
+    else{Q(-5,3,13,9,Dk);Q(-1,12,9,6,Dk);Q(2,18,5,5,Dk);Q(-5,11,13,1,'#1e5234');}
+    Q(-8,-3,17,7,G);Q(-8,2,17,2,Dk);Q(-17,-6,10,5,G);Q(-29,-5,13,2,'#ffd04a');Q(-27,-3,10,1,'#d8a800');Q(-11,-9,7,3,'#e8344a');Q(-14,-5,1,1,'#fff');
+    Q(9,-1,8,2,G);Q(16,-2,4,1,G);Q(-3,4,2,5,'#ffd04a');Q(3,4,2,5,'#ffd04a');};
+  const frame=now=>{if(ended)return;const e=E=(now-t0)/1000,dt=1/60;c.clearRect(0,0,W,H);shx=shy=0;
+    if(e<.9){const k=e/.9;shx=(Math.random()-.5)*(1+k*3);shy=(Math.random()-.5)*(1+k*2);}
+    else if(e<1.2||(e>=GRAB&&e<GRAB+.3)){shx=(Math.random()-.5)*6;shy=(Math.random()-.5)*5;}
+    else if(e>=B&&e<C){shx=(Math.random()-.5)*1.5;}
+    /* sky, sun, clouds */
+    P(0,TOP,W,60,'#4aa8f0');P(0,TOP+60,W,60,'#7cc4f8');P(0,TOP+120,W,GY-TOP-120,'#b4e2ff');
+    for(let dy=-11;dy<=11;dy++){const w=Math.round(Math.sqrt(121-dy*dy));P(26-w,50+dy,w*2,1,dy<-3?'#fffbe0':'#fff0a0');}
+    for(let i=0;i<8;i++){const a=i/8*Math.PI*2+e*.4;P(26+Math.cos(a)*16-1,50+Math.sin(a)*16-1,2,2,'#fff6c0');}
+    for(let i=0;i<3;i++){const x=((i*61+e*5)%(W+50))-30,y=34+i*31;P(x,y,22,5,'#ffffff');P(x+4,y-3,12,3,'#ffffff');P(x+2,y+5,18,2,'#dff2ff');}
+    /* the tower, going up out of sight */
+    for(let y=TOP;y<GY;y+=8){P(98,y,36,7,'#4a3866');P(98+((y/8|0)%2?9:20),y,1,7,'#2a1c40');P(98,y+7,36,1,'#2a1c40');P(98,y,2,8,'#6a5490');P(132,y,2,8,'#231733');}
+    P(110,GY-20,12,20,'#150d1e');P(110,GY-22,12,2,'#6a5490');
+    /* the meadow in full sun, what is left of the wall, the hole he came out of */
+    P(0,GY,W,BOT-GY,'#6ad058');P(0,GY,W,2,'#9ae878');
+    for(let i=0;i<30;i++){const x=hash(i,1)*W,y=GY+5+hash(i,2)*(BOT-GY-7);P(x,y,2,1,'#3f9a38');if(i%5===0)P(x+3,y-1,1,1,i%10?'#ffffff':'#ffd400');}
+    for(let i=0;i<7;i++){const x=-4+i*7+(hash(i,3)*4|0),h=6+(hash(i,4)*10|0);P(x,GY-h,9,h,i%2?'#7c7886':'#6a6674');P(x,GY-h,9,1,'#a8a4b4');P(x+8,GY-h,1,h,'#3a3644');}
+    if(e>=.9){for(let dy=0;dy<5;dy++){const w=13-dy*2;P(HX+12-w,GY+3+dy,w*2,1,'#1a1020');}P(HX-2,GY+2,28,1,'#6a4a2a');}
+    else{const k=e/.9;P(HX+2,GY-Math.round(k*4),20,Math.round(k*4)+1,'#58b848');for(let i=0;i<Math.round(k*14);i++)for(const d of [-1,1])P(HX+12+d*i,GY+2+((i*7)%3),1,2,'#1a1020');} /* the ground bulges and cracks */
+    const taken=e>=GRAB;
+    /* the pterosaur's path: down out of the sun-side sky to the family, then up and away along the tower */
+    let px=0,py=0,pOn=e>=C;
+    if(e>=C&&!taken){const k=(e-C)/(GRAB-C),q=k*k;px=170-134*k;py=30+110*q;}
+    else if(taken){const k=Math.min(1,(e-GRAB)/(D-GRAB)),q=k*k;px=36+60*k;py=140-190*q;}
+    /* washing line, wife, children (on the ground until the grab, then dangling from the claws) */
+    if(!taken){P(8,GY-30,2,30,'#6e4420');P(50,GY-30,2,30,'#6e4420');laundry(10,GY-28,0);
+      if(e>1.2&&e<B)for(const [dx,ph] of [[18,0],[30,.5],[42,.25]]){if(((e*3+ph)%1)<.5){P(dx,GY-36,1,3,'#fff');P(dx-1,GY-35,3,1,'#fff');}} /* dry and sparkling */
+      const run=e>=A&&e<A+1.1,k=Math.min(1,Math.max(0,(e-A)/1.1));
+      S(WIFE_UP,14+k*20,GY-28,WP,2,true);
+      kid(K1,22+k*26,GY+6,1,run);kid(K2,6+k*32,GY+12,1,run);
+      if(e>=A+1.1&&e<B){const hb=(e*1.4)%1;heart(52,GY-40-hb*12);if(hb>.4)heart(40,GY-34-hb*10);}
+      if(e>=B){if(((e*6)|0)%2){bang(42,GY-44);bang(HX+11,GY-62);}}}
+    else{const sw=Math.round(Math.sin(e*9)*2),lx=px-22,ly=py+20;P(8,GY-30,2,30,'#6e4420');P(50,GY-30,2,30,'#6e4420');
+      laundry(lx,ly,sw);S(WIFE_UP,lx-2+sw,ly+2,WP,2,true);S(KID,lx+14-sw,ly+12,K1,2);S(KID,lx+28+sw,ly+10,K2,2);
+      if(Math.random()<.2)bits.push({x:lx+20,y:ly+14,vx:(Math.random()-.5)*20,vy:10,l:1.2});}
+    /* him */
+    if(e<.9){}
+    else if(e<1.6){const k=(e-.9)/.7;front(HX,GY-42-Math.sin(k*Math.PI)*46+(1-k)*18,'up');once('burst',()=>{sfx.boom();vibe([50,30,80]);for(let i=0;i<18;i++)bits.push({x:HX+12+(Math.random()-.5)*14,y:GY,vx:(Math.random()-.5)*120,vy:-60-Math.random()*90,l:.9,c:i%3?'#6a4a2a':'#58b848'});});}
+    else front(HX,GY-42,e>=D+1.6?'fist':e>=D?'idle':taken?'up':'idle');
+    if(e>=D&&e<D+1.4&&((e*5)|0)%2)P(HX+11,GY-52,2,2,'#fff'); /* ... */
+    /* the shadow that sweeps over, then the beast itself */
+    if(e>=B&&e<GRAB){const k=(e-B)/(GRAB-B);c.globalAlpha=.25+.2*Math.sin(k*Math.PI);P(W-k*(W+90),GY,90,BOT-GY,'#0a0620');c.globalAlpha=.12*Math.sin(k*Math.PI);P(0,TOP,W,BOT-TOP,'#0a0620');c.globalAlpha=1;}
+    if(pOn&&py>-70){ptero(px,py,((e*7)|0)%2===0);if(((e*7)|0)!==cues.fl){cues.fl=(e*7)|0;snd(t=>noise(t,.09,300,.6,.16,'lowpass'));}}
+    bits=bits.filter(p=>(p.l-=dt)>0);for(const p of bits){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.c?300:20)*dt;P(p.x,p.y,2,2,p.c||'#f4efe8');}
+    /* one sock comes floating back down onto his head */
+    if(e>=D+.3){const k=Math.min(1,(e-D-.3)/1.6),x=HX+10+Math.sin(k*9)*10*(1-k),y=TOP+10+(GY-58-TOP-10)*k;P(x,y,3,6,'#f4efe8');P(x,y+5,6,3,'#f4efe8');P(x,y,3,1,'#e8344a');}
+    /* words and sounds */
+    if(e<A)say(e<.9?'쿠구구구…':'20층.\n드디어 지상이다!');
+    else if(e<A+2.2)say('아내: 여보! 벽이 무너져서\n빨래가 다 말랐어!');
+    else if(e<B)say('김주먹: …다행이다.');
+    else if(e<C){say('그런데 그때…');once('dark',()=>{snd(t=>{noise(t,1.4,80,.6,.4,'lowpass');});vibe(60);});}
+    else if(!taken){say('끼에에에에엑!!');once('scr',()=>snd(t=>{tone(t,.5,1900,900,'sawtooth',.1);tone(t+.08,.5,2100,1000,'square',.05);}));}
+    else if(e<D){say('공룡이 가족을\n빨래째 물고 날아갔다!');once('grab',()=>{sfx.boom();vibe([80,40,120]);snd(t=>tone(t+.3,.6,1700,800,'sawtooth',.08));});}
+    else if(e<D+1.9)say('김주먹: ……');
+    else say('빨래는 내가 걷는다.\n하늘 끝까지 뚫고 올라간다!');
+    if(e>=GRAB&&e<GRAB+.14){c.globalAlpha=1-(e-GRAB)/.14;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
+    c.fillStyle='#000';c.fillRect(0,0,W,TOP);c.fillRect(0,BOT,W,H-BOT);
+    if(e>=END){end();return;}
+    requestAnimationFrame(frame);};
+  requestAnimationFrame(frame);}
 function showSplash(){
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
@@ -2929,7 +3527,7 @@ function showSplash(){
     </div>
     <button class="sndbtn${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}"><i aria-hidden="true"></i><span>${soundLabel()}</span></button>`;
   let stage2=false,done=false;
-  const toTitle=()=>{ov.classList.remove('black');showTitle();};
+  const toTitle=()=>{const go=()=>{ov.classList.remove('black');showTitle();};if(!storySeen()&&!RM)playStory(go);else go();}; /* first visit: the story plays between the logo and the title */
   const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);
     toTitle();}; /* straight to the title (the fist-punch transition was removed) */
   const play=()=>{
@@ -2976,7 +3574,7 @@ function showTitle(){menuMusic();showOverlay(`
     <button class="btn primary" id="go" data-act="go"><i aria-hidden="true">▶</i>시작</button>
     <div class="dsel" role="group" aria-label="난이도"><button class="darr" type="button" data-act="dprev" aria-label="쉬운 난이도">◀</button><b id="dname" aria-live="polite"></b><button class="darr" type="button" data-act="dnext" aria-label="어려운 난이도">▶</button></div>
     <div class="stat best" id="bestline"></div>
-    <div class="icons"><button class="ico" type="button" data-act="rank">${pxIcon('rank')}<span>랭킹</span></button><button class="ico" type="button" data-act="howto">${pxIcon('howto')}<span>조작법</span></button><button class="ico" type="button" data-act="settings">${pxIcon('set')}<span>설정</span></button></div>
+    <div class="icons"><button class="ico" type="button" data-act="rank">${pxIcon('rank')}<span>랭킹</span></button><button class="ico" type="button" data-act="howto">${pxIcon('howto')}<span>힌트</span></button><button class="ico" type="button" data-act="settings">${pxIcon('set')}<span>설정</span></button></div>
   </div>
   ${CREDIT}`,{go:startGame,rank:()=>showRanking(),howto:showHowto,settings:showSettings,dprev:()=>stepDiff(-1),dnext:()=>stepDiff(1)});
   syncDiff();
@@ -2992,20 +3590,19 @@ function stepDiff(d){const i=clamp(diffIdx+d,0,DIFFS.length-1);if(i===diffIdx){s
   initAudio();diffIdx=i;D=DIFFS[diffIdx];try{localStorage.setItem('punchtower.diff',diffIdx);}catch(e){}sfx.select();syncDiff();}
 // settings: nickname, music / sound / tilt / hints, and 'learn the moves again'
 function showSettings(){menuMusic();showOverlay(`
-  <div class="eyebrow">SETTINGS</div>
-  <h2 class="big">설정</h2>
-  <div class="menu">
-    <div class="sect"><span class="lbl">닉네임</span>
-      <label class="namebox" for="pname"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="랭킹에 올라갈 이름" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>
-      <p class="ddesc">비워 두면 첫 기록을 올릴 때 물어봐요</p></div>
-    <div class="sect"><span class="lbl">소리 · 조작</span>
-      <div class="setgrid">${togHTML('bgmbtn','music','음악',bgmOn)}${togHTML('sndlink','sound','소리',soundOn)}${togHTML('tiltbtn','tilt','기울기',tiltOn)}${togHTML('hintbtn','hints','힌트',hintsOn)}</div></div>
-    <button class="btn2" type="button" data-act="rehint">힌트 다시 보기</button>
+  <div class="ezr setp">
+    <div class="ezhead">SETTINGS</div>
+    <span class="lbl" style="--d:1">닉네임</span>
+    <label class="namebox" for="pname" style="--d:1"><span>NAME</span><input id="pname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="랭킹에 올라갈 이름" value="${isGuest?'':esc(playerName)}"><button class="nameclear" id="nameclear" type="button" aria-label="닉네임 지우기"${(isGuest||!playerName)?" hidden":""}></button></label>
+    <p class="ddesc" style="--d:1">비워 두면 첫 기록을 올릴 때 물어봐요</p>
+    <span class="lbl" style="--d:2">소리 · 조작</span>
+    <div class="setgrid" style="--d:2">${togHTML('bgmbtn','music','음악',bgmOn)}${togHTML('sndlink','sound','소리',soundOn)}${togHTML('tiltbtn','tilt','기울기',tiltOn)}${togHTML('hintbtn','hints','힌트',hintsOn)}</div>
+    <span class="lbl" style="--d:3">스토리</span>
+    <button class="tog setstory" type="button" data-act="story" style="--d:3"><span>스토리 다시 보기</span><b>PLAY</b></button>
   </div>
   <div class="ezbtns one"><button class="ezb go" type="button" data-act="back">돌아가기</button></div>
   ${CREDIT}`,{back:showTitle,
-    rehint:()=>{learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0,vib:0,got:{}};runOpen={};saveLearned();hintsOn=true;setTog('hintbtn',true);try{localStorage.setItem('punchtower.hints','on');}catch(e){}
-      sfx.select();const b=ov.querySelector('[data-act="rehint"]');if(b){b.textContent='처음부터 다시 배워요!';b.disabled=true;}},
+    story:()=>{sfx.select();playStory(()=>{if(story2Seen())playStory2(()=>{});});}, /* chapter 2 too, once it has been earned */
     sound:()=>{setSound(!soundOn);setTog('sndlink',soundOn);if(soundOn){sfx.select();menuMusic();}},
     music:()=>{toggleBgm();setTog('bgmbtn',bgmOn);},
     hints:()=>{hintsOn=!hintsOn;setTog('hintbtn',hintsOn);try{localStorage.setItem('punchtower.hints',hintsOn?'on':'off');}catch(e){}sfx.select();},
@@ -3018,30 +3615,32 @@ function showSettings(){menuMusic();showOverlay(`
   inp.addEventListener('input',save);
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}});
   clr.addEventListener('click',e=>{e.preventDefault();inp.value='';save();sfx.same();inp.focus();});}
+/* hint book: the very cards and one-line tips the game shows while you play, to flip through any time */
+const HINT_BOOK=[
+  {k:'tap',tab:'펀치',tag:'HOW TO',nm:'L R 번갈아 탁탁!',sub:'두 주먹을 누르면 펀치!\n빨간 약점 밑에서 번갈아 치면\n훨씬 빨리 깨져요',demo:'tap',tips:['주먹을 눌러 윗층을 부숴요','왼손 오른손 번갈아 쳐요!']},
+  {k:'walk',tab:'걷기',tag:'5F',nm:SKILL_KO.walk[0],sub:SKILL_KO.walk[1],demo:'walk',tips:['꾹 눌러서 빨간 약점 밑으로 걸어가요','지금 손을 떼면 기 펀치!','걷는 중에 반대쪽 탭! 대시!']},
+  {k:'king',tab:'쇼타임',tag:'20F',nm:SKILL_KO.king[0],sub:SKILL_KO.king[1],demo:'king',tips:['양쪽 같이 꾹! 그다음 연타!']},
+  {k:'vib',tab:'블록',tag:'BLOCK',nm:VIB_CARD[0],sub:VIB_CARD[1]+'\n금은 용암을 내리고\nTNT는 위층까지 터져요',demo:'',tips:[]},
+  {k:'time',tab:'용암',tag:'TIME',nm:'용암보다 빨리!',sub:'TIME은 용암이 닿기까지 남은 시간\n블록을 깨면 시간이 늘어나요\n용암에 세 번 닿으면 끝!',demo:'',tips:[]}];
+let howRAF=0;
 function showHowto(){menuMusic();showOverlay(`
-  <div class="eyebrow">HOW TO PLAY</div>
-  <h2 class="big">조작법</h2>
-  <ul class="rules win">
-    <li>화면 <b>왼쪽 탭은 왼펀치</b>, <b>오른쪽 탭은 오른펀치</b></li>
-    <li><b>꾹 누르면</b> 그쪽으로 걸어가며 기가 모이고, <b>떼면</b> 모인 만큼 센 펀치</li>
-    <li>걷는 중에 <b>반대쪽을 탭</b>하면 가던 방향으로 휙 <b>대시</b></li>
-    <li><b class="w">빨간 약점</b> 아래에서 좌우 번갈아 치거나 기 펀치를 날리면 크게 깨져요</li>
-    <li><b>TIME</b>은 용암이 발밑까지 올라오는 데 남은 시간이에요. 0이 되면 용암에 닿아요! 위로 올라가면 늘어나고, 블록을 부수면 +1.5초, 약점을 4번 넘게 연속으로 때려서 부수면 <b>CLEAN</b> +3초, 보스 블록은 +5.5초.</li>
-        <li><b>기울기</b>를 켜면 폰을 왼쪽/오른쪽으로 기울이는 쪽으로 걸어가요. 게임 시작할 때 들고 있던 각도가 기준이에요.</li>
-    <li><b>왕주먹 단계</b>: 약점을 <b>30번</b> 때릴 때마다 LV이 하나씩 올라가요(LV1~LV5). LV5에서 <b>150번</b> 더 때리면 극악의 <b>MAX</b>. 단계마다 <b>불꽃 펫</b>이 하나씩 따라다녀요. 펫 1마리당 펀치 공격력 <b>+5%</b>(MAX면 +30%), 레벨마다 <b>약점이 8%씩 넓어져요</b>(MAX면 +48%). MAX가 되면 온 화면이 파랗게 타올라요.</li>
-    <li>양쪽을 같이 꾹 누르면 모은 단계 그대로 발사! 위력은 LV1 0.6배 · LV2 1배 · LV3 1.6배 · LV4 2.2배 · LV5 3배 · MAX 4.5배.</li>
-    ${KING_STYLE==='rub'?`<li>올라가는 동안 화면을 <b>위아래로 크고 빠르게</b> 쓱싹! 가운데 조이스틱처럼 아래위로 빠르게 쓱쓱(화면 높이의 4분의 1쯤)! 쓸 때마다 땅! 땅! 뚫고 올라가요.</li>
-    <li>문지를 시간: LV1 2초 · LV2 3초 · LV3 3.5초 · LV4 4초 · LV5 5초 · MAX 5.5초. 빠르게 계속 쓸어 게이지가 차면 <b>MAX</b>: 그때부터 1.5배. 안 비비면 헛방!</li>
-    <li>뚫은 층마다 시간 +1초, 착지하면 용암이 1.5초 얼어요.</li>`:`<li>발사하면 <b>SHOW TIME</b>! 몇 초 동안 <b>모든 블록 전체가 약점</b>이 돼요. 움직일 필요 없이 그냥 갈기기만 하면 전부 <b>PERFECT!</b></li>
-    <li>SHOW TIME: LV1 3초 · LV2 4초 · LV3 5초 · LV4 6초 · LV5 7초 · MAX 8초. 그동안 용암은 멈추고, 펀치는 모은 단계 위력만큼 더 세져요.</li>`}
-    <li>약점이 아닌 곳은 단단해서 <b>3~5배</b> 더 때려야 깨져요. 25번째 약점 타격마다 <b>피버</b>!</li>
-    <li>보랏빛 <b>비브라늄</b> 블록은 약점 말고는 아예 안 깨져요</li>
-    <li>게임 중 위쪽 <b>II</b> 버튼으로 일시정지, 재시작, 메뉴로 갈 수 있어요</li>
-    <li>탑은 끝이 없어요. 밑에서 <b>용암</b>이 올라갈수록 점점 더 빨라져요. 누가 더 높이 가나 대결!</li>
-  </ul>
+  <div class="eyebrow">HINT BOOK</div>
+  <h2 class="big">힌트 모음</h2>
+  <div class="hsel" role="tablist">${HINT_BOOK.map((h,i)=>`<button type="button" role="tab" data-h="${i}" aria-selected="${i===0}">${h.tab}</button>`).join('')}</div>
+  <div class="hcard" id="hcard"><em></em><b></b><i></i><canvas class="demo" width="120" height="64" aria-hidden="true"></canvas><div class="htips"></div></div>
   <div class="hint">PC: ← → 펀치 · 꾹 = 걷기 · 걷다가 SPACE = 대시 · ↑ / 양쪽 같이 꾹 = SHOW TIME</div>
-  <button class="btn" type="button" data-act="back">돌아가기</button>
-  ${CREDIT}`,{back:showTitle});}
+  <div class="ezbtns one"><button class="ezb go" type="button" data-act="back">돌아가기</button></div>
+  <button class="ghost" type="button" data-act="rehint">게임 중 힌트 처음부터 다시 받기</button>
+  ${CREDIT}`,{back:()=>{cancelAnimationFrame(howRAF);showTitle();},
+    rehint:()=>{learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0,vib:0,got:{}};runOpen={};saveLearned();hintsOn=true;try{localStorage.setItem('punchtower.hints','on');}catch(e){}
+      sfx.select();const b=ov.querySelector('[data-act="rehint"]');if(b){b.textContent='다음 판부터 처음부터 다시 배워요!';b.disabled=true;}}});
+  const card=ov.querySelector('#hcard'),cv=card.querySelector('canvas'),g2=cv.getContext('2d'),tabs=[...ov.querySelectorAll('.hsel button')];
+  const pick=i=>{const h=HINT_BOOK[i];tabs.forEach((b,n)=>b.setAttribute('aria-selected',n===i));
+    card.querySelector('em').textContent=h.tag;card.querySelector('b').textContent=h.nm;card.querySelector('i').textContent=h.sub;
+    card.querySelector('.htips').innerHTML=h.tips.map(t=>`<span>${esc(t)}</span>`).join('');
+    cancelAnimationFrame(howRAF);cv.hidden=!h.demo;if(!h.demo)return;const t0=performance.now();
+    const loop=()=>{if(!cv.isConnected)return;const kg=dg,kk=demoK;dg=g2;demoK=h.demo;try{drawDemo((performance.now()-t0)/1000%DEMO_LEN[h.demo]);}finally{dg=kg;demoK=kk;}howRAF=requestAnimationFrame(loop);};loop();};
+  tabs.forEach((b,i)=>b.addEventListener('click',()=>{initAudio();sfx.select();pick(i);}));pick(0);}
 function showRanking(){menuMusic();showOverlay(`
   <div id="board" class="boardwrap"></div>
   ${SCORE_RULE}
@@ -3064,12 +3663,15 @@ function resultScreen(cleared){
   const post=()=>{if(sub||floor<1)return sub;en.name=playerName||'???';sub=submitScore(en);prepShare(cleared,en,acc,0,false);
     sub.then(res=>{if(ovGen!==g1||!res)return;const r=ov.querySelector('#ezrank');if(r)r.textContent=res.rank?ord(res.rank):'-';
       if(res.online&&res.rank)prepShare(cleared,en,acc,res.rank,true);});return sub;};
+  const retry=()=>{if(performance.now()-t1<500)return;removeEventListener('keydown',nextKey); /* straight into the next run: a nameless run still goes up as GUEST### */
+    if(floor>=1){if(askName&&!sub){playerName='GUEST'+String(100+Math.floor(Math.random()*900));isGuest=true;}post();}startGame();};
   const next=()=>{if(performance.now()-t1<500)return; /* ignore the leftover mashing */
     removeEventListener('keydown',nextKey);scorePage(cleared,floor,en,askName&&!sub?post:post());}; /* still nameless: page 2 asks, then posts */
   showOverlay(`${head}${ezResult(floor,scoreOf(en),time)}
-    <div class="ezbtns">${floor>=1?'<button class="ezb" type="button" id="sharebtn" data-act="share">자랑하기</button>':''}<button class="ezb go" type="button" id="go" data-act="next">랭킹 보기 ▶</button></div>${CREDIT}`,
-    {share:shareResult,next});
+    <div class="ezbtns"><button class="ezb" type="button" data-act="retry">다시 하기</button><button class="ezb go" type="button" id="go" data-act="next">랭킹 보기 ▶</button></div>${CREDIT}`,
+    {retry,next});
   const g1=ovGen,t1=performance.now();ezCount(g1);
+  {const p=ov.querySelector('.ezr');if(p&&p.offsetHeight)stage.style.setProperty('--resH',p.offsetHeight+'px');} /* the ranking page that follows is made exactly this tall */
   const nextKey=e=>{if(ovGen!==g1){removeEventListener('keydown',nextKey);return;}if(e.key==='Enter'&&performance.now()-t1>=500){e.preventDefault();next();}};
   addEventListener('keydown',nextKey);
   if(floor>=1){if(askName)prepShare(cleared,en,acc,0,false);else post();}
@@ -3078,13 +3680,17 @@ function scorePage(cleared,floor,en,sub){
   /* sub is a function when the run still needs a nickname: the name box takes the rank line's place, and 등록 posts the run.
      Leaving without a name posts it as GUEST### (never saved) so the run is not lost */
   const ask=typeof sub==='function'?sub:null;if(ask)sub=null;
-  const top=ask?`<div class="namereg" id="namereg"><div class="row2"><label class="namebox" for="rname"><span>NAME</span><input id="rname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="닉네임"></label><button class="ezb reg" type="button" data-act="reg">등록</button></div><p>닉네임을 정하면 이 기록(<b>${floor}F</b>)이 랭킹에 올라가요</p></div>`
+  const top=ask?`<div class="ezr rkp nreg" id="namereg"><div class="ezhead" style="--d:0">NAME ENTRY</div>
+      <div class="nrec"><i>이번 기록</i><b>${floor}F</b></div>
+      <label class="namebox" for="rname"><span>NAME</span><input id="rname" maxlength="${NAME_MAX}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="닉네임"></label>
+      <button class="ezb go reg" type="button" data-act="reg">랭킹에 등록</button>
+      <p>닉네임을 정하면 이 기록이 랭킹에 올라가요</p></div>`
     :`<div class="rankbig" id="myrank">${floor>=1?'기록 등록 중…':'1층은 넘어야 랭킹에 올라가요'}</div>`;
   const leave=()=>{if(ask&&!sub){playerName='GUEST'+String(100+Math.floor(Math.random()*900));isGuest=true;sub=ask();}};
   showOverlay(`${top}
   <div id="board" class="boardwrap"></div>
-  <div class="ezbtns"><button class="ezb" type="button" data-act="title">처음으로</button><button class="ezb go" type="button" id="go" data-act="go">${cleared?'한 판 더':'다시 갈기기'}</button></div>
-  ${CREDIT}`,{go:()=>{leave();startGame();},title:()=>{leave();showTitle();},reg:()=>reg()});
+  <div class="ezbtns${floor>=1?' three':''}"><button class="ezb" type="button" data-act="title">처음으로</button>${floor>=1?'<button class="ezb" type="button" id="sharebtn" data-act="share">자랑하기</button>':''}<button class="ezb go" type="button" id="go" data-act="go">${cleared?'한 판 더':'다시 갈기기'}</button></div>
+  ${CREDIT}`,{go:()=>{leave();startGame();},title:()=>{leave();showTitle();},reg:()=>reg(),share:shareResult});
   const gen=ovGen;
   const show=p=>p.then(res=>{
     if(gen!==ovGen)return;
@@ -3097,7 +3703,7 @@ function scorePage(cleared,floor,en,sub){
     if(!v){box.classList.remove('bad');void box.offsetWidth;box.classList.add('bad');sfx.same();inp.focus();return;}
     playerName=v;isGuest=false;try{localStorage.setItem('punchtower.name',v);}catch(e){}sfx.select();sub=ask();
     const w=ov.querySelector('#namereg');if(w)w.outerHTML='<div class="rankbig" id="myrank">기록 등록 중…</div>';show(sub);};
-  if(ask){const inp=ov.querySelector('#rname');inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();reg();}});fillBoard('#board');return;}
+  if(ask){const inp=ov.querySelector('#rname');inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();reg();}});return;} /* the board comes once the name is in */
   if(!sub){fillBoard('#board');return;}
   show(sub);
 }
@@ -3109,7 +3715,7 @@ function ezResult(floor,score,time){const acc=accOf(),tot=jCount.reduce((a,b)=>a
   const n=(v,pad,suf)=>`<b data-to="${v}" data-pad="${pad}"${suf?` data-suf="${suf}"`:''}>${String(v).padStart(pad,'0')}${suf||''}</b>`;
   const bar=(cls,v,label)=>`<div class="ezbar ${cls}" style="--d:${d++}">${n(v,4)}<i>${label}</i></div>`;
   const top=bar('tot',tot,'TOTAL PUNCH');
-  const list=bar('jp',jCount[0],'PERFECT!')+bar('jc',jCount[1],'COOOOL!')+bar('j9',jCount[2],'90%')+bar('jm',jCount[3],'MOVE! MOVE!');
+  const list=bar('jp',jCount[0],'PERFECT!')+bar('jc',jCount[1],'COOOOL!')+bar('j9',jCount[2],'GOOD')+bar('jm',jCount[3],'MOVE! MOVE!');
   const cmb=bar('cmb',maxCombo,'MAX COMBO');
   return `<div class="ezr" aria-label="결과">
     <div class="ezhead" style="--d:0">RESULT</div>${top}
@@ -3126,7 +3732,7 @@ function ezCount(gen){if(RM)return;ov.querySelectorAll('.ezr [data-to]').forEach
     requestAnimationFrame(step);});}
 function judgeBlock(){const acc=accOf();
   const row=(name,cls,n)=>`<div class="jrow ${cls}"><b>${name}</b><span>${n}</span></div>`;
-  return `<div class="judges">${row('PERFECT!','jp',jCount[0])}${row('COOOOL!','jc',jCount[1])}${row('90%','j9',jCount[2])}${row('MOVE! MOVE!','jm',jCount[3])}
+  return `<div class="judges">${row('PERFECT!','jp',jCount[0])}${row('COOOOL!','jc',jCount[1])}${row('GOOD','j9',jCount[2])}${row('MOVE! MOVE!','jm',jCount[3])}
     <div class="jacc"><i>ACCURACY</i><span>${acc.toFixed(1)}%</span></div></div>`;}
 /* ---------- result share ----------
    The score page draws a 1080x1350 pixel card (last game frame behind, logo, floor, score, rank, link) ahead of time,
@@ -3134,6 +3740,11 @@ function judgeBlock(){const acc=accOf();
 const SHARE_URL='https://vento-punch-tower.vercel.app/';
 /* challenge link: the shared link carries the run (floor, difficulty, name). Opening it puts '이 기록을 넘어라' on the title,
    switches to that difficulty for this visit (not saved), draws the floor in the tower and says on the result how it went */
+function vsRip(){try{const old=stage.querySelector('.vsrip');if(old)old.remove();
+  const card=`<div class="card"><i>도전장</i><p>${esc(vs.name)}의 ${DIFF_KO[vs.diff]}<br><b>${vs.floor}F</b></p><span class="seal">挑</span></div>`;
+  const el=document.createElement('div');el.className='vsrip';el.setAttribute('aria-hidden','true');
+  el.innerHTML=`<div class="h l">${card}</div><div class="h r">${card}</div><div class="zap"></div>`;
+  stage.appendChild(el);setTimeout(()=>{try{sfx.brk();}catch(e){}},700);setTimeout(()=>el.remove(),1600);}catch(e){}}
 function shareLink(en){const q=new URLSearchParams({f:en.floor,d:en.diff});const n=String(en.name||'');if(n&&n!=='???')q.set('by',n);return SHARE_URL+'?'+q;}
 function readVs(){try{const q=new URLSearchParams(location.search),f=parseInt(q.get('f'),10),d=q.get('d');
   if(!(f>=1&&f<=9999)||!DIFF_KO[d])return;
@@ -3218,9 +3829,10 @@ function shareSheet(){const old=ov.querySelector('.sharesheet');if(old)old.remov
       if(navigator.share)navigator.share({title:'펀치펀치 타워',text:shareText}).catch(er=>{if(!er||er.name!=='AbortError')copyText(shareText).then(ok);});
       else copyText(shareText).then(r=>{btn.textContent=r?'링크 복사했어요!':'복사가 안 돼요';});}});
   ov.appendChild(d);}
-function showOver(){resultScreen(false);}
+function showOver(){if(pl.level>=SURF&&!story2Seen()&&!RM)playStory2(()=>resultScreen(false));else resultScreen(false);} /* first time past the surface: chapter 2, then the result */
 function showClear(){resultScreen(true);}
 readVs();
 showSplash();
 })();
-</script><script>if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));</script></body></html>
+</script>
+<script>if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));</script></body></html>
