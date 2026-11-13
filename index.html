@@ -2889,35 +2889,44 @@ const scoreOf=x=>Math.round(x.floor*SC_FLOOR*(DIFF_MUL[x.diff]||1));
 const byRank=(a,b)=>scoreOf(b)-scoreOf(a)||a.time-b.time;
 const num=n=>n.toLocaleString('en-US');
 let netErr='';
-const errCode=e=>{const m=String(e&&e.message||e);return /^http \d+/.test(m)?m.toUpperCase():'네트워크';};
+const errCode=e=>{const m=String(e&&e.message||e);return /^(http \d+|run )/.test(m)?m.toUpperCase():'네트워크';};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function localBoard(){try{return JSON.parse(localStorage.getItem('punchtower.board')||'[]')||[];}catch(e){return [];}}
 function saveLocal(en){const a=localBoard();a.push(en);try{localStorage.setItem('punchtower.board',JSON.stringify(a.slice(-500)));}catch(e){}}
 async function fetchT(url,opt){const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),8000);
-  try{const r=await fetch(url,Object.assign({signal:ctl.signal},opt||{}));if(!r.ok)throw new Error('http '+r.status);return r;}
+  try{const r=await fetch(url,Object.assign({signal:ctl.signal},opt||{}));
+    if(!r.ok){let m='';try{const j=await r.json();m=j&&j.message?' '+String(j.message).slice(0,20):'';}catch(e){}throw new Error('http '+r.status+m);}return r;}
   finally{clearTimeout(to);}}
 const ONLINE=!!(SUPA_URL&&SUPA_KEY);
 // publishable keys go in the apikey header only (they are not JWTs)
 const supaH=extra=>Object.assign({apikey:SUPA_KEY},extra||{});
-async function supaAll(){
-  const r=await fetchT(`${SUPA_URL}/rest/v1/punch_tower_scores?select=client_id,name,diff,floor,secs&order=floor.desc,secs.asc&limit=1000`,{headers:supaH()});
-  return (await r.json()).map(x=>({id:x.client_id,name:x.name,diff:x.diff,floor:+x.floor,time:+x.secs})).sort(byRank);}
-async function supaInsert(en){
-  await fetchT(`${SUPA_URL}/rest/v1/punch_tower_scores`,{method:'POST',headers:supaH({'Content-Type':'application/json',Prefer:'return=minimal'}),
-    body:JSON.stringify({client_id:en.id,name:en.name,diff:en.diff,floor:en.floor,secs:en.time})});}
+/* v51: the game never touches the table. It goes through 3 server functions (supabase-v51-secure.sql):
+   start = a one-time run token when the run begins, submit = token + result (the server checks the time), board = top 20 bests + my rank */
+let PID='';try{PID=localStorage.getItem('punchtower.pid')||'';}catch(e){}
+if(!/^[A-Za-z0-9_-]{8,40}$/.test(PID)){PID='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);try{localStorage.setItem('punchtower.pid',PID);}catch(e){}}
+const rpc=(fn,body)=>fetchT(`${SUPA_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:supaH({'Content-Type':'application/json'}),body:JSON.stringify(body)}).then(r=>r.json());
+let runTokP=null;
+function startRunToken(diff){runTokP=ONLINE?rpc('punch_tower_start',{p_player:PID,p_diff:diff}).catch(()=>null):Promise.resolve(null);}
+const rowOf=x=>({id:x.run_key,pid:x.player_id,rk:+x.rk,name:x.name,diff:x.diff,floor:+x.floor,time:+x.secs});
+async function supaBoard(){const j=await rpc('punch_tower_board',{p_player:PID,p_limit:LIMIT});
+  return {list:(j&&j.top||[]).map(rowOf),me:j&&j.me?rowOf(j.me):null};}
+async function supaSubmit(en,tokP){
+  const tok=await Promise.race([tokP||Promise.resolve(null),new Promise(r=>setTimeout(()=>r(null),5000))]);
+  if(!tok)throw new Error('run token');
+  return +(await rpc('punch_tower_submit',{p_run:tok,p_player:PID,p_key:en.id,p_name:en.name,p_floor:en.floor,p_secs:en.time}));}
 const localAll=()=>localBoard().sort(byRank);
 async function getTop(){
-  if(ONLINE){try{const list=await supaAll();netErr='';return {online:true,list};}catch(e){netErr=errCode(e);}}
+  if(ONLINE){try{const b=await supaBoard();netErr='';return {online:true,list:b.list,me:b.me};}catch(e){netErr=errCode(e);}}
   return {online:false,list:localAll()};
 }
 async function submitScore(en){
+  const tokP=runTokP;runTokP=null; /* this run's token: a quick retry starts the next run (and its token) right after */
   saveLocal(en);
   if(ONLINE){
     // save and read separately: if only the save is refused, still show the shared board
-    let saveErr='';try{await supaInsert(en);}catch(e){saveErr=errCode(e);}
-    try{const list=await supaAll();netErr='';
-      if(saveErr){const mine=list.concat([en]).sort(byRank);return {online:true,saveErr,rank:mine.findIndex(x=>x.id===en.id)+1,list:mine};}
-      return {online:true,rank:list.findIndex(x=>x.id===en.id)+1,list};}catch(e){netErr=errCode(e);}}
+    let saveErr='',rank=0;try{rank=await supaSubmit(en,tokP);}catch(e){saveErr=errCode(e);}
+    try{const b=await supaBoard();netErr='';
+      return {online:true,saveErr,rank:saveErr?0:rank,list:b.list,me:b.me};}catch(e){netErr=errCode(e);}}
   const list=localAll();
   return {online:false,rank:list.findIndex(x=>x.id===en.id)+1,list};
 }
@@ -2926,30 +2935,34 @@ const dKey=x=>DIFF_KO[x.diff]?x.diff:'easy';
 const bigNum=(t,cls)=>`<div class="logo${cls?' '+cls:''}" aria-hidden="true"><span class="lw"><span class="lo">${t}</span><span class="lf">${t}</span></span></div>`;
 /* grade of a run: kept with the run on this device (the server board has no grade) */
 const gradeOf=x=>{if(x.grade)return x.grade;const m=localBoard().find(y=>y.id===x.id);return m&&m.grade||'';};
-function rowHTML(x,i,hiId,dd){const me=hiId&&x.id===hiId;const d=dKey(x);
-  return `<div class="rkrow rkfr${me?' me':''}" style="--d:${dd}"><b>${ord(i+1)}</b><div class="rkn"><span class="kr22">${esc(x.name)}</span>`+
+const rkOf=(x,i)=>x.rk||i+1;
+function rowHTML(x,i,me,dd){const d=dKey(x);
+  return `<div class="rkrow rkfr${me?' me':''}" style="--d:${dd}"><b>${ord(rkOf(x,i))}</b><div class="rkn"><span class="kr22">${esc(x.name)}</span>`+
     `<p class="sub"><span class="dt t-${d}">${DIFF_KO[d]}</span><span>${x.floor}F</span></p></div><span class="sc">${num(scoreOf(x))}</span></div>`;}
-function topHTML(x,i,hiId){const d=dKey(x);
-  return `<div class="rkt rkfr p${i+1}${hiId&&x.id===hiId?' me':''}" style="--d:${i+2}" aria-label="${i+1}위">${bigNum(i+1)}`+
+function topHTML(x,i,me){const d=dKey(x);
+  return `<div class="rkt rkfr p${i+1}${me?' me':''}" style="--d:${i+2}" aria-label="${i+1}위">${bigNum(i+1)}`+
     `<div class="rkn"><span class="kr22">${esc(x.name)}</span><p class="sub"><span class="dchip d-${d}">${DIFF_KO[d]}</span><span>${x.floor}F</span>`+
     `<span class="ps">${num(scoreOf(x))}</span></p></div></div>`;}
 const LIMIT=20;
 /* your spot on the board: grade stamp (when known) + rank, name, floor, score */
 function myBoxHTML(list,mi,label){const x=list[mi],g=gradeOf(x),d=dKey(x);
   return `<div class="rkme${g?'':' nog'}" style="--d:1">${g?`<div class="rkg"><i>GRADE</i>${bigNum(g)}</div>`:''}<div class="rkd">`+
-    `<div class="rkline hi"><i>${label}</i><b>${ord(mi+1)}</b></div>`+
+    `<div class="rkline hi"><i>${label}</i><b>${ord(rkOf(x,mi))}</b></div>`+
     `<div class="rkwho"><span class="kr22">${esc(x.name)}</span><span class="dchip d-${d}">${DIFF_KO[d]}</span></div>`+
     `<div class="rkline"><i>FLOOR</i><b>${x.floor}F</b></div><div class="rkline"><i>SCORE</i><b>${num(scoreOf(x))}</b></div></div></div>`;}
 function boardHTML(res,hiId,mine){
-  const list=res.list||[];
+  let list=res.list||[];
+  if(res.online&&res.me&&!list.some(x=>x.pid===res.me.pid))list=list.concat([res.me]); /* my best, below the top 20 */
   const note=res.saveErr?`전체 랭킹 · 이번 기록은 서버 저장 실패 (${esc(res.saveErr)})`:res.online?'전체 플레이어 랭킹':(ONLINE?`온라인 연결 실패${netErr?' ('+esc(netErr)+')':''} · 이 기기 기록만 보여요`:'이 기기에 저장된 랭킹');
   if(!list.length)return `<div class="ezr rkp empty"><div class="ezhead" style="--d:0">RANKING</div><p class="rkempty">아직 기록이 없어요<br><b>첫 1위를 차지하세요!</b></p></div><p class="bnote">${note}</p>`;
-  if(!hiId&&mine){const ids=new Set(localBoard().map(x=>x.id));const f=list.find(x=>ids.has(x.id));if(f)hiId=f.id;}
-  const mi=hiId?list.findIndex(x=>x.id===hiId):-1;
-  const box=mi>=0?myBoxHTML(list,mi,mine?'MY BEST':'YOUR RANK'):'';
-  const top=list.slice(0,3).map((x,i)=>topHTML(x,i,hiId)).join('');
-  let h=list.slice(3,LIMIT).map((x,i)=>rowHTML(x,i+3,hiId,i+5)).join('');
-  if(mi>=LIMIT)h+=`<div class="rkgap">· · ·</div>`+rowHTML(list[mi],mi,hiId,LIMIT);
+  if(!hiId&&mine&&!res.online){const ids=new Set(localBoard().map(x=>x.id));const f=list.find(x=>ids.has(x.id));if(f)hiId=f.id;}
+  /* online the board keeps one row per player (their best), so 'me' is my player row */
+  const isMe=x=>res.online?(!!(hiId||mine)&&x.pid===PID):(!!hiId&&x.id===hiId);
+  const mi=list.findIndex(isMe);
+  const box=mi>=0?myBoxHTML(list,mi,mine||list[mi].id!==hiId?'MY BEST':'YOUR RANK'):'';
+  const top=list.slice(0,3).map((x,i)=>topHTML(x,i,isMe(x))).join('');
+  let h=list.slice(3,LIMIT).map((x,i)=>rowHTML(x,i+3,isMe(x),i+5)).join('');
+  if(mi>=LIMIT)h+=`<div class="rkgap">· · ·</div>`+rowHTML(list[mi],mi,true,LIMIT);
   return `<div class="ezr rkp"><div class="ezhead" style="--d:0">RANKING</div>${box}<div class="rkscroll">${top}${h}</div></div><p class="bnote">${note}</p>`;
 }
 const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 × 1,000 × 난이도 배율 · 같은 점수면 더 빨리 오른 사람이 위<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
@@ -3007,7 +3020,7 @@ let countT=0,countShown=0;
 const LEAF_T=2.4,DROP_AT=.85,LEAF_BEEPS=[1.25,1.6,1.95]; /* the lava pours down first; as it nearly reaches the floor he drops in on a fast 3-2-1 and lands on GO */
 const LETS_T=LEAF_T;
 let leafBeeps=0,leafLand=null;
-function beginCountdown(){newGame();gcrack=null;landQ=[];landEnd=false;offStreak=0;comboBreak=null;for(const v of BURN_VOICES)clipDecode(v);mode='count';countT=LETS_T;countShown=0;leafBeeps=0;bgmStop();holds.clear();}
+function beginCountdown(){newGame();startRunToken(D.key);gcrack=null;landQ=[];landEnd=false;offStreak=0;comboBreak=null;for(const v of BURN_VOICES)clipDecode(v);mode='count';countT=LETS_T;countShown=0;leafBeeps=0;bgmStop();holds.clear();}
 function updateCountdown(dt){
   countT-=dt;const el=LEAF_T-countT;
   while(leafBeeps<LEAF_BEEPS.length&&el>=LEAF_BEEPS[leafBeeps]){leafBeeps++;sfx.count(false);vibe(8);} // ti... ti... ti...
