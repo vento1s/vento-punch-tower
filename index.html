@@ -414,7 +414,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 /* round arcade push button in a black bezel with a yellow ring */
 .abtn{border:0;padding:0;margin:0;background:none;cursor:pointer;display:block;line-height:0}
 /* the button art is a tiny pixel canvas scaled 4x; it keeps pressing itself to invite a tap */
-.abtn canvas{width:208px;height:116px;image-rendering:pixelated;image-rendering:crisp-edges}
+.abtn canvas{width:208px;height:148px;image-rendering:pixelated;image-rendering:crisp-edges}
 .abtn:focus-visible{outline:3px dashed var(--gold);outline-offset:6px}
 /* sound toggle: pixel speaker + label, bottom of the boot screen */
 .sndbtn{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:8px;
@@ -1206,7 +1206,7 @@ const popX=w=>{const half=(w||20)/2+10;return pl.x<W/2?Math.min(W-WALL-half,pl.x
 const fistX=side=>pl.x+(side?4:-4);
 // STRETCH PUNCH: when the next floor's weak point sits right above the one you just broke, the boxer stays put
 // and his arm stretches up to punch that floor too (bababa!), up to REACH_MAX floors; then he hops up all at once.
-const REACH_MAX=3;
+const REACH_MAX=3,REACH_MOVE=5; /* px walked away from where the stretch began that ends it */
 const tgtN=()=>pl.level+1+(pl.reach||0),tgt=()=>slabs[tgtN()];
 const alignedUnder=s=>s&&!s.broken&&s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
 function hopTo(dest){pl.from=pl.feet;pl.to=-dest*FH;pl.jt=0;pl.jd=.13+.07*Math.max(0,dest-pl.level-1);pl.level=dest;pl.reach=0;sfx.jump();
@@ -1322,6 +1322,7 @@ function breakSlab(s){
   if(s.type==='boss'||s.type==='vibranium')pop(popX(44),pl.feet-30,s.type==='boss'?'GATE BROKEN':'SMASHED!',s.type==='boss'?'#a4b5c6':'#b7a8ff',1);
   const nx=slabs[dest+1];ensureSlabs(dest+31);
   if(kingT<=0&&skillOn('walk')&&s.type!=='tnt'&&pl.jt<0&&(pl.reach||0)<REACH_MAX&&dest+1>=practiceTo&&alignedUnder(slabs[dest+1])){ // (no stretching arm during SHOW TIME) // stretch to the next floor, stay put
+    if(!pl.reach)pl.reachX=pl.x; /* where the stretch began: walking off it ends the stretch (v58) */
     pl.reach=dest+1-(pl.level+1);
     pop(popX(46),pl.feet-30,'x'+(pl.reach+1)+' STRETCH!','#ffd400',pl.reach>=2?2:1);
     if(AC){const t=AC.currentTime;tone(t,.12,300+pl.reach*180,900+pl.reach*260,'square',.08);}
@@ -1730,7 +1731,9 @@ function update(dt){
     if(started)tNow=t-tStart;
     if(landQ.length&&!landing()&&started)hit(landQ.shift()); /* the presses made during the landing, one per frame */
     if(t-lastTap>D.win)combo=0; // weak hits toward the next KING level are kept even when the chain breaks
-    if(pl.reach>0&&pl.jt<0&&!alignedUnder(tgt()))hopTo(pl.level+pl.reach);
+    /* the stretch ends (he hops up to the floors he broke) when the next weak point is no longer over him,
+       or as soon as he walks a little way from where it began - moving means he is done stretching (v58) */
+    if(pl.reach>0&&pl.jt<0&&(!alignedUnder(tgt())||Math.abs(pl.tx-pl.reachX)>REACH_MOVE||Math.abs(pl.x-pl.reachX)>REACH_MOVE))hopTo(pl.level+pl.reach);
     if(started){const tg=tgt();// lava speeds up with height, and the climb itself accelerates it (×2 by floor 150)
       // past 40F the climb keeps getting harder, but at half the rate (it used to wall everyone in the 50s)
       const L=pl.level<=40?pl.level:40+(pl.level-40)*.5;
@@ -3063,16 +3066,16 @@ function startGuest(){isGuest=true;playerName='GUEST'+String(100+Math.floor(Math
 const BTN_S=8; /* the button art is 52x29 pixels drawn 8x bigger, so the lying VENTO on its cap can be finer than one art pixel */
 let btnArt=null,ventoFlat=null;
 function drawStartButton(c,h,broken,capOnly){
-  if(c.width!==52*BTN_S){c.width=52*BTN_S;c.height=29*BTN_S;}
-  if(!btnArt){btnArt=document.createElement('canvas');btnArt.width=52;btnArt.height=29;}
-  const g=btnArt.getContext('2d');g.clearRect(0,0,52,29);
+  if(c.width!==52*BTN_S||c.height!==37*BTN_S){c.width=52*BTN_S;c.height=37*BTN_S;}
+  if(!btnArt){btnArt=document.createElement('canvas');btnArt.width=52;btnArt.height=37;}
+  const g=btnArt.getContext('2d');g.clearRect(0,0,52,37);
   const ell=(cx,cy,rx,ry,col)=>{g.fillStyle=col;for(let y=-ry;y<=ry;y++){const w=Math.round(rx*Math.sqrt(1-(y*y)/(ry*ry)));if(w>0)g.fillRect(cx-w,cy+y,w*2+1,1);}};
-  const cx=26,by=16;
+  const cx=26,by=22,DOME=4; /* v58: seen a little more from above, and the cap is a round dome (it used to be a flat disc) */
   if(!capOnly){                         // (capOnly: just the cap, for the pieces that fly off)
-  ell(cx,by+4,23,7,'#4a403a');          // floor shadow / outer bezel
-  ell(cx,by+2,20,6,'#2a2420');          // bezel ring
-  ell(cx,by+1,17,5,'#5c5450');          // bezel lip
-  ell(cx,by,16,5,'#1a1512');            // hole
+  ell(cx,by+4,23,10,'#4a403a');         // floor shadow / outer bezel
+  ell(cx,by+2,20,9,'#2a2420');          // bezel ring
+  ell(cx,by+1,17,8,'#5c5450');          // bezel lip
+  ell(cx,by,16,7,'#1a1512');            // hole
   }
   // cap side (cylinder) from the hole up to the top face
   if(broken){ /* the cap is gone: a cracked, empty socket with a few red stumps left in it */
@@ -3080,16 +3083,18 @@ function drawStartButton(c,h,broken,capOnly){
     g.fillStyle='#7a0a0a';[[cx-12,by+2,3,2],[cx+8,by+2,4,2],[cx-3,by+3,2,1]].forEach(r=>g.fillRect(...r));
     g.fillStyle='#b81010';[[cx-12,by+1,2,1],[cx+9,by+1,2,1]].forEach(r=>g.fillRect(...r));
     const o2=c.getContext('2d');o2.imageSmoothingEnabled=false;o2.clearRect(0,0,c.width,c.height);o2.drawImage(btnArt,0,0,c.width,c.height);return;}
-  for(let k=0;k<=h;k++){ell(cx,by-k,15,5,k<2?'#7a0a0a':'#b81010');}
-  for(let k=1;k<=h;k++){g.fillStyle='#d81e1e';const y=by-k+4;g.fillRect(cx+2,y,12,1);} // lit right side of the wall
-  ell(cx,by-h,15,5,'#ff2a2a');          // top face
-  ell(cx-3,by-h-1,9,3,'#ff4d40');
-  g.fillStyle='#ffb2a6';g.fillRect(cx-8,by-h-4,4,1);g.fillRect(cx-10,by-h-3,2,1); // glint
+  for(let k=0;k<=h;k++){ell(cx,by-k,15,7,k<2?'#7a0a0a':'#b81010');}
+  for(let k=1;k<=h;k++){g.fillStyle='#d81e1e';const y=by-k+6;g.fillRect(cx+2,y,12,1);} // lit right side of the wall
+  /* the dome: rings shrinking as they rise, darker at the rim, brighter toward the crown */
+  const top=by-h,DC=['#c81414','#e81e1e','#ff2a2a','#ff3e34','#ff5446'];
+  for(let d=0;d<=DOME;d++){const f=Math.sqrt(1-Math.pow(d/(DOME+1),2));ell(cx,top-d,Math.round(15*f),Math.round(7*f),DC[d]);}
+  ell(cx-4,top-DOME-1,6,2,'#ff7a6a');   // the crown catching the light
+  g.fillStyle='#ffd0c8';g.fillRect(cx-9,top-DOME,3,1);g.fillRect(cx-10,top-DOME+1,1,1);g.fillRect(cx-7,top-DOME-1,2,1); // glint
   const out=c.getContext('2d');out.imageSmoothingEnabled=false;out.clearRect(0,0,c.width,c.height);out.drawImage(btnArt,0,0,c.width,c.height);
   /* VENTO lying flat on the cap, facing the sky: the AI STUDIO lettering (cream face, red then deep-red drop), squashed to the cap's
      tilt, and a little narrower at the far edge. Seen from the front, the word lies on its back */
   const v=ventoWord();if(!v)return;
-  const S=BTN_S,dh=v.height,y0=Math.round((by-h)*S+S/2-dh/2),cxp=cx*S+S/2;
+  const S=BTN_S,dh=v.height,y0=Math.round((by-h-DOME*.6)*S+S/2-dh/2),cxp=cx*S+S/2;
   for(let r=0;r<dh;r+=3){const k=.88+.12*(r/dh),w=Math.round(v.width*k);out.drawImage(v,0,r,v.width,3,Math.round(cxp-w/2),y0+r,w,3);} /* one dot row at a time, the far rows a little narrower */
 }
 /* splash lettering as real pixel art: a bold arcade bitmap face (2-pixel strokes, 6 rows), a dark outline,
@@ -3310,7 +3315,7 @@ function playStory(done){
   const KID=[".hhhh.","hhhhhh",".ssss.","sesses",".ssss.",".tttt.","tttttt",".tttt."];
   const K1={h:'#2a1a14',s:'#f2b68a',e:'#1a1020',t:'#3a8aff'},K2={h:'#7a3a1a',s:'#f2b68a',e:'#1a1020',t:'#ffd400'};
   const TOP=20,BOT=220,WY=186,GY=207,CX=72,FY=198;           /* bars, foot of the wall, his feet, centre, the tower floor */
-  const TALK=2.2,GO=3.7,PT=[4.1,4.6,5.1,5.55,6.0,6.4,6.8],T1=7.3,T2=8.7,T3=9.7,T4=13.1,END=T4+3.9; /* her complaint, his answer, the blows, the rumble, the split, the fall, the landing */
+  const INTRO=3.4,TALK=2.2,GO=3.7,PT=[4.1,4.6,5.1,5.55,6.0,6.4,6.8],T1=7.3,T2=8.7,T3=9.7,T4=13.1,END=T4+3.9; /* her complaint, his answer, the blows, the rumble, the split, the fall, the landing */
   /* the rock wall, painted once: big rough blocks, lit top-left, dark toward the foot */
   const wall=document.createElement('canvas');wall.width=W;wall.height=WY-TOP;{const w=wall.getContext('2d'),cols=['#7c7886','#6a6674','#5e5a68','#8a8694','#726e7c'];
     for(let r=0,y=0;y<wall.height;r++){const h=10+(hash(r,7)*8|0);let x=-(hash(r,3)*20|0);
@@ -3346,9 +3351,27 @@ function playStory(done){
       else{P(ax,top+18,6,13,HP.s);P(ax+(sd?4:0),top+18,2,13,HP.S);P(ax-1,top+29,8,7,'#ffd0bd');}}};
   const front=(x,y,fl,armsUp)=>{S(BODY,x,y,HP,3,fl);  /* him from the front (3x), for the fall and the landing */
     if(armsUp){P(x-4,y-10+(fl?4:0),5,18,HP.s);P(x-5,y-16+(fl?4:0),7,7,'#ffd0bd');P(x+23,y-10+(fl?0:4),5,18,HP.s);P(x+22,y-16+(fl?0:4),7,7,'#ffd0bd');}};
+  /* ---------- 0: the title card of a hero: his face out of the dark, two lines, a drum under each ---------- */
+  const FACE=["...k.kk..kk.k...","..kkkkkkkkkkkk..",".kkkkkkkkkkkkkk.",".rrrrrrrrrrrrrrr",".RRRRRRRRRRRRRRR",".kssssssssssssk.",".sBBssssssssBBS.",".ssBBBssssBBBSS.",".sseWesssseWeSS.",".ssssssssssssSS.",".sssssSSSssssSS.",".ssssssssssssSS.","..ssdmmmmmmdsS..","..sssssssssSS...","...ssSSSSSsS....","..gggGssssGggg..",".ggggggGGggggggg"];
+  const FP={k:'#2a1a14',r:'#e8344a',R:'#a81c30',s:'#f2b68a',S:'#b87a54',B:'#2a1a14',e:'#1a1020',W:'#ffffff',d:'#5a2a20',m:'#8a4a3a',g:'#f4efe8',G:'#c4bccd'};
+  const intro=t=>{
+    P(0,TOP,W,BOT-TOP,'#0a0610');
+    {const gg=c.createRadialGradient(CX,118,4,CX,118,96);gg.addColorStop(0,'rgba(200,52,26,.55)');gg.addColorStop(1,'rgba(200,52,26,0)');c.fillStyle=gg;c.fillRect(0,TOP,W,BOT-TOP);} /* the lava glow behind him */
+    for(let i=0;i<18;i++){const x=hash(i,81)*W,y=BOT-((t*(18+hash(i,82)*26)+i*29)%(BOT-TOP));P(x+Math.sin(t*2+i)*2,y,1,1,i%3?'#ff8a1a':'#ffd04a');} /* embers drifting up */
+    const sc=6,fx=CX-48,fy=64+Math.round(Math.max(0,1-t/1.2)*8),fl=((t*7)|0)%2;  /* rises into place, then holds still */
+    for(const [dx,dy,w] of [[96,22,10],[100,28+fl*2,14],[104,34+fl*4,12]])P(fx+dx,fy+dy,w,5,dy%2?FP.R:FP.r); /* headband tails in the wind */
+    S(FACE,fx,fy,FP,sc);
+    c.globalAlpha=.38;P(fx+72,fy,24,102,'#0a0610');c.globalAlpha=1;  /* one side of the face in shadow */
+    if(t>1.75&&t<2.05){const a=1-(t-1.75)/.3;c.globalAlpha=a;P(fx+21,fy+50,12,2,'#fff');P(fx+63,fy+50,12,2,'#fff');P(fx+26,fy+45,2,12,'#fff');P(fx+68,fy+45,2,12,'#fff');c.globalAlpha=1;} /* a glint in the eyes */
+    once('i1',()=>snd(tt=>{tone(tt,.7,70,38,'sine',.22);noise(tt,.5,120,.6,.25,'lowpass');}));
+    if(t>1.7)once('i2',()=>{snd(tt=>{tone(tt,.9,62,32,'sine',.26);noise(tt,.7,110,.6,.3,'lowpass');});vibe(30);});
+    say(t<1.7?'내 이름은 김주먹.':'주먹으로 안 되는 일은 없다.');
+    if(t<.35){c.globalAlpha=1-t/.35;P(0,0,W,H,'#000');c.globalAlpha=1;}
+    if(t>INTRO-.25){c.globalAlpha=Math.min(1,(t-(INTRO-.25))/.25);P(0,0,W,H,'#000');c.globalAlpha=1;}};
   const lavaRow=(y,amp)=>{for(let x=0;x<W;x++){const w=Math.round(Math.sin(x*.28+E*4)*amp+Math.sin(x*.09-E*2.2)*amp),yy=y+w;P(x,yy,1,2,'#ffe27a');P(x,yy+2,1,4,'#ff8a1a');P(x,yy+6,1,BOT-yy,'#c8341a');}};
-  const frame=now=>{if(ended)return;const e=E=(now-t0)/1000,dt=1/60;c.clearRect(0,0,W,H);shx=shy=0;
-    if(e<T3){ /* ---------- 1-3: the wall, the rumble, the split ---------- */
+  const frame=now=>{if(ended)return;const raw=(now-t0)/1000,e=E=raw-INTRO,dt=1/60;c.clearRect(0,0,W,H);shx=shy=0;
+    if(raw<INTRO)intro(raw);
+    else if(e<T3){ /* ---------- 1-3: the wall, the rumble, the split ---------- */
       let n=0;while(n<PT.length&&PT[n]<=e)n++;
       const since=n?e-PT[n-1]:9,calm=e<T1,side=(n+1)%2,punching=calm&&since<.16;
       if(n!==lastN){lastN=n;const big=n===PT.length;snd(t=>{noise(t,.09,420,.9,big?.5:.34,'bandpass');tone(t,.1,big?120:150,50,'square',big?.16:.1);noise(t,.2,90,.7,big?.5:.3,'lowpass');});vibe(big?40:14);
@@ -3378,16 +3401,18 @@ function playStory(done){
         for(let b2=0;b2<4;b2++){const bl=Math.round(k*14);for(let i=0;i<bl;i++)P(CX+(b2-1.5)*22+i*(b2%2?1:-1),GY+3+i,1,2,'#1a1020');}}
       let hy=0;
       if(e>=T2){const k=Math.min(1,(e-T2)/.3);
-        for(let y=196;y<BOT;y++){const d=(y-196)/(BOT-196),hw=k*(15+d*40)+(hash(y,5)*5-2.5)*k;
+        for(let y=196;y<BOT;y++){const d=(y-196)/(BOT-196),hw=k*(15+d*28)+(hash(y,5)*5-2.5)*k; /* v58: narrower at the bottom, so the kids keep grass under them */
           P(CX-hw,y,hw*2,1,d<.18?'#6a4a2a':d<.42?'#0b0811':d<.62?'#3a0a06':d<.82?'#8a1c10':(((e*12)|0)%2?'#d8401a':'#c8341a'));P(CX-hw-1,y,2,1,'#2f7a2a');P(CX+hw-1,y,2,1,'#2f7a2a');}
         once('split',()=>{sfx.boom();vibe([60,30,120]);});
         if(e>T2+.2){const tt=e-T2-.2;hy=420*tt*tt;once('fall',()=>snd(t=>tone(t,1.6,1100,170,'sine',.09)));}}
       hero(GY-48+hy,punching?'punch':e>=T2?'up':(e>=TALK&&e<GO)?'punch':'idle',(e>=TALK&&e<GO)?1:side); /* 'leave it to me': one fist goes up */
       if(!calm&&e<T2&&((e*6)|0)%2)bang(CX,GY-66);
       /* the children run about in front, and freeze */
-      {const ek=Math.min(e,T1),u=(ek*42)%240,x=u<120?8+u:8+240-u,dir=u<120?1:-1,u2=((ek-.4)*42+240)%240,x2=u2<120?8+u2:8+240-u2,d2=u2<120?1:-1;
-        kid(K1,x,215,calm?dir:(CX<x?-1:1),calm);kid(K2,x2,218,calm?d2:(CX<x2?-1:1),calm);
-        if(!calm&&((e*6)|0)%2){bang(x+5,186);bang(x2+5,189);}}
+      {const ek=Math.min(e,T1),u=(ek*42)%240,x0=u<120?8+u:8+240-u,dir=u<120?1:-1,u2=((ek-.4)*42+240)%240,x02=u2<120?8+u2:8+240-u2,d2=u2<120?1:-1;
+        /* v58: when the ground shakes they run off the middle to the grass - one to mum, one to the washing - and freeze there */
+        const run=calm?0:Math.min(1,(e-T1)/.55),ez=1-(1-run)*(1-run),x=Math.round(x0+(16-x0)*ez),x2=Math.round(x02+(116-x02)*ez),moving=!calm&&run<1;
+        kid(K1,x,215,calm?dir:moving?(16<x0?-1:1):1,calm||moving);kid(K2,x2,218,calm?d2:moving?(116<x02?-1:1):-1,calm||moving);
+        if(!calm&&!moving&&((e*6)|0)%2){bang(x+5,186);bang(x2+5,189);}}
       chips=chips.filter(p=>(p.l-=dt)>0);for(const p of chips){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=260*dt;P(p.x,p.y,2,2,p.l>.35?'#b4b4c0':'#62626e');}
       if(e>=T1&&Math.random()<.5)chips.push({x:Math.random()*W,y:TOP,vx:0,vy:40,l:.9}); /* grit shaken off the wall */
       if(e<TALK)say('아내: 여보, 저 암벽 때문에\n빨래가 안 말라.');
@@ -3558,7 +3583,7 @@ function showSplash(){
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
       <div class="pushcue" aria-hidden="true"><canvas class="pushtxt" id="pushcv" aria-hidden="true"></canvas><div class="pusharrow"></div></div>
-      <button class="abtn" id="startbtn" type="button" aria-label="START"><canvas id="btncv" width="52" height="29"></canvas></button>
+      <button class="abtn" id="startbtn" type="button" aria-label="START"><canvas id="btncv" width="52" height="37"></canvas></button>
     </div>
     <button class="sndbtn${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}"><i aria-hidden="true"></i><span>${soundLabel()}</span></button>`;
   let stage2=false,done=false;
