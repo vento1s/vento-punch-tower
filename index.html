@@ -1157,7 +1157,7 @@ let dispT=0,tGains=[],gainSum=0,gainT=0,hudT=0; // TIME counter that rolls up, a
 // TIME drives the lava: 60s banked -> x0.6, 30s (start) -> about x1, 10s -> x1.35, 0s -> TIME UP surge
 // TIME is now the honest truth: seconds until the lava reaches your feet at its current speed.
 // bonuses ('+1.5s') push the lava down by exactly that many seconds of its climb.
-let lavaV=10;const LAVA_CAP_S=4,lavaCap=()=>Math.max(110,LAVA_CAP_S*lavaV); // how far below you it can be pushed
+let lavaV=10;const LAVA_TOP=3,LAVA_CREEP=.35,LAVA_CAP_S=4,lavaCap=()=>Math.max(110,LAVA_CAP_S*lavaV); // how far below you it can be pushed
 function addTime(v,label){if(timeUp)return;const was=lavaY;lavaY=Math.min(lavaY+v*lavaV,pl.feet+lavaCap());timeFlash=.35;
   const g=(lavaY-was)/lavaV;if(g>.01){tGains.push({v:g,a:0,x:(Math.random()-.5)*10});if(tGains.length>8)tGains.shift();gainSum=(gainT>0?gainSum:0)+g;gainT=1.1;}
   if(label)pop(popX(30),pl.feet-44,label,'#7af0ff',1);}
@@ -1735,10 +1735,14 @@ function update(dt){
       // past 40F the climb keeps getting harder, but at half the rate (it used to wall everyone in the 50s)
       const L=pl.level<=40?pl.level:40+(pl.level-40)*.5;
       let v=(D.lava+L*D.grow)*(1+L/150); /* v56: the climb's own acceleration eased (was /90) */
+      v=Math.min(v,D.lava*LAVA_TOP); /* v57: top speed, 3x the start speed of this difficulty */
       timeFlash=Math.max(0,timeFlash-dt);
       {const z=zoneOfLevel(pl.level+1);if(lastZone&&z!==lastZone){pop(W/2,pl.feet-58,z.name,'#ffd04a',2);if(AC){const t=AC.currentTime;[660,880,1320].forEach((f,i)=>tone(t+i*.07,.12,f,f,'square',.07));}}lastZone=z;}
       if(tg&&(tg.type==='boss'||tg.type==='final'))v*=.6;if(fever>0)v*=.85;
       lavaV=Math.max(1,v);
+      /* v57: once the lava is on screen it creeps: full speed at the bottom edge, down to x0.65 right under his feet.
+         Only the climb slows; lavaV (TIME and the bonus push-back) keeps the full speed, so TIME reads a little short of the truth */
+      {const sy=lavaY-camY,fy=pl.feet-camY;if(sy<H&&fy<H-4){const k=Math.min(1,Math.max(0,(H-sy)/(H-fy)));v*=1-LAVA_CREEP*k;}}
       if(lavaHold>0){lavaHold-=ldt;v=0;} // frozen right after a KING PUNCH landing
       else if(practicing()||landing())v=0; /* walk + dash practice, or he is still getting up: the lava waits */
       lavaY-=v*ldt;lavaY=Math.min(lavaY,pl.feet+lavaCap());
