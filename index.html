@@ -2198,7 +2198,9 @@ function perfectText(s,cx,y,age,base,quiet,pal){
   {const gr=ctx.createLinearGradient(0,y-3,0,y+5*sc+6),sh=Math.min(1,Math.max(0,(age-.03)/.35)); /* v61b: the rim takes the grade's colours, lit from above, and a light band slides down it */
     gr.addColorStop(0,'#ffffff');gr.addColorStop(.28,pal.top);gr.addColorStop(.62,pal.f[0]);gr.addColorStop(1,pal.ex[2]);
     if(sh>0&&sh<1){gr.addColorStop(Math.max(.01,sh-.08),pal.f[0]);gr.addColorStop(sh,'#ffffff');gr.addColorStop(Math.min(.99,sh+.08),pal.f[0]);}
-    ctx.fillStyle=gr;for(const [px,py] of cells)for(let o=0;o<=3;o++)ctx.fillRect(px+o-2,py+o-2,sc+4,sc+4);}
+    /* v62: an uneven rim - fat in places, hairline in others, gone in a few - like it was inked by hand. Fixed per glyph cell, so it never flickers */
+    ctx.fillStyle=gr;for(const [px,py] of cells){const u=px-x,r=Math.round(1.3+1.5*Math.sin(u*.19+s.length)+1.1*Math.sin(u*.07+py*.3)+(hash(u>>1,py>>1)-.5)*1.6);
+      if(r<=0)continue;const R=Math.min(4,r);for(let o=0;o<=3;o++)ctx.fillRect(px+o-R,py+o-R,sc+2*R,sc+2*R);}}
   ctx.fillStyle='#0d0a08';for(const [px,py] of cells)for(let o=0;o<=3;o++)ctx.fillRect(px+o-1,py+o-1,sc+2,sc+2);
   [[pal.ex[0],3],[pal.ex[1],2],[pal.ex[2],1]].forEach(([c,o])=>{ctx.fillStyle=c;for(const [px,py] of cells)ctx.fillRect(px+o,py+o,sc,sc);});
   const shine=age>.04&&age<.34?x-10+(tw(s,sc)+20)*((age-.04)/.3):-999;          // one white glint sweeping left to right
@@ -3090,18 +3092,34 @@ function drawStartButton(c,h,broken,capOnly){
   ell(cx,by,16,7,'#1a1512');            // hole
   }
   // cap side (cylinder) from the hole up to the top face
-  if(broken){ /* v61b: blown apart. Jagged red stumps stand round the rim of a dark, smoking hole; the wiring spills out of it.
-       sparkButton() fizzes sparks over this */
+  if(broken){ /* v62: blown apart, but not all of it. A chunk of the red dome still stands at the back-left with a jagged broken face;
+       the rest is a dark hole with the wiring spilling out and red stumps round the front rim. The bezel under it has split into
+       three pieces that have shifted apart. sparkButton() fizzes sparks over this */
     ell(cx,by,15,7,'#0a0706');ell(cx,by+1,13,5,'#1c1210');                     /* the empty socket */
-    for(let x=-15;x<=15;x++){const edge=Math.round(7*Math.sqrt(Math.max(0,1-(x*x)/225))),hgt=Math.round(1+3*hash(x+20,9)+(Math.abs(x)>9?2:0)); /* stumps along the front rim */
-      const y0=by+edge;g.fillStyle='#7a0a0a';g.fillRect(cx+x,y0-hgt,1,hgt);g.fillStyle=hash(x,4)>.5?'#d81e1e':'#b81010';g.fillRect(cx+x,y0-hgt,1,1);
+    const cut=y=>cx-6-Math.max(0,y-(by-4))+Math.round(hash(y,3)*3)-(y%2); /* narrower toward the front: only the back-left chunk is left */                            /* the broken face of the chunk that is left */
+    const ellCut=(ex,ey,rx,ry,col)=>{g.fillStyle=col;for(let y=-ry;y<=ry;y++){const w=Math.round(rx*Math.sqrt(1-(y*y)/(ry*ry)));const x1=Math.min(ex+w,cut(ey+y));if(w>0&&x1>ex-w)g.fillRect(ex-w,ey+y,x1-(ex-w)+1,1);}};
+    for(let k=0;k<=3;k++)ellCut(cx,by-k,15,7,k<2?'#7a0a0a':'#b81010');
+    const DC=['#c81414','#e81e1e','#ff2a2a','#ff3e34'];for(let d=0;d<=3;d++){const f=Math.sqrt(1-Math.pow(d/5,2));ellCut(cx,by-3-d,Math.round(15*f),Math.round(7*f),DC[d]);}
+    g.fillStyle='#ffd0c8';g.fillRect(cx-9,by-7,3,1);g.fillRect(cx-10,by-6,1,1);  /* its glint survives */
+    for(let y=by-12;y<=by+6;y++){const x=cut(y);g.fillStyle='#5a0808';g.fillRect(x,y,1,1);g.fillStyle='#ff6a5a';if(hash(y,8)>.4)g.fillRect(x-1,y,1,1);} /* the raw broken face */
+    for(let x=-15;x<=15;x++){const edge=Math.round(7*Math.sqrt(Math.max(0,1-(x*x)/225))),hgt=Math.round(1+3*hash(x+20,9)+(Math.abs(x)>9?2:0)); /* stumps round the rest of the rim */
+      const y0=by+edge;if(cx+x<=cut(y0-1))continue;g.fillStyle='#7a0a0a';g.fillRect(cx+x,y0-hgt,1,hgt);g.fillStyle=hash(x,4)>.5?'#d81e1e':'#b81010';g.fillRect(cx+x,y0-hgt,1,1);
       if(hash(x,6)>.6){g.fillStyle='#ff6a5a';g.fillRect(cx+x,y0-hgt-1,1,1);}}
-    for(let x=-13;x<=13;x+=2){const edge=Math.round(7*Math.sqrt(Math.max(0,1-(x*x)/225))),hgt=Math.round(hash(x,12)*3);if(!hgt)continue; /* and a few at the back */
-      g.fillStyle='#5a0808';g.fillRect(cx+x,by-edge-hgt,1,hgt+1);}
-    g.fillStyle='#ffd400';[[cx-2,by-1],[cx-3,by-2],[cx-3,by-3],[cx-2,by-4],[cx-1,by-5]].forEach(([x,y])=>g.fillRect(x,y,1,1));   /* wires spilling out */
-    g.fillStyle='#3ad06a';[[cx+2,by],[cx+3,by-1],[cx+4,by-2],[cx+4,by-3],[cx+5,by-4],[cx+6,by-4]].forEach(([x,y])=>g.fillRect(x,y,1,1));
-    g.fillStyle='#3a8aff';[[cx+1,by+1],[cx,by-1],[cx-1,by-2],[cx+1,by-3]].forEach(([x,y])=>g.fillRect(x,y,1,1));
-    g.fillStyle='#c4bccd';g.fillRect(cx-1,by+1,3,1);                                                                      /* a bit of metal spring */
+    g.fillStyle='#ffd400';[[cx+2,by-1],[cx+1,by-2],[cx+1,by-3],[cx+2,by-4],[cx+3,by-5]].forEach(([x,y])=>g.fillRect(x,y,1,1));   /* wires spilling out */
+    g.fillStyle='#3ad06a';[[cx+5,by],[cx+6,by-1],[cx+7,by-2],[cx+7,by-3],[cx+8,by-4],[cx+9,by-4]].forEach(([x,y])=>g.fillRect(x,y,1,1));
+    g.fillStyle='#3a8aff';[[cx+4,by+1],[cx+3,by-1],[cx+4,by-2],[cx+5,by-3]].forEach(([x,y])=>g.fillRect(x,y,1,1));
+    g.fillStyle='#c4bccd';g.fillRect(cx+3,by+1,3,1);
+    /* the bezel splits in three: each pixel belongs to a wedge round the centre; the wedges shift apart and a gap opens between them */
+    {const im=g.getImageData(0,0,52,37),src=new Uint8ClampedArray(im.data),cy=by+1,B=[-2.55,-.42,1.72],OFF=[[-2,1],[0,-1],[2,1]];
+      im.data.fill(0);
+      for(let y=0;y<37;y++)for(let x=0;x<52;x++){const i=(y*52+x)*4;if(!src[i+3])continue;
+        const nx=(x-cx)/23,ny=(y-cy)/10,r=Math.hypot(nx,ny),a=Math.atan2(ny,nx);
+        let w=a<B[0]||a>=B[2]?0:a<B[1]?1:2;                                      /* 0 front-left, 1 back, 2 front-right */
+        const gap=Math.min(...B.map(b=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)))));
+        if(r>.62&&gap<.07+.05*hash(x,y))continue;                                 /* the crack itself: nothing there */
+        const [ox,oy]=r>.62?OFF[w]:[0,0],X=x+ox,Y=y+oy;if(X<0||Y<0||X>=52||Y>=37)continue;
+        const j=(Y*52+X)*4;im.data[j]=src[i];im.data[j+1]=src[i+1];im.data[j+2]=src[i+2];im.data[j+3]=src[i+3];}
+      g.putImageData(im,0,0);}
     const o2=c.getContext('2d');o2.imageSmoothingEnabled=false;o2.clearRect(0,0,c.width,c.height);o2.drawImage(btnArt,0,0,c.width,c.height);return;}
   for(let k=0;k<=h;k++){ell(cx,by-k,15,7,k<2?'#7a0a0a':'#b81010');}
   for(let k=1;k<=h;k++){g.fillStyle='#d81e1e';const y=by-k+6;g.fillRect(cx+2,y,12,1);} // lit right side of the wall
@@ -3196,7 +3214,7 @@ function speakerSwitch(cv,startOn){
 /* v61: the smashed button keeps fizzing: bursts of electric sparks at the wire ends and along the cracks ('chijik chijik'),
    a wisp of smoke. Runs until the canvas leaves the page */
 function sparkButton(c){
-  const S=BTN_S,cx=26,by=22,PTS=[[cx-1,by-6],[cx+6,by-5],[cx+1,by-3],[cx-9,by+4],[cx+10,by+3]]; /* wire ends and stumps */
+  const S=BTN_S,cx=26,by=22,PTS=[[cx+3,by-6],[cx+9,by-5],[cx+1,by-3],[cx,by-8],[cx+12,by+3]]; /* wire ends, the broken face, stumps */
   let burstAt=0,burstEnd=0,pt=PTS[0];const g=c.getContext('2d');
   const tick=()=>{if(!c.isConnected)return;const t=performance.now();drawStartButton(c,0,true);
     if(t>burstEnd+30+Math.random()*150&&t>burstAt){burstAt=t;burstEnd=t+70+Math.random()*110;pt=PTS[(Math.random()*PTS.length)|0];
@@ -3325,7 +3343,7 @@ function smashStart(btn,stopBtn,next){
     // the button itself breaks: its own picture is cut into jagged chunks that burst out from under the fist and tumble down
     const cx=br.left-orc.left+br.width/2,cy=br.top-orc.top+br.height*.52,GX=8,GY=6,cw=br.width/GX,ch=br.height/GY; /* v61b: more, smaller shards */
     if(capURL)for(let gy=0;gy<GY;gy++)for(let gx=0;gx<GX;gx++){
-      const px=(gx+.5)/GX-.5,py=(gy+.5)/GY-.52;if((px*px)/(.42*.42)+(py*py)/(.48*.48)>1)continue; /* every cell that holds a piece of the cap: it really shatters */
+      const px=(gx+.5)/GX-.5,py=(gy+.5)/GY-.52;if((px*px)/(.42*.42)+(py*py)/(.48*.48)>1||(px<-.2&&py<.05))continue; /* the cap shatters, all but the chunk left standing at the back-left */
       const d=document.createElement('div'),j=()=>(8+Math.random()*30|0)+'%',k=()=>(62+Math.random()*30|0)+'%';
       Object.assign(d.style,{position:'absolute',left:(br.left-orc.left+gx*cw)+'px',top:(br.top-orc.top+gy*ch)+'px',width:cw+'px',height:ch+'px',
         backgroundImage:`url(${capURL})`,backgroundSize:`${br.width}px ${br.height}px`,backgroundPosition:`${-gx*cw}px ${-gy*ch}px`,imageRendering:'pixelated',
