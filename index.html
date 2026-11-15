@@ -1246,7 +1246,7 @@ function hit(side,power){
   const fx=fistX(side),fy=-tgtN()*FH+10;
   // weak point = the boxer's body lined up under it, hit with alternating hands
   const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
-  /* 6 punches in a row off the weak point and the combo shatters, right there */
+  /* 12 punches in a row off the weak point and the combo shatters, right there */
   if(onWeak||kingT>0||s.wT<1)offStreak=0;
   else if((offLostAt=t,++offStreak)>=OFF_BREAK){offStreak=0;if(combo>2){comboBreak={at:t,n:combo-1,dx:comboFX.dx};
       if(AC){const a=AC.currentTime;noise(a,.18,3200,1.5,.4,'bandpass',900);tone(a,.22,700,140,'square',.07);}vibe([20,20,40]);}
@@ -1571,7 +1571,7 @@ function dash(dirSide){
   for(let i=0;i<6;i++)parts.push({x:pl.x-d*3,y:pl.feet-1,vx:-d*(30+Math.random()*50),vy:-Math.random()*25,life:.3,col:'rgba(230,220,240,.6)',s:Math.random()<.5?2:1,g:40});
   sfx.dash();vibe(8);
 }
-let landQ=[],offStreak=0,comboBreak=null;const OFF_BREAK=6;
+let landQ=[],offStreak=0,comboBreak=null;const OFF_BREAK=12;
 let offShow=OFF_BREAK,offLostAt=-9; /* combo guard gauge under the count: offShow eases back up after a weak hit, drops at once on a miss */
 function press(id,side){if(holds.has(id))return;
   if(mode==='count'&&countT<.5){if(landQ.length<3)landQ.push(side);return;} /* pressed just before the landing: kept, punched the moment he lands */
@@ -2250,13 +2250,13 @@ function drawComboFX(){
   drawGuard(pal,t);
   ctx.globalAlpha=1;
 }
-/* combo guard: 6 cells under the count = misses left before BREAK. A punch off the weak point knocks one cell out (white flash, it drops);
-   a punch on the weak point fills them straight back up. 2 left: amber, 1 left: red and blinking */
+/* combo guard: 12 cells under the count = misses left before BREAK. A punch off the weak point knocks one cell out (white flash, it drops);
+   a punch on the weak point fills them straight back up. 4 left: amber, 2 left: red and blinking */
 function drawGuard(pal,t){
   const left=OFF_BREAK-offStreak;
-  offShow=offShow<left?Math.min(left,offShow+.5):left;
-  const n=OFF_BREAK,cw=6,gap=2,w=n*cw+(n-1)*gap,x0=Math.round(W/2-w/2),y=81,la=t-offLostAt;
-  const col=left>=3?pal[1]:left===2?'#ffb000':(((t*10)|0)%2?'#ff3a3a':'#ffd0d0');
+  offShow=offShow<left?Math.min(left,offShow+1):left;
+  const n=OFF_BREAK,cw=5,gap=1,w=n*cw+(n-1)*gap,x0=Math.round(W/2-w/2),y=86,la=t-offLostAt;
+  const col=left>4?pal[1]:left>2?'#ffb000':(((t*10)|0)%2?'#ff3a3a':'#ffd0d0');
   const a=ctx.globalAlpha,shk=la<.12?(((t*60)|0)%2?1:-1):0;
   ctx.fillStyle='#0d0a08';ctx.fillRect(x0-1+shk,y-1,w+2,5);
   for(let i=0;i<n;i++){const x=x0+i*(cw+gap)+shk,on=i<Math.floor(offShow+.001);
