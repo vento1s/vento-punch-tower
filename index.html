@@ -2200,7 +2200,7 @@ function perfectText(s,cx,y,age,base,quiet,pal){
     if(sh>0&&sh<1){gr.addColorStop(Math.max(.01,sh-.08),pal.f[0]);gr.addColorStop(sh,'#ffffff');gr.addColorStop(Math.min(.99,sh+.08),pal.f[0]);}
     /* v62: an uneven rim - fat in places, hairline in others, gone in a few - like it was inked by hand. Fixed per glyph cell, so it never flickers */
     ctx.fillStyle=gr;for(const [px,py] of cells){const u=px-x,r=Math.round(1.3+1.5*Math.sin(u*.19+s.length)+1.1*Math.sin(u*.07+py*.3)+(hash(u>>1,py>>1)-.5)*1.6);
-      if(r<=0)continue;const R=Math.min(4,r);for(let o=0;o<=3;o++)ctx.fillRect(px+o-R,py+o-R,sc+2*R,sc+2*R);}}
+      if(r<=1)continue;const R=Math.min(3,r); /* R counts from the glyph edge: 1px is the ink line, so the colour shows R-1 = at most 2px (2x the ink line) */for(let o=0;o<=3;o++)ctx.fillRect(px+o-R,py+o-R,sc+2*R,sc+2*R);}}
   ctx.fillStyle='#0d0a08';for(const [px,py] of cells)for(let o=0;o<=3;o++)ctx.fillRect(px+o-1,py+o-1,sc+2,sc+2);
   [[pal.ex[0],3],[pal.ex[1],2],[pal.ex[2],1]].forEach(([c,o])=>{ctx.fillStyle=c;for(const [px,py] of cells)ctx.fillRect(px+o,py+o,sc,sc);});
   const shine=age>.04&&age<.34?x-10+(tw(s,sc)+20)*((age-.04)/.3):-999;          // one white glint sweeping left to right
