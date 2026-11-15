@@ -2195,7 +2195,10 @@ function perfectText(s,cx,y,age,base,quiet,pal){
   const BOLD={P:'111101111100100',R:'111101110101101'}; // squarer P/R so they don't read as F at this size
   for(let i=0;i<s.length;i++){const g=BOLD[s[i]]||F[s[i]]||F[' '];for(let p=0;p<15;p++)if(g[p]==='1')cells.push([x+(i*4+p%3)*sc,y+((p/3)|0)*sc,p<3||g[p-3]!=='1']);}
   /* v61: a sticker outline around the face and its whole extrusion: a white rim outside, a dark ink line inside it */
-  ctx.fillStyle=pal.rim||'#ffffff';for(const [px,py] of cells)for(let o=0;o<=3;o++)ctx.fillRect(px+o-2,py+o-2,sc+4,sc+4);
+  {const gr=ctx.createLinearGradient(0,y-3,0,y+5*sc+6),sh=Math.min(1,Math.max(0,(age-.03)/.35)); /* v61b: the rim takes the grade's colours, lit from above, and a light band slides down it */
+    gr.addColorStop(0,'#ffffff');gr.addColorStop(.28,pal.top);gr.addColorStop(.62,pal.f[0]);gr.addColorStop(1,pal.ex[2]);
+    if(sh>0&&sh<1){gr.addColorStop(Math.max(.01,sh-.08),pal.f[0]);gr.addColorStop(sh,'#ffffff');gr.addColorStop(Math.min(.99,sh+.08),pal.f[0]);}
+    ctx.fillStyle=gr;for(const [px,py] of cells)for(let o=0;o<=3;o++)ctx.fillRect(px+o-2,py+o-2,sc+4,sc+4);}
   ctx.fillStyle='#0d0a08';for(const [px,py] of cells)for(let o=0;o<=3;o++)ctx.fillRect(px+o-1,py+o-1,sc+2,sc+2);
   [[pal.ex[0],3],[pal.ex[1],2],[pal.ex[2],1]].forEach(([c,o])=>{ctx.fillStyle=c;for(const [px,py] of cells)ctx.fillRect(px+o,py+o,sc,sc);});
   const shine=age>.04&&age<.34?x-10+(tw(s,sc)+20)*((age-.04)/.3):-999;          // one white glint sweeping left to right
@@ -3087,19 +3090,18 @@ function drawStartButton(c,h,broken,capOnly){
   ell(cx,by,16,7,'#1a1512');            // hole
   }
   // cap side (cylinder) from the hole up to the top face
-  if(broken){ /* v61: crushed, not gone. The cap is smashed flat into its bezel, split by cracks, a chunk knocked out of it
-       with the wiring hanging out. sparkButton() fizzes sparks over this */
-    for(let k=0;k<=1;k++)ell(cx,by-k,15,7,'#5a0808');
-    ell(cx,by-2,15,6,'#9a1010');ell(cx-3,by-3,9,3,'#c41818');ell(cx+3,by-1,7,3,'#6a0a0a');   /* dented in where the fist landed */
-    g.fillStyle='#ff5a4a';g.fillRect(cx-11,by-6,3,1);g.fillRect(cx-12,by-5,1,1);
-    /* big jagged cracks running out from where the fist landed, a pale broken edge along each */
-    for(const [dx,dy,n] of [[-1,0,13],[1,-.45,8],[-.6,-.5,7],[-.3,.6,6],[.5,.55,6],[-1,-.25,9]]){let x=cx+1,y=by-3;
-      for(let i=0;i<n;i++){x+=dx+(hash(i,n*7+dx*10|0)-.5)*.9;y+=dy+(hash(n,i*3)-.5)*.9;const X=Math.round(x),Y=Math.round(y);
-        g.fillStyle='#0a0706';g.fillRect(X,Y,1,1);if(i<n*.6)g.fillRect(X,Y+1,1,1);g.fillStyle='#ff6a5a';g.fillRect(X,Y-1,1,1);}}
-    g.fillStyle='#0a0706';[[cx+7,by-5,7,1],[cx+6,by-4,9,2],[cx+6,by-2,10,2],[cx+7,by,8,2],[cx+9,by+2,4,1]].forEach(r=>g.fillRect(...r));g.fillStyle='#2a1a14';[[cx+8,by-3,6,1],[cx+8,by-1,7,1]].forEach(r=>g.fillRect(...r)); /* the hole, dark inside */
-    g.fillStyle='#ffd400';[[cx+9,by-5],[cx+9,by-6],[cx+10,by-7],[cx+11,by-7]].forEach(([x,y])=>g.fillRect(x,y,1,1));      /* wires sticking out */
-    g.fillStyle='#3ad06a';[[cx+12,by-5],[cx+13,by-6],[cx+13,by-7],[cx+14,by-8]].forEach(([x,y])=>g.fillRect(x,y,1,1));
-    g.fillStyle='#3a8aff';[[cx+11,by-4],[cx+12,by-4],[cx+13,by-3]].forEach(([x,y])=>g.fillRect(x,y,1,1));
+  if(broken){ /* v61b: blown apart. Jagged red stumps stand round the rim of a dark, smoking hole; the wiring spills out of it.
+       sparkButton() fizzes sparks over this */
+    ell(cx,by,15,7,'#0a0706');ell(cx,by+1,13,5,'#1c1210');                     /* the empty socket */
+    for(let x=-15;x<=15;x++){const edge=Math.round(7*Math.sqrt(Math.max(0,1-(x*x)/225))),hgt=Math.round(1+3*hash(x+20,9)+(Math.abs(x)>9?2:0)); /* stumps along the front rim */
+      const y0=by+edge;g.fillStyle='#7a0a0a';g.fillRect(cx+x,y0-hgt,1,hgt);g.fillStyle=hash(x,4)>.5?'#d81e1e':'#b81010';g.fillRect(cx+x,y0-hgt,1,1);
+      if(hash(x,6)>.6){g.fillStyle='#ff6a5a';g.fillRect(cx+x,y0-hgt-1,1,1);}}
+    for(let x=-13;x<=13;x+=2){const edge=Math.round(7*Math.sqrt(Math.max(0,1-(x*x)/225))),hgt=Math.round(hash(x,12)*3);if(!hgt)continue; /* and a few at the back */
+      g.fillStyle='#5a0808';g.fillRect(cx+x,by-edge-hgt,1,hgt+1);}
+    g.fillStyle='#ffd400';[[cx-2,by-1],[cx-3,by-2],[cx-3,by-3],[cx-2,by-4],[cx-1,by-5]].forEach(([x,y])=>g.fillRect(x,y,1,1));   /* wires spilling out */
+    g.fillStyle='#3ad06a';[[cx+2,by],[cx+3,by-1],[cx+4,by-2],[cx+4,by-3],[cx+5,by-4],[cx+6,by-4]].forEach(([x,y])=>g.fillRect(x,y,1,1));
+    g.fillStyle='#3a8aff';[[cx+1,by+1],[cx,by-1],[cx-1,by-2],[cx+1,by-3]].forEach(([x,y])=>g.fillRect(x,y,1,1));
+    g.fillStyle='#c4bccd';g.fillRect(cx-1,by+1,3,1);                                                                      /* a bit of metal spring */
     const o2=c.getContext('2d');o2.imageSmoothingEnabled=false;o2.clearRect(0,0,c.width,c.height);o2.drawImage(btnArt,0,0,c.width,c.height);return;}
   for(let k=0;k<=h;k++){ell(cx,by-k,15,7,k<2?'#7a0a0a':'#b81010');}
   for(let k=1;k<=h;k++){g.fillStyle='#d81e1e';const y=by-k+6;g.fillRect(cx+2,y,12,1);} // lit right side of the wall
@@ -3194,7 +3196,7 @@ function speakerSwitch(cv,startOn){
 /* v61: the smashed button keeps fizzing: bursts of electric sparks at the wire ends and along the cracks ('chijik chijik'),
    a wisp of smoke. Runs until the canvas leaves the page */
 function sparkButton(c){
-  const S=BTN_S,cx=26,by=22,PTS=[[cx+11,by-8],[cx+14,by-9],[cx+10,by-4],[cx-6,by-2],[cx+2,by-5]];
+  const S=BTN_S,cx=26,by=22,PTS=[[cx-1,by-6],[cx+6,by-5],[cx+1,by-3],[cx-9,by+4],[cx+10,by+3]]; /* wire ends and stumps */
   let burstAt=0,burstEnd=0,pt=PTS[0];const g=c.getContext('2d');
   const tick=()=>{if(!c.isConnected)return;const t=performance.now();drawStartButton(c,0,true);
     if(t>burstEnd+30+Math.random()*150&&t>burstAt){burstAt=t;burstEnd=t+70+Math.random()*110;pt=PTS[(Math.random()*PTS.length)|0];
@@ -3204,7 +3206,7 @@ function sparkButton(c){
         for(let i=0;i<n;i++){x+=(Math.random()<.5?-1:1);y+=(Math.random()<.6?-1:Math.random()<.5?0:1);g.fillStyle=i%3?'#bff6ff':'#ffffff';g.fillRect(x*S,y*S,S,S);}}
       for(let i=0;i<4;i++){g.fillStyle=i%2?'#ffe27a':'#ffd400';g.fillRect((pt[0]+(Math.random()-.5)*10)*S,(pt[1]-Math.random()*6)*S,S/2,S/2);}
       g.fillStyle='#bff6ff';for(let r=5;r>=2;r-=3){g.globalAlpha=.16;for(let dy=-r;dy<=r;dy++){const w=Math.round(Math.sqrt(r*r-dy*dy));g.fillRect((pt[0]-w)*S,(pt[1]+dy)*S,(2*w+1)*S,S);}}g.globalAlpha=1;} /* a round flash of light */
-    {const u=(t/900)%1;g.globalAlpha=.45*(1-u);g.fillStyle='#8a8494';g.fillRect((cx+10+Math.sin(t/200)*1.5)*S,(by-10-u*9)*S,2*S,2*S);g.globalAlpha=1;} /* smoke */
+    {const u=(t/900)%1;g.globalAlpha=.45*(1-u);g.fillStyle='#8a8494';g.fillRect((cx+Math.sin(t/200)*1.5)*S,(by-6-u*10)*S,2*S,2*S);g.globalAlpha=1;} /* smoke */
     requestAnimationFrame(tick);};
   requestAnimationFrame(tick);}
 function animStartButton(c){
@@ -3321,9 +3323,9 @@ function smashStart(btn,stopBtn,next){
     const fl=document.createElement('div');Object.assign(fl.style,{position:'absolute',inset:0,background:'#fff3c0',zIndex:6,pointerEvents:'none'});
     ov.appendChild(fl);fl.animate([{opacity:.85},{opacity:0}],{duration:260,fill:'forwards'});
     // the button itself breaks: its own picture is cut into jagged chunks that burst out from under the fist and tumble down
-    const cx=br.left-orc.left+br.width/2,cy=br.top-orc.top+br.height*.52,GX=5,GY=4,cw=br.width/GX,ch=br.height/GY;
+    const cx=br.left-orc.left+br.width/2,cy=br.top-orc.top+br.height*.52,GX=8,GY=6,cw=br.width/GX,ch=br.height/GY; /* v61b: more, smaller shards */
     if(capURL)for(let gy=0;gy<GY;gy++)for(let gx=0;gx<GX;gx++){
-      const px=(gx+.5)/GX-.5,py=(gy+.5)/GY-.52;if((px*px)/(.36*.36)+(py*py)/(.4*.4)>1||gy>1)continue; /* only cells that hold a piece of the cap, top part only: the rest stays, crushed */
+      const px=(gx+.5)/GX-.5,py=(gy+.5)/GY-.52;if((px*px)/(.42*.42)+(py*py)/(.48*.48)>1)continue; /* every cell that holds a piece of the cap: it really shatters */
       const d=document.createElement('div'),j=()=>(8+Math.random()*30|0)+'%',k=()=>(62+Math.random()*30|0)+'%';
       Object.assign(d.style,{position:'absolute',left:(br.left-orc.left+gx*cw)+'px',top:(br.top-orc.top+gy*ch)+'px',width:cw+'px',height:ch+'px',
         backgroundImage:`url(${capURL})`,backgroundSize:`${br.width}px ${br.height}px`,backgroundPosition:`${-gx*cw}px ${-gy*ch}px`,imageRendering:'pixelated',
@@ -3331,7 +3333,7 @@ function smashStart(btn,stopBtn,next){
       ov.appendChild(d);const out=180+Math.random()*260,vx=px*2*out+(Math.random()-.5)*80,up=-(150+Math.random()*230)*(1-Math.abs(px)),rot=(Math.random()-.5)*900,T=900+Math.random()*350;
       d.animate([{transform:'translate(0,0) rotate(0deg)',offset:0},{transform:`translate(${vx*.45}px,${up}px) rotate(${rot*.4}deg)`,offset:.32,easing:'cubic-bezier(.4,0,.9,.5)'},
         {transform:`translate(${vx}px,${up+640}px) rotate(${rot}deg)`,offset:1}],{duration:T,easing:'cubic-bezier(.1,.7,.4,1)',fill:'forwards'});}
-    for(let i=0;i<12;i++){const d=document.createElement('div'),sz=(3+Math.random()*4)|0,a=-Math.PI*Math.random(),sp=140+Math.random()*300; /* crumbs, in the button's own reds and greys */
+    for(let i=0;i<34;i++){const d=document.createElement('div'),sz=(3+Math.random()*7)|0,a=-Math.PI*Math.random()*1.15+.08,sp=160+Math.random()*380; /* crumbs, in the button's own reds and greys */
       Object.assign(d.style,{position:'absolute',left:(cx+(Math.random()-.5)*br.width*.6)+'px',top:(cy+(Math.random()-.5)*br.height*.3)+'px',
         width:sz+'px',height:sz+'px',background:['#ff2a2a','#b81010','#7a0a0a','#5c5450','#2a2420'][i%5],zIndex:4,pointerEvents:'none'});
       ov.appendChild(d);
