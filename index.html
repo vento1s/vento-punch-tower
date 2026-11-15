@@ -427,6 +427,10 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .sndbtn.off{color:var(--muted);box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
 .sndbtn.off i::after{content:"x";border:0;right:-9px;top:-1px;width:auto;height:auto;font-size:9px;color:var(--weak)}
 .sndbtn:focus-visible{outline:3px dashed var(--gold);outline-offset:5px}
+/* v59: the sound switch is a pixel speaker. Off = a fist smashes it; on = a capsule pops and it bounces back */
+.sndbtn.spk{padding:0;background:none;box-shadow:none;gap:0;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+.sndbtn.spk canvas{width:90px;height:72px;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+.sndbtn.spk.off{box-shadow:none}
 @media (prefers-reduced-motion:reduce){.pushtxt,.pusharrow{animation:none}}
 .studio{font-family:var(--f-pixel);font-size:clamp(16px,6.5cqw,24px);line-height:1.6;letter-spacing:.08em;color:var(--gi);
   text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408;text-align:center;transition:color .05s,text-shadow .05s}
@@ -3120,6 +3124,59 @@ function ventoWord(){if(ventoFlat)return ventoFlat;
   const SX=5,SY=3,q=document.createElement('canvas'),qg=q.getContext('2d');q.width=src.width*SX;q.height=src.height*SY;
   qg.imageSmoothingEnabled=false;qg.drawImage(src,0,0,q.width,q.height);
   return ventoFlat=q;}
+/* v59: pixel speaker sound switch, 30x24 art. on(): a red-white capsule pops ('pong'), shards of light, the speaker bounces back
+   with its sound waves. off(): a fist drops on it ('thud'), it cracks, shards fly, a wisp of smoke. Taps can come as fast as you like */
+function speakerSwitch(cv,startOn){
+  const AW=30,AH=24,SC=6;cv.width=AW*SC;cv.height=AH*SC;
+  const art=document.createElement('canvas');art.width=AW;art.height=AH;const g=art.getContext('2d'),o=cv.getContext('2d');o.imageSmoothingEnabled=false;
+  const P=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h);};
+  let state=startOn?'on':'off',at=-9,parts=[],run=false;const now_=()=>performance.now()/1000;
+  const snd=f=>{try{if(AC)f(AC.currentTime);}catch(e){}};
+  const speaker=(broken,cy)=>{ /* body (magnet) + cone opening to the right, dark outline */
+    const body=broken?'#7a7680':'#ffd400',bodyD=broken?'#55505c':'#d89a00',cone=broken?'#8a8692':'#ffe27a',coneD=broken?'#5a5662':'#ffb000',ink='#0d0a08';
+    P(5,cy-4,6,9,ink);P(6,cy-3,4,7,body);P(6,cy+2,4,2,bodyD);P(6,cy-3,4,1,'#fff6c0');
+    for(let i=0;i<7;i++){const h=3+i*1.15,x=10+i;P(x,cy-h-1,1,2*h+3,ink);P(x,cy-h,1,2*h+1,i%3?cone:coneD);if(!broken&&i<5)P(x,cy-h,1,1,'#fff6c0');}
+    P(17,cy-11,1,23,ink);
+    if(broken){[[11,cy-5],[12,cy-4],[13,cy-3],[12,cy-2],[13,cy-1],[14,cy],[13,cy+1],[14,cy+2],[15,cy+3],[16,cy+5],[11,cy+3],[10,cy+4]].forEach(([x,y])=>P(x,y,1,1,ink)); /* cracks */
+      P(15,cy-8,2,3,'#0d0a08');P(16,cy+6,2,3,'#0d0a08');}}; /* chunks knocked out */
+  const waves=(t,cy)=>{for(let k=0;k<3;k++){const on=((t*3-k*.33)%1+1)%1<.6,r=4+k*3.2;if(!on)continue;
+    for(let a=-0.9;a<=0.9;a+=0.08){const x=Math.round(17+Math.cos(a)*r),y=Math.round(cy+Math.sin(a)*r*1.1);P(x,y,1,1,k?'#ffe27a':'#fff6c0');}}};
+  const fist=(y)=>{for(let r=0;r<BIG_FIST.length;r++){const row=BIG_FIST[BIG_FIST.length-1-r];for(let c=0;c<row.length;c++){const col=BIG_FIST_PAL[row[c]];if(col)P(3+c,y+r,1,1,col);}}};
+  const capsule=(cx,cy,open,sc)=>{const r=Math.round(5*sc);if(r<1)return;
+    for(let y=-r;y<=r;y++){const w=Math.round(Math.sqrt(r*r-y*y));const top=y<0;const dy=open*(top?-1:1),dx=open*(top?-.6:.6);
+      P(cx-w+dx,cy+y+dy,2*w+1,1,top?'#ff3a4a':'#f4efe8');if(Math.abs(y)===r||w<=1)continue;P(cx-w+dx,cy+y+dy,1,1,'#0d0a08');P(cx+w+dx,cy+y+dy,1,1,'#0d0a08');}
+    if(!open){P(cx-r+1,cy,2*r-1,1,'#0d0a08');P(cx-2,cy-r+1,2,1,'#ffd0d0');}};
+  const burst=(n,cols,sp)=>{for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=sp*(.5+Math.random());parts.push({x:13,y:12,vx:Math.cos(a)*v,vy:Math.sin(a)*v-sp*.4,l:.5+Math.random()*.3,c:cols[i%cols.length]});}};
+  let last=now_();
+  const draw=()=>{const t=now_(),a=t-at,dt=Math.min(.05,t-last);last=t;g.clearRect(0,0,AW,AH);let cy=12,shake=0,scale=1,keep=false;
+    if(state==='on'){
+      if(a<.14){capsule(13,12,0,.4+a/.14*.8);keep=true;} /* the capsule pops in */
+      else{const b=a-.14;
+        if(b<.2){capsule(13,12,b*30,1.2);keep=true;}
+        scale=b<.32?1+.35*Math.sin(Math.min(1,b/.32)*Math.PI)*(1-b/.32)+(b<.08?-.4+b*5:0):1; /* bounces back */
+        speaker(false,cy);if(b>.12)waves(t,cy);if(b<.6)keep=true;}
+      if(a>=.14&&a<.16&&!parts.pong){parts.pong=1;}
+    }else{
+      const hit=.09;
+      if(a<hit){speaker(false,cy);waves(t,cy);fist(-21+(a/hit)*16);keep=true;}
+      else{const b=a-hit;shake=b<.18?((b*60|0)%2?1:-1):0;speaker(true,cy+(b<.08?1:0));
+        if(b<.32)fist(b<.12?-5:-5-(b-.12)*90);
+        if(b<.1){const k=1-b/.1,L=Math.round(4+b*60);g.globalAlpha=k;P(11-L,11,2*L+2,2,'#ffffff');P(11,11-L,2,2*L+2,'#ffffff');for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]])for(let j=2;j<L*.7;j++)P(11+dx*j,11+dy*j,1,1,'#ffe27a');g.globalAlpha=1;} /* impact star where the fist lands */
+        if(((t*2)|0)%3===0||b<1){const u=(t*1.5)%1;g.globalAlpha=.6*(1-u);P(13+Math.sin(t*5)*1.5,4-u*4,2,2,'#c9c2d6');g.globalAlpha=1;} /* smoke */
+        if(b<.7)keep=true;}}
+    parts=parts.filter(q=>(q.l-=dt)>0);for(const q of parts){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=70*dt;P(q.x,q.y,1,1,q.c);keep=true;}
+    o.clearRect(0,0,cv.width,cv.height);const w=AW*SC*scale,h=AH*SC*scale;o.drawImage(art,(cv.width-w)/2+shake*SC,(cv.height-h)/2+(scale<1?(1-scale)*AH*SC*.4:0),w,h);
+    if(!cv.isConnected){run=false;return;}
+    /* idle 'on' keeps the waves moving and 'off' keeps its smoke; slow frames are enough for that */
+    if(keep)requestAnimationFrame(draw);else setTimeout(()=>requestAnimationFrame(draw),90);};
+  const go=()=>{if(!run){run=true;last=now_();requestAnimationFrame(draw);}};
+  go();
+  return {
+    on(){state='on';at=RM?-9:now_();parts=[];if(!RM)setTimeout(()=>{burst(14,['#ffffff','#ffd400','#7af0ff','#ff8ad0'],38);},140);
+      snd(t=>{tone(t+.13,.07,520,1240,'sine',.16);tone(t+.21,.06,700,1500,'sine',.12);noise(t+.13,.05,3000,1.4,.12,'bandpass');});go();},
+    off(){state='off';at=RM?-9:now_();parts=[];if(!RM)setTimeout(()=>{burst(16,['#ffd400','#b4b4c0','#0d0a08','#ffe27a'],46);},90);
+      snd(t=>{noise(t+.08,.12,420,.9,.5,'bandpass');tone(t+.08,.14,150,45,'square',.16);noise(t+.1,.18,2200,1.2,.25,'bandpass');});go();}};
+}
 function animStartButton(c){
   const seq=[6,6,5,4,2,1,1,2,4,5];let i=0,run=true,forced=null;
   const tick=()=>{if(!run)return;drawStartButton(c,forced!==null?forced:seq[i++%seq.length]);setTimeout(tick,100);};
@@ -3585,7 +3642,7 @@ function showSplash(){
       <div class="pushcue" aria-hidden="true"><canvas class="pushtxt" id="pushcv" aria-hidden="true"></canvas><div class="pusharrow"></div></div>
       <button class="abtn" id="startbtn" type="button" aria-label="START"><canvas id="btncv" width="52" height="37"></canvas></button>
     </div>
-    <button class="sndbtn${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}"><i aria-hidden="true"></i><span>${soundLabel()}</span></button>`;
+    <button class="sndbtn spk${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}" aria-label="${soundOn?'소리 켜짐':'소리 꺼짐'}"><canvas width="30" height="24" aria-hidden="true"></canvas></button>`;
   let stage2=false,done=false;
   const toTitle=()=>{const go=()=>{ov.classList.remove('black');showTitle();};if(!storySeen()&&!RM)playStory(go);else go();}; /* first visit: the story plays between the logo and the title */
   const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);
@@ -3608,9 +3665,11 @@ function showSplash(){
   let pushed=false;
   document.getElementById('startbtn').addEventListener('click',e=>{e.stopPropagation();if(pushed)return;pushed=true;
     initAudio();smashStart(e.currentTarget,stopBtn,play);});
-  document.getElementById('sndbtn').addEventListener('click',e=>{e.stopPropagation();setSound(!soundOn);
-    const b=e.currentTarget;b.classList.toggle('off',!soundOn);b.setAttribute('aria-pressed',soundOn);b.querySelector('span').textContent=soundLabel();
-    if(soundOn){initAudio();sfx.select();}});
+  {const b=document.getElementById('sndbtn'),spk=speakerSwitch(b.querySelector('canvas'),soundOn);let muteT=0;
+    b.addEventListener('click',e=>{e.stopPropagation();const on=!b.classList.contains('off')?false:true; /* the switch flips at once; the sound itself */
+      b.classList.toggle('off',!on);b.setAttribute('aria-pressed',on);b.setAttribute('aria-label',on?'소리 켜짐':'소리 꺼짐');clearTimeout(muteT);
+      if(on){setSound(true);initAudio();spk.on();}
+      else{initAudio();spk.off();muteT=setTimeout(()=>{if(b.classList.contains('off'))setSound(false);},RM?0:260);}});} /* ...goes off after the smash is heard */
   // once the logo is playing, a tap anywhere skips it
   ov.addEventListener('pointerdown',function h(){if(done){ov.removeEventListener('pointerdown',h);return;}if(stage2)finish();});
   addEventListener('keydown',onKey);}
