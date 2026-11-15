@@ -1248,7 +1248,7 @@ function hit(side,power){
   const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
   /* 6 punches in a row off the weak point and the combo shatters, right there */
   if(onWeak||kingT>0||s.wT<1)offStreak=0;
-  else if(++offStreak>=OFF_BREAK){offStreak=0;if(combo>2){comboBreak={at:t,n:combo-1,dx:comboFX.dx};
+  else if((offLostAt=t,++offStreak)>=OFF_BREAK){offStreak=0;if(combo>2){comboBreak={at:t,n:combo-1,dx:comboFX.dx};
       if(AC){const a=AC.currentTime;noise(a,.18,3200,1.5,.4,'bandpass',900);tone(a,.22,700,140,'square',.07);}vibe([20,20,40]);}
     combo=0;}
   // weak bonus: alternating hands, or a ki punch with at least a little charge
@@ -1572,6 +1572,7 @@ function dash(dirSide){
   sfx.dash();vibe(8);
 }
 let landQ=[],offStreak=0,comboBreak=null;const OFF_BREAK=6;
+let offShow=OFF_BREAK,offLostAt=-9; /* combo guard gauge under the count: offShow eases back up after a weak hit, drops at once on a miss */
 function press(id,side){if(holds.has(id))return;
   if(mode==='count'&&countT<.5){if(landQ.length<3)landQ.push(side);return;} /* pressed just before the landing: kept, punched the moment he lands */
   if(landing())landEnd=true; /* a press snaps him out of the landing pose: never eaten */
@@ -2246,7 +2247,23 @@ function drawComboFX(){
   ctx.globalAlpha=(age>D.win?Math.max(0,1-(age-D.win)/.2):1)*.92;
   if(fever<=0)bigDigits('COMBO',W/2,26,2,pal,null); /* 2x: readable over the bricks, still clear of the number under it. In FEVER this spot says FEVER x2 (drawHUD) */
   bigDigits(String(combo),W/2,fresh?45:47,sc,pal,glow); /* a few pixels below the COMBO / FEVER x2 label so they never touch */
+  drawGuard(pal,t);
   ctx.globalAlpha=1;
+}
+/* combo guard: 6 cells under the count = misses left before BREAK. A punch off the weak point knocks one cell out (white flash, it drops);
+   a punch on the weak point fills them straight back up. 2 left: amber, 1 left: red and blinking */
+function drawGuard(pal,t){
+  const left=OFF_BREAK-offStreak;
+  offShow=offShow<left?Math.min(left,offShow+.5):left;
+  const n=OFF_BREAK,cw=6,gap=2,w=n*cw+(n-1)*gap,x0=Math.round(W/2-w/2),y=81,la=t-offLostAt;
+  const col=left>=3?pal[1]:left===2?'#ffb000':(((t*10)|0)%2?'#ff3a3a':'#ffd0d0');
+  const a=ctx.globalAlpha,shk=la<.12?(((t*60)|0)%2?1:-1):0;
+  ctx.fillStyle='#0d0a08';ctx.fillRect(x0-1+shk,y-1,w+2,5);
+  for(let i=0;i<n;i++){const x=x0+i*(cw+gap)+shk,on=i<Math.floor(offShow+.001);
+    ctx.fillStyle=on?col:'#3a2424';ctx.fillRect(x,y,cw,3);
+    if(on){ctx.globalAlpha=a*.35;ctx.fillStyle='#fff';ctx.fillRect(x,y,cw,1);ctx.globalAlpha=a;}}
+  if(la<.25&&left<n&&left>0){const x=x0+left*(cw+gap),fall=Math.round(la*la*160); /* the cell just lost */
+    ctx.globalAlpha=a*(1-la/.25);ctx.fillStyle=la<.06?'#fff':'#ff5a5a';ctx.fillRect(x,y+fall,cw,3);ctx.globalAlpha=a;}
 }
 function drawLava(){
   const sy=lavaY-camY;if(sy>H+4)return;
@@ -3021,7 +3038,7 @@ let countT=0,countShown=0;
 const LEAF_T=2.4,DROP_AT=.85,LEAF_BEEPS=[1.25,1.6,1.95]; /* the lava pours down first; as it nearly reaches the floor he drops in on a fast 3-2-1 and lands on GO */
 const LETS_T=LEAF_T;
 let leafBeeps=0,leafLand=null;
-function beginCountdown(){newGame();startRunToken(D.key);gcrack=null;landQ=[];landEnd=false;offStreak=0;comboBreak=null;for(const v of BURN_VOICES)clipDecode(v);mode='count';countT=LETS_T;countShown=0;leafBeeps=0;bgmStop();holds.clear();}
+function beginCountdown(){newGame();startRunToken(D.key);gcrack=null;landQ=[];landEnd=false;offStreak=0;offShow=OFF_BREAK;comboBreak=null;for(const v of BURN_VOICES)clipDecode(v);mode='count';countT=LETS_T;countShown=0;leafBeeps=0;bgmStop();holds.clear();}
 function updateCountdown(dt){
   countT-=dt;const el=LEAF_T-countT;
   while(leafBeeps<LEAF_BEEPS.length&&el>=LEAF_BEEPS[leafBeeps]){leafBeeps++;sfx.count(false);vibe(8);} // ti... ti... ti...
