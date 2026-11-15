@@ -567,7 +567,7 @@ const DIFFS=[
  {key:'hard',  ko:'고급',  tag:'HARD',  desc:'블록이 단단하고 약점이 좁아요.',
   lava:13,grow:.78,hp:1.5,win:.38,weakW:9.9,weakMul:3.5,relocate:4,gold:50,vib:1.25},
  {key:'master',ko:'초고수',tag:'MASTER',desc:'약점을 못 맞추면 용암을 못 이겨요. 각오하세요.',
-  lava:16.9,grow:1.01,hp:2.25,win:.32,weakW:8.9,weakMul:4,  relocate:3,gold:40,vib:1.5,tHalf:7}, /* tHalf: TIME bonuses halve by 7F (others 10F): perfect play ends near 1:30 */
+  lava:16.9,grow:1.01,hp:2.25,win:.32,weakW:8.9,weakMul:4,  relocate:3,gold:40,vib:1.5,tHalf:17.5}, /* tHalf: TIME bonuses halve by 17.5F (others 25F) */
 ];
 let diffIdx=1;
 try{const d=parseInt(localStorage.getItem('punchtower.diff'),10);if(d>=0&&d<4)diffIdx=d;}catch(e){}
@@ -1143,8 +1143,8 @@ function genCracks(){const out=[];for(let k=0;k<4;k++){let x=10+Math.random()*(I
   for(let i=0;i<14;i++){p.push([x|0,y|0]);x+=(Math.random()*3-1.5);y-=Math.random()<.55?1:0;if(y<1)y=1;}out.push(p);}return out;}
 // TIME: a countdown that good smashing keeps topping up. Run out and the lava surges.
 const TIME_START=30,TIME_MAX=60,T_BREAK=1.5,T_CLEAN=1.5,T_BOSS=4,T_WEAK=.2,T_KING=1;
-/* TIME bonuses fade as you climb (x1 at 1F, x1/2 at T_HALF floors, never below T_FLOOR), so even perfect play meets the lava in the end. BOSS_REST: the lava pauses after a boss gate breaks */
-const T_HALF=10,T_FLOOR=.1,BOSS_REST=2,K_HALF=20;const tMul=()=>Math.max(T_FLOOR,1/(1+pl.level/(D.tHalf||T_HALF))),kingHoldMul=()=>Math.max(T_FLOOR,1/(1+pl.level/K_HALF)); /* SHOW TIME's lava freeze fades the same way */
+/* TIME bonuses fade as you climb (x1 at 1F, x1/2 at T_HALF floors; v56: 10F -> 25F so clean play carries you much higher, never below T_FLOOR), so even perfect play meets the lava in the end. BOSS_REST: the lava pauses after a boss gate breaks */
+const T_HALF=25,T_FLOOR=.1,BOSS_REST=2,K_HALF=20;const tMul=()=>Math.max(T_FLOOR,1/(1+pl.level/(D.tHalf||T_HALF))),kingHoldMul=()=>Math.max(T_FLOOR,1/(1+pl.level/K_HALF)); /* SHOW TIME's lava freeze fades the same way */
 // after a KING PUNCH lands, the lava freezes for a moment
 const KING_FREEZE=1.5;let lavaHold=0;
 // (CHILL - weak hits slowing the lava - was removed; TIME bonuses already push the lava back)
@@ -1731,10 +1731,10 @@ function update(dt){
     if(landQ.length&&!landing()&&started)hit(landQ.shift()); /* the presses made during the landing, one per frame */
     if(t-lastTap>D.win)combo=0; // weak hits toward the next KING level are kept even when the chain breaks
     if(pl.reach>0&&pl.jt<0&&!alignedUnder(tgt()))hopTo(pl.level+pl.reach);
-    if(started){const tg=tgt();// lava speeds up with height, and the climb itself accelerates it (×2 by floor 90, ×3 by 180)
+    if(started){const tg=tgt();// lava speeds up with height, and the climb itself accelerates it (×2 by floor 150)
       // past 40F the climb keeps getting harder, but at half the rate (it used to wall everyone in the 50s)
       const L=pl.level<=40?pl.level:40+(pl.level-40)*.5;
-      let v=(D.lava+L*D.grow)*(1+L/90);
+      let v=(D.lava+L*D.grow)*(1+L/150); /* v56: the climb's own acceleration eased (was /90) */
       timeFlash=Math.max(0,timeFlash-dt);
       {const z=zoneOfLevel(pl.level+1);if(lastZone&&z!==lastZone){pop(W/2,pl.feet-58,z.name,'#ffd04a',2);if(AC){const t=AC.currentTime;[660,880,1320].forEach((f,i)=>tone(t+i*.07,.12,f,f,'square',.07));}}lastZone=z;}
       if(tg&&(tg.type==='boss'||tg.type==='final'))v*=.6;if(fever>0)v*=.85;
