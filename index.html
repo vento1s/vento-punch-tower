@@ -428,9 +428,10 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .sndbtn.off i::after{content:"x";border:0;right:-9px;top:-1px;width:auto;height:auto;font-size:9px;color:var(--weak)}
 .sndbtn:focus-visible{outline:3px dashed var(--gold);outline-offset:5px}
 /* v59: the sound switch is a pixel speaker. Off = a fist smashes it; on = a capsule pops and it bounces back */
-.sndbtn.spk{padding:0;background:none;box-shadow:none;gap:0;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+.sndbtn.spk{padding:0 6px 0 0;background:none;box-shadow:none;gap:2px;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 .sndbtn.spk canvas{width:90px;height:72px;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
 .sndbtn.spk.off{box-shadow:none}
+.sndbtn.spk span{font-size:10px;letter-spacing:.12em;color:var(--gold);white-space:nowrap}.sndbtn.spk.off span{color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.pushtxt,.pusharrow{animation:none}}
 .studio{font-family:var(--f-pixel);font-size:clamp(16px,6.5cqw,24px);line-height:1.6;letter-spacing:.08em;color:var(--gi);
   text-shadow:3px 3px 0 #c8341a,6px 6px 0 #4a1408;text-align:center;transition:color .05s,text-shadow .05s}
@@ -1250,8 +1251,9 @@ function hit(side,power){
   const fx=fistX(side),fy=-tgtN()*FH+10;
   // weak point = the boxer's body lined up under it, hit with alternating hands
   const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
-  /* 12 punches in a row off the weak point and the combo shatters, right there */
-  if(onWeak||kingT>0||s.wT<1)offStreak=0;
+  /* every punch off the weak point knocks a cell out of the 12-cell gauge, every weak hit wins one back; empty = the combo shatters */
+  if(onWeak)offStreak=Math.max(0,offStreak-1); /* v60: a weak hit wins back one cell (it used to refill the whole gauge) */
+  else if(kingT>0||s.wT<1){} /* SHOW TIME, or the weak point is moving: no cell lost */
   else if((offLostAt=t,++offStreak)>=OFF_BREAK){offStreak=0;if(combo>2){comboBreak={at:t,n:combo-1,dx:comboFX.dx};
       if(AC){const a=AC.currentTime;noise(a,.18,3200,1.5,.4,'bandpass',900);tone(a,.22,700,140,'square',.07);}vibe([20,20,40]);}
     combo=0;}
@@ -2262,10 +2264,10 @@ function drawComboFX(){
   ctx.globalAlpha=1;
 }
 /* combo guard: 12 cells under the count = misses left before BREAK. A punch off the weak point knocks one cell out (white flash, it drops);
-   a punch on the weak point fills them straight back up. 4 left: amber, 2 left: red and blinking */
+   a punch on the weak point wins one cell back (v60). 4 left: amber, 2 left: red and blinking */
 function drawGuard(pal,t){
   const left=OFF_BREAK-offStreak;
-  offShow=offShow<left?Math.min(left,offShow+1):left;
+  offShow=offShow<left?Math.min(left,offShow+.25):left; /* the won-back cell fills in over a few frames */
   const n=OFF_BREAK,cw=5,gap=1,w=n*cw+(n-1)*gap,x0=Math.round(W/2-w/2),y=86,la=t-offLostAt;
   const col=left>4?pal[1]:left>2?'#ffb000':(((t*10)|0)%2?'#ff3a3a':'#ffd0d0');
   const a=ctx.globalAlpha,shk=la<.12?(((t*60)|0)%2?1:-1):0;
@@ -3642,7 +3644,7 @@ function showSplash(){
       <div class="pushcue" aria-hidden="true"><canvas class="pushtxt" id="pushcv" aria-hidden="true"></canvas><div class="pusharrow"></div></div>
       <button class="abtn" id="startbtn" type="button" aria-label="START"><canvas id="btncv" width="52" height="37"></canvas></button>
     </div>
-    <button class="sndbtn spk${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}" aria-label="${soundOn?'소리 켜짐':'소리 꺼짐'}"><canvas width="30" height="24" aria-hidden="true"></canvas></button>`;
+    <button class="sndbtn spk${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}" aria-label="${soundOn?'소리 켜짐':'소리 꺼짐'}"><canvas width="30" height="24" aria-hidden="true"></canvas><span aria-hidden="true">${soundLabel()}</span></button>`;
   let stage2=false,done=false;
   const toTitle=()=>{const go=()=>{ov.classList.remove('black');showTitle();};if(!storySeen()&&!RM)playStory(go);else go();}; /* first visit: the story plays between the logo and the title */
   const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);
@@ -3667,7 +3669,7 @@ function showSplash(){
     initAudio();smashStart(e.currentTarget,stopBtn,play);});
   {const b=document.getElementById('sndbtn'),spk=speakerSwitch(b.querySelector('canvas'),soundOn);let muteT=0;
     b.addEventListener('click',e=>{e.stopPropagation();const on=!b.classList.contains('off')?false:true; /* the switch flips at once; the sound itself */
-      b.classList.toggle('off',!on);b.setAttribute('aria-pressed',on);b.setAttribute('aria-label',on?'소리 켜짐':'소리 꺼짐');clearTimeout(muteT);
+      b.classList.toggle('off',!on);b.setAttribute('aria-pressed',on);b.setAttribute('aria-label',on?'소리 켜짐':'소리 꺼짐');b.querySelector('span').textContent=on?'SOUND ON':'SOUND OFF';clearTimeout(muteT);
       if(on){setSound(true);initAudio();spk.on();}
       else{initAudio();spk.off();muteT=setTimeout(()=>{if(b.classList.contains('off'))setSound(false);},RM?0:260);}});} /* ...goes off after the smash is heard */
   // once the logo is playing, a tap anywhere skips it
