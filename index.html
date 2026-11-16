@@ -431,6 +431,12 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .volbar{position:absolute;left:calc(50% + 88px);bottom:calc(30px + env(safe-area-inset-bottom,0px));padding:10px 6px;touch-action:none;cursor:ew-resize;-webkit-user-select:none;user-select:none}
 .volbar canvas{display:block;width:72px;height:30px;image-rendering:pixelated;image-rendering:crisp-edges}
 .volbar:focus-visible{outline:3px dashed var(--gold);outline-offset:2px}
+/* v74: speaker, label and wheel sit together as one centred row at the bottom */
+.sndrow{position:absolute;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;align-items:center;gap:4px;pointer-events:none}
+.sndrow>*{pointer-events:auto}
+.sndrow .sndbtn,.sndrow .sndbtn.spk{position:relative;left:auto;bottom:auto;transform:none}
+.sndrow .sndbtn.spk span{display:inline-block;min-width:8.2em;text-align:left}
+.sndrow .volbar{position:relative;left:auto;bottom:auto;padding:12px 4px}
 /* v59: the sound switch is a pixel speaker. Off = a fist smashes it; on = a capsule pops and it bounces back */
 .sndbtn.spk{padding:0 6px 0 0;background:none;box-shadow:none;gap:2px;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 .sndbtn.spk canvas{width:90px;height:72px;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
@@ -3807,8 +3813,8 @@ function showSplash(){
       <div class="pushcue" aria-hidden="true"><canvas class="pushtxt" id="pushcv" aria-hidden="true"></canvas><div class="pusharrow"></div></div>
       <button class="abtn" id="startbtn" type="button" aria-label="START"><canvas id="btncv" width="52" height="37"></canvas></button>
     </div>
-    <button class="sndbtn spk${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}" aria-label="${soundOn?'소리 켜짐':'소리 꺼짐'}"><canvas width="30" height="24" aria-hidden="true"></canvas><span aria-hidden="true">${soundLabel()}</span></button>
-    <div class="volbar${soundOn?'':' off'}" id="volbar" role="slider" tabindex="0" aria-label="볼륨" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(vol*100)}"><canvas width="36" height="15" aria-hidden="true"></canvas></div>`;
+    <div class="sndrow"><button class="sndbtn spk${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}" aria-label="${soundOn?'소리 켜짐':'소리 꺼짐'}"><canvas width="30" height="24" aria-hidden="true"></canvas><span aria-hidden="true">${soundLabel()}</span></button>
+    <div class="volbar${soundOn?'':' off'}" id="volbar" role="slider" tabindex="0" aria-label="볼륨" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(vol*100)}"><canvas width="36" height="15" aria-hidden="true"></canvas></div></div>`;
   let stage2=false,done=false;
   const toTitle=()=>{const go=()=>{ov.classList.remove('black');showTitle();};if(!storySeen()&&!RM)playStory(go);else go();}; /* first visit: the story plays between the logo and the title */
   const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);
