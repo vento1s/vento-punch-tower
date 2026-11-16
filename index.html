@@ -726,6 +726,9 @@ const sfx={
       tone(t,.5,95,40,'sawtooth',.35);noise(t,.6,3600*b,4,.25,'bandpass',2600*b);clatter(5,1800,4000,.3,.25);}
     else if(type==='tnt'){clatter(5,700,1800,.25,.35);}
     else{clatter(8,1100,2600,.26,.45);}},          // brick: crumbly chunks raining down
+  dig(k,alt){if(!AC)return;const t=AC.currentTime; /* v70 'bo bo bo': a dull earthy thump that climbs as the tunnel deepens */
+    tone(t,.11,95+k*90+(alt?20:0),40,'sine',.9);noise(t,.07,420+k*500,.8,.5,'lowpass',160);
+    for(let i=0;i<2;i++)noise(t+.03+Math.random()*.08,.03,600+Math.random()*900,2,.18);},
   glitch(len){if(!AC)return;const t0=AC.currentTime;let t=t0;const end=t0+(len||.7); /* v69: digital 'chijik chijik': stuttering slices of buzz, crackle and dropouts */
     while(t<end){const d=.018+Math.random()*.05,r=Math.random();
       if(r<.38)noise(t,d,2400+Math.random()*4200,3,.32,'bandpass');
@@ -955,7 +958,7 @@ const ZONES=[
  {name:'SKY',bg:'#2e5cbe',back:'#c8cede',backL:'#eef2fa',wall:'#b8c0d4',wallL:'#eef2fa',wallD:'#7a849c'},
  {name:'SPACE',bg:'#06050f',back:'#1e2333',backL:'#2a3046',wall:'#3a4258',wallL:'#7a8aaa',wallD:'#1e2333'},
 ];
-const SLABC={brick:['#b5523b','#6e2a20','#d97456'],stone:['#7d7f8c','#4b4d58','#a6a9b6'],gold:['#e0a82a','#8a5a0c','#ffe27a'],
+const SLABC={thick:['#5a3a26','#2e1c12','#8a6040'],brick:['#b5523b','#6e2a20','#d97456'],stone:['#7d7f8c','#4b4d58','#a6a9b6'],gold:['#e0a82a','#8a5a0c','#ffe27a'],
  tnt:['#c42a2a','#6a1010','#ff6a50'],vibranium:['#3a2f5c','#17122b','#b7a8ff'],boss:['#5e6b78','#2c333c','#a4b5c6'],final:['#6a4a8a','#2c1c40','#e8c050']};
 /* plain floors change material as you climb: dirt -> gravel -> brick -> paving -> asphalt -> rock -> ice -> cloud -> marble -> metal.
    Only the look, the chips and the rubble change; 'stone' floors (the tough ones, 1.6x HP) are the same material, reinforced: darker, bolted. */
@@ -1189,14 +1192,34 @@ function makeSlab(n){
   const vibP=n<vibFrom?0:Math.min(.4,.12+n*.004)*D.vib;
   const prev=slabs[n-1],prev2=slabs[n-2];
   const vibRun=prev&&prev.type==='vibranium'&&prev2&&prev2.type==='vibranium';
+  const thickNear=[1,2,3,4,5,6,7].some(k=>slabs[n-k]&&slabs[n-k].type==='thick');
   if(n%10===0)type='boss';
+  else if(n>=DIG_FROM&&n%10!==9&&!thickNear&&Math.random()<(n<20?DIG_P*2:DIG_P))type='thick'; /* v70: a thick wall now and then, to dig through */
   else if(!vibRun&&Math.random()<vibP)type='vibranium';
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
   const base=10+Math.floor(n*.8);
-  const raw=type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
+  const raw=type==='thick'?DIG_HP*(.8+.2*D.hp)/D.hp:type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
   const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
   return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:n<SKILL_AT.walk&&!skillOn('walk')?Math.round(W/2):newWeakX(null),ww:D.weakW*WEAK_WIDEN,weakHits:0,wflash:0,wFrom:null,wT:1};
 }
+/* v70 THICK WALL (DIG): a whole storey of packed earth. Any punch anywhere digs; alternating hands dig twice as fast.
+   A tunnel bores up into it and the boxer climbs in after it, until he breaks through the top. No weak point, no misses. */
+const DIG_FROM=8,DIG_P=.13,DIG_HP=30,DIG_H=34,T_DIG=.1;
+const digDepth=s=>s&&s.type==='thick'&&!s.broken?(1-s.hp/s.max)*DIG_H:0;
+const digLift=()=>{const s=tgt();return s&&s.type==='thick'&&!s.broken&&mode==='play'?Math.max(0,digDepth(s)-6)*.9:0;};
+function digHit(s,side,charged,power,alt){
+  if(s.digX==null){s.digX=clamp(Math.round(pl.x),WALL+9,W-WALL-9);pop(popX(40),pl.feet-34,'DIG DIG DIG!','#ffb060',1);}
+  let dmg=charged?Math.ceil(2+4*power):alt?2:1;if(fever>0)dmg*=2;
+  s.hp=Math.max(0,s.hp-dmg);s.flash=.35;s.bump=1;s.digT=now();
+  pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;weakStreak=0;
+  const dep=digDepth(s),fy=-s.n*FH+10-dep;
+  for(let i=0;i<7;i++){const c=SLABC.thick[i%3];parts.push({x:s.digX+(Math.random()-.5)*12,y:fy+2,vx:(Math.random()-.5)*70,vy:-10+Math.random()*50,life:.45+Math.random()*.3,col:i%4?c:'#c09060',s:Math.random()<.4?2:1,g:420});}
+  sfx.dig(1-s.hp/s.max,alt);
+  shake=Math.max(shake,alt?2:1.3);hitstop=Math.max(hitstop,.018);vibe(alt?9:6);
+  if(Math.random()<.3&&s.hp>0)pop(s.digX+(side?11:-11),fy-2,['BO!','BOBO!','DIG!'][(Math.random()*3)|0],'#ffcf8a',1);
+  addTime(T_DIG*tMul());
+  if(s.hp<=0){const lift=digLift();breakSlab(s);if(pl.jt>=0)pl.from-=lift; /* the hop starts up in the tunnel */
+    pop(popX(50),pl.feet-36,'BREAKTHROUGH!','#ffd400',2);}}
 function ensureSlabs(upTo){while(slabs.length<=upTo)slabs.push(makeSlab(slabs.length));}
 function newGame(){
   preloadDieVoice();
@@ -1230,10 +1253,10 @@ const alignedUnder=s=>s&&!s.broken&&s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
 let aimG=null,aimSlowUsed=false;const AIM_SLOW=1.6,AIM_TS=.35;
 /* v68: on the first 5 floors of EVERY run (hints on or off) the same arrows show whenever the weak point is away from him */
 const EARLY_AIM=5;
-const earlyAim=s=>mode==='play'&&started&&!landing()&&!newCard&&kingT<=0&&skillOn('walk')&&!!s&&!s.broken&&s.wT>=1&&s.n<=EARLY_AIM&&!alignedUnder(s);
+const earlyAim=s=>mode==='play'&&started&&!landing()&&!newCard&&kingT<=0&&skillOn('walk')&&!!s&&!s.broken&&s.type!=='thick'&&s.wT>=1&&s.n<=EARLY_AIM&&!alignedUnder(s);
 function aimTick(real){
   const s=tgt();
-  const ok=mode==='play'&&started&&hintsOn&&skillOn('walk')&&!knows('aim')&&!newCard&&!landing()&&kingT<=0&&!superReady&&!(tryK&&tryK!=='king')&&!practicing()&&s&&!s.broken&&s.wT>=1;
+  const ok=mode==='play'&&started&&hintsOn&&skillOn('walk')&&!knows('aim')&&!newCard&&!landing()&&kingT<=0&&!superReady&&!(tryK&&tryK!=='king')&&!practicing()&&s&&!s.broken&&s.type!=='thick'&&s.wT>=1;
   if(!ok){aimG=null;return;}
   if(aimG&&aimG.n!==s.n)aimG=null;
   if(!aimG){if(pl.jt<0&&Math.abs(pl.x-s.wx)>wkW(s)/2+6){aimG={n:s.n,t:0,slow:aimSlowUsed?0:AIM_SLOW};aimSlowUsed=true;
@@ -1274,6 +1297,7 @@ function hit(side,power){
   combo++;maxCombo=Math.max(maxCombo,combo);lastTap=t;
   comboFX={dx:side?13:-13,at:t};
   if(!charged)pl.tx=clamp(pl.tx+(side?NUDGE:-NUDGE),XMIN,XMAX);
+  if(s.type==='thick'&&kingT<=0){digHit(s,side,charged,power,alt);return;} /* v70: digging */
   const fx=fistX(side),fy=-tgtN()*FH+10;
   // weak point = the boxer's body lined up under it, hit with alternating hands
   const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
@@ -1342,7 +1366,7 @@ function debris(s){const y=-s.n*FH;const c=slabCol(s);
 function breakSlab(s){
   s.broken=true;s.hp=0;debris(s);sfx.brk(s.type,plain(s)?matOf(s.n):null);vibe(30);learn('tap');if(s.type==='vibranium')learn('vib'); /* first floor / first vibranium broken: those tips retire */
   shake=Math.max(shake,4.5);hitstop=Math.max(hitstop,.085);
-  {const clean=weakStreak>=4,t=(T_BREAK+(clean?T_CLEAN:0))*tMul()+(s.type==='boss'?T_BOSS:0);if(s.type==='boss')lavaHold=Math.max(lavaHold,BOSS_REST);
+  {const clean=weakStreak>=4,t=(T_BREAK+(clean||s.type==='thick'?T_CLEAN:0))*tMul()+(s.type==='boss'?T_BOSS:0);if(s.type==='boss')lavaHold=Math.max(lavaHold,BOSS_REST);
    addTime(t,(clean?'CLEAN ':'')+'+'+t.toFixed(1)+'s');}
   if(kingT>0){showBrk++;brkFX.push({n:showBrk,at:now(),x:W/2+Math.round(Math.random()*14-7),tilt:showBrk%2?1:-1});if(brkFX.length>4)brkFX.shift();
     flashO=Math.max(flashO,.3);flashCol='#ffffff';shake=Math.max(shake,7);vibe(45);
@@ -1354,7 +1378,7 @@ function breakSlab(s){
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();pop(popX(36),pl.feet-30,'LAVA DOWN','#ffe27a',1);}
   if(s.type==='boss'||s.type==='vibranium')pop(popX(44),pl.feet-30,s.type==='boss'?'GATE BROKEN':'SMASHED!',s.type==='boss'?'#a4b5c6':'#b7a8ff',1);
   const nx=slabs[dest+1];ensureSlabs(dest+31);
-  if(kingT<=0&&skillOn('walk')&&s.type!=='tnt'&&pl.jt<0&&(pl.reach||0)<REACH_MAX&&dest+1>=practiceTo&&alignedUnder(slabs[dest+1])){ // (no stretching arm during SHOW TIME) // stretch to the next floor, stay put
+  if(kingT<=0&&skillOn('walk')&&s.type!=='tnt'&&s.type!=='thick'&&pl.jt<0&&(pl.reach||0)<REACH_MAX&&dest+1>=practiceTo&&slabs[dest+1].type!=='thick'&&alignedUnder(slabs[dest+1])){ // (no stretching arm during SHOW TIME) // stretch to the next floor, stay put
     if(!pl.reach)pl.reachX=pl.x; /* where the stretch began: walking off it ends the stretch (v58) */
     pl.reach=dest+1-(pl.level+1);
     pop(popX(46),pl.feet-30,'x'+(pl.reach+1)+' STRETCH!','#ffd400',pl.reach>=2?2:1);
@@ -2049,12 +2073,30 @@ function drawWeak(s,sy){
     R(ix-2,ay,5,1,'#ff3a5a');R(ix-1,ay+1,3,1,'#ff3a5a');R(ix,ay+2,1,1,'#ff3a5a');   // above, pointing down
     R(ix,uy,1,1,'#ff3a5a');R(ix-1,uy+1,3,1,'#ff3a5a');R(ix-2,uy+2,5,1,'#ff3a5a');}  // below, pointing up
 }
+function drawThick(s,sy){
+  const x0=WALL,top=sy-26,bot=sy+10,Hh=bot-top,[a,b,c]=SLABC.thick;
+  R(x0,top,IN,Hh,a);
+  for(let y=top;y<bot;y+=6){R(x0,y,IN,1,b);for(let i=0;i<10;i++)R(x0+((hash(s.n*7+y,i)*IN)|0),y+2+((hash(i,y)*3)|0),2,1,i%3?b:c);} // packed earth in layers
+  for(let i=0;i<9;i++){const px=x0+((hash(s.n,i+40)*(IN-6))|0),py=top+3+((hash(i+40,s.n)*(Hh-8))|0);R(px,py,4,3,'#6e6a66');R(px,py,4,1,'#a8a29a');R(px,py+2,4,1,'#3e3a38');} // stones in it
+  R(x0,top,IN,2,c);R(x0,bot-1,IN,1,'#1a100a');
+  if(!s.digT&&s.n===tgtN()&&mode==='play'&&((gt*3)|0)%2)text('DIG!',W/2,sy-6,2,'#ffcf8a','c','#2e1c12'); // what to do: just dig
+  const d=Math.round(digDepth(s));
+  if(d>0){const x=s.digX!=null?s.digX:Math.round(pl.x),w=14,ty=bot-d;
+    R(x-w/2-1,ty,w+2,d,'#2e1c12');R(x-w/2,ty+1,w,d,'#140a06');                 // the tunnel
+    for(let y=ty;y<bot;y+=3){R(x-w/2-2+((hash(y,s.n)*2)|0),y,1,2,c);R(x+w/2+1-((hash(s.n,y)*2)|0),y,1,2,c);} // crumbly walls
+    R(x-w/2,ty,w,1,'#8a6040');
+    const fresh=s.digT?now()-s.digT:9;if(fresh<.12){ctx.globalAlpha=1-fresh/.12;R(x-w/2,ty,w,3,'#ffcf8a');ctx.globalAlpha=1;}}
+  if(s.flash>0){ctx.globalAlpha=s.flash*.35;R(x0,top,IN,Hh,'#fff');ctx.globalAlpha=1;}
+  if(s.n===tgtN()&&(mode==='play'||mode==='count')){const r=clamp(s.hp/s.max,0,1),cut=Math.round(IN*r);
+    R(x0,bot,IN,3,'#0d0a08');R(x0,bot+1,cut,1,r>.5?'#ffb060':r>.25?'#ffd400':'#ff3a5a');} /* HP: a thin strip under the wall */
+  if(typeof kingT==='number'&&kingT>0)weakMarquee(s,sy);}
 function drawSlab(s){
-  const sy=Math.round(-s.n*FH-camY-s.bump);if(sy>H||sy<-14)return;
+  const sy=Math.round(-s.n*FH-camY-s.bump);if(sy>H+26||sy<-14)return;
   const x0=WALL,z=zoneOfLevel(s.n);
   if(s.broken){
     for(let x=0;x<IN;x+=2){const h=(hash(s.n,x)*3)|0;R(x0+x,sy+h,2,10-h,z.wallD);if(hash(x,s.n)>.8)R(x0+x,sy+h,2,1,z.wallL);}
     R(x0,sy+9,IN,1,'rgba(0,0,0,.4)');return;}
+  if(s.type==='thick'){drawThick(s,sy);return;}
   const [a,b,c]=slabCol(s);
   if(plain(s)){drawMat(matOf(s.n),x0,sy,s.n);if(s.type==='stone')drawTough(x0,sy,matOf(s.n));}
   else R(x0,sy,IN,10,a);
@@ -2152,7 +2194,7 @@ function drawPlayer(){
   if(mode==='super'&&sup){drawSuperPlayer();return;}
   if(mode==='count'||landing()){drawDrop();return;} // the START drop, see drawDrop
   const hop=pl.punchT>0?3*(pl.punchT/PUNCH):0;
-  let feet=pl.feet;if(pl.jt>=0)feet-=Math.sin(Math.PI*pl.jt)*10;
+  let feet=pl.feet-digLift();if(pl.jt>=0)feet-=Math.sin(Math.PI*pl.jt)*10;
   const px=Math.round(pl.x)-4,top=Math.round(feet-14-hop-camY+pl.sink);
   const fev=fever>0;
   const pal={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:fev?'#ff9af4':'#f4efe8',G:fev?'#ffffff':'#c4bccd',b:'#1e1a24',d:'#3a2a24',u:'#e8344a'};
@@ -2719,7 +2761,7 @@ function drawKingAura(){
     for(let y=1;y<GH;y++)for(let x=0;x<GW;x++){const v=h[y*GW+x],r=(Math.random()*3)|0,dx=Math.min(GW-1,Math.max(0,x-r+1));
       h[(y-1)*GW+dx]=Math.max(0,v-(r&1?dec:dec*.55)*(.85+Math.random()*.3));}
     for(let x=0;x<GW;x++)h[(GH-1)*GW+x]*=.5;}
-  let feet=pl.feet;if(pl.jt>=0)feet-=Math.sin(Math.PI*pl.jt)*10;
+  let feet=pl.feet-digLift();if(pl.jt>=0)feet-=Math.sin(Math.PI*pl.jt)*10;
   const gx=Math.round(pl.x)-4-HF_M,gy=Math.round(feet-camY)-bh-HF_T;
   const BL=k=>k>.7?'#e8fbff':k>.45?'#7af0ff':k>.22?'#2a8aff':'#1a3ac8';
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const v=h[y*GW+x];if(v<.1)continue;ctx.globalAlpha=v<.22?v*4:1;R(gx+x,gy+y,1,1,blue?BL(v):FIREPAL(v*.85));}
@@ -2913,7 +2955,7 @@ function render(){
     const y=-n*FH-camY;if(y>-10&&y<H)text(String(n),WALL-2,y-8,1,zoneOfLevel(n).wallL,'r',false);}
   for(let n=nLo;n<=nHi+1;n++){const y=-(n-1)*FH-camY;if(y>-30&&y<H+40&&n%3===1&&n<=SURF)drawTorch(n);}
   const gy=-camY;if(gy<H){const z0=ZONES[0];R(WALL,gy,IN,H,z0.wallD);for(let x=0;x<IN;x+=6)R(WALL+x,gy,5,1,z0.wall);drawGroundCrack(gy);}
-  for(let n=nLo;n<=nHi;n++){const y=-n*FH-camY;if(y>-16&&y<H+2)drawSlab(slabs[n]);}
+  for(let n=nLo;n<=nHi;n++){const y=-n*FH-camY;if(y>-16&&y<H+28)drawSlab(slabs[n]);}
   if(vsOn()){const y=-vs.floor*FH-camY,c=vsBeat?'#6e6480':'#ffd400';if(y>-12&&y<H+2){for(let x=WALL;x<W-WALL;x+=6)R(x,y,3,1,c);text('VS',W-WALL-2,y-7,1,c,'r');}} /* the friend's floor: a dashed line across the tower */
   drawImpactFrame();
   if(mode==='super'&&sup){
