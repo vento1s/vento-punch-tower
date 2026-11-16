@@ -427,11 +427,9 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .sndbtn.off{color:var(--muted);box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
 .sndbtn.off i::after{content:"x";border:0;right:-9px;top:-1px;width:auto;height:auto;font-size:9px;color:var(--weak)}
 .sndbtn:focus-visible{outline:3px dashed var(--gold);outline-offset:5px}
-/* v72 volume: five stepped pixel bars beside the speaker; tap or drag across them */
-.volbar{position:absolute;left:calc(50% + 92px);bottom:calc(34px + env(safe-area-inset-bottom,0px));display:flex;align-items:flex-end;gap:3px;padding:10px 8px;touch-action:none;cursor:pointer;-webkit-user-select:none;user-select:none}
-.volbar i{display:block;width:7px;background:#2a2236;box-shadow:inset 0 0 0 1px #4a3d5c}
-.volbar i.on{background:var(--gold);box-shadow:inset 0 -2px 0 0 #c98a00,inset 0 1px 0 0 #fff3a0}
-.volbar.off i.on{background:#6b6178;box-shadow:none}
+/* v73 volume: a horizontal thumbwheel beside the speaker - drag it left/right to turn it */
+.volbar{position:absolute;left:calc(50% + 88px);bottom:calc(30px + env(safe-area-inset-bottom,0px));padding:10px 6px;touch-action:none;cursor:ew-resize;-webkit-user-select:none;user-select:none}
+.volbar canvas{display:block;width:72px;height:30px;image-rendering:pixelated;image-rendering:crisp-edges}
 .volbar:focus-visible{outline:3px dashed var(--gold);outline-offset:2px}
 /* v59: the sound switch is a pixel speaker. Off = a fist smashes it; on = a capsule pops and it bounces back */
 .sndbtn.spk{padding:0 6px 0 0;background:none;box-shadow:none;gap:2px;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
@@ -615,9 +613,10 @@ let shakeLv=2;try{const v=+localStorage.getItem('punchtower.shake');if(v===0||v=
 const SHAKE_MUL=[.3,.6,1],SHAKE_KO=['하','중','상'];
 let soundOn=true;try{soundOn=localStorage.getItem('punchtower.sound')!=='off';}catch(e){}
 /* v72: volume in 5 steps (boot screen bar, tap or drag). Step 4 = the old fixed level */
-const VOLS=[.12,.26,.45,.7,1];let volLv=3;try{const v=+localStorage.getItem('punchtower.vol');if(v>=1&&v<=5)volLv=v-1;}catch(e){}
-const masterVol=()=>soundOn?VOLS[volLv]:0;
-function setVol(i){volLv=clamp(i,0,4);try{localStorage.setItem('punchtower.vol',String(volLv+1));}catch(e){}if(master&&AC)master.gain.setTargetAtTime(masterVol(),AC.currentTime,.02);}
+/* v73: the volume is a thumbwheel (0..1), gain = vol^1.5 so the wheel feels even; default ~ the old fixed level */
+let vol=.78;try{const v=localStorage.getItem('punchtower.vol2');if(v!=null&&isFinite(+v))vol=clamp(+v,0,1);else{const o=+localStorage.getItem('punchtower.vol');if(o>=1&&o<=5)vol=[.25,.4,.6,.78,1][o-1];}}catch(e){}
+const masterVol=()=>soundOn?Math.pow(vol,1.5):0;
+function setVol(v){vol=clamp(v,0,1);try{localStorage.setItem('punchtower.vol2',vol.toFixed(3));}catch(e){}if(master&&AC)master.gain.setTargetAtTime(masterVol(),AC.currentTime,.03);}
 function setSound(on){soundOn=on;mediaChannel(on);if(!on&&typeof bgmStop==='function')bgmStop();try{localStorage.setItem('punchtower.sound',on?'on':'off');}catch(e){}
   if(master&&AC)master.gain.setTargetAtTime(masterVol(),AC.currentTime,.02);}
 const soundLabel=()=>soundOn?'SOUND ON':'SOUND OFF';
@@ -3809,7 +3808,7 @@ function showSplash(){
       <button class="abtn" id="startbtn" type="button" aria-label="START"><canvas id="btncv" width="52" height="37"></canvas></button>
     </div>
     <button class="sndbtn spk${soundOn?'':' off'}" id="sndbtn" type="button" aria-pressed="${soundOn}" aria-label="${soundOn?'소리 켜짐':'소리 꺼짐'}"><canvas width="30" height="24" aria-hidden="true"></canvas><span aria-hidden="true">${soundLabel()}</span></button>
-    <div class="volbar${soundOn?'':' off'}" id="volbar" role="slider" tabindex="0" aria-label="볼륨" aria-valuemin="1" aria-valuemax="5" aria-valuenow="${volLv+1}">${[0,1,2,3,4].map(k=>`<i style="height:${6+k*4}px"${k<=volLv?' class="on"':''}></i>`).join('')}</div>`;
+    <div class="volbar${soundOn?'':' off'}" id="volbar" role="slider" tabindex="0" aria-label="볼륨" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(vol*100)}"><canvas width="36" height="15" aria-hidden="true"></canvas></div>`;
   let stage2=false,done=false;
   const toTitle=()=>{const go=()=>{ov.classList.remove('black');showTitle();};if(!storySeen()&&!RM)playStory(go);else go();}; /* first visit: the story plays between the logo and the title */
   const finish=()=>{if(done)return;done=true;removeEventListener('keydown',onKey);
@@ -3837,18 +3836,32 @@ function showSplash(){
       b.classList.toggle('off',!on);b.setAttribute('aria-pressed',on);b.setAttribute('aria-label',on?'소리 켜짐':'소리 꺼짐');b.querySelector('span').textContent=on?'SOUND ON':'SOUND OFF';clearTimeout(muteT);
       if(on){setSound(true);initAudio();spk.on();}
       else{initAudio();spk.off();muteT=setTimeout(()=>{if(b.classList.contains('off'))setSound(false);},RM?0:260);}
-      vb.classList.toggle('off',!on);});
-    const vb=document.getElementById('volbar'),bars=[...vb.querySelectorAll('i')];
-    const show=()=>{bars.forEach((e,k)=>e.classList.toggle('on',k<=volLv));vb.setAttribute('aria-valuenow',volLv+1);};
-    const pick=lv=>{lv=clamp(lv,0,4);if(!soundOn&&b.classList.contains('off'))b.click(); /* touching the volume turns the sound back on */
-      if(lv===volLv)return;setVol(lv);show();initAudio();if(AC&&soundOn){const a=AC.currentTime;tone(a,.06,520+lv*130,520+lv*130,'square',.09);}};
-    const at=e=>{const r=vb.getBoundingClientRect(),x=e.clientX-r.left-8,w=r.width-16;return Math.floor(clamp(x/w,0,.999)*5);};
-    let drag=false;
-    vb.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();drag=true;try{vb.setPointerCapture(e.pointerId);}catch(_){}pick(at(e));});
-    vb.addEventListener('pointermove',e=>{if(drag)pick(at(e));});
-    const up=()=>{drag=false;};vb.addEventListener('pointerup',up);vb.addEventListener('pointercancel',up);
+      document.getElementById('volbar').classList.toggle('off',!on);});
+    const vb=document.getElementById('volbar'),wc=vb.querySelector('canvas'),wx=wc.getContext('2d');
+    let ph=vol*9,tickAt=Math.floor(ph/.35),spin=0; /* ph: the wheel's angle (radians); a click every ridge that passes */
+    const drawWheel=()=>{const P=(x,y,w,h,c)=>{wx.fillStyle=c;wx.fillRect(x,y,w,h);};const off=vb.classList.contains('off');
+      wx.clearRect(0,0,36,15);
+      P(0,1,36,10,'#0d0a08');P(1,2,34,8,'#2a2236');                       // the slot it sits in
+      for(let x=2;x<34;x++){const u=(x+.5-18)/16,c=Math.sqrt(Math.max(0,1-u*u)),l=(c*(off?.55:1));  // the cylinder, lit in the middle
+        const g=Math.round(40+l*120),r=Math.round(46+l*136),bb=Math.round(54+l*80);P(x,3,1,6,`rgb(${r},${g},${bb})`);
+        P(x,3,1,1,`rgba(255,255,255,${.25*c})`);P(x,8,1,1,'rgba(0,0,0,.35)');}
+      for(let k=0;k<18;k++){const a=ph+k*(Math.PI*2/18),s=Math.sin(a),cz=Math.cos(a);if(cz<=0)continue; // ridges turning past
+        const x=Math.round(18+s*16);if(x<2||x>33)continue;P(x,3,1,6,`rgba(10,6,14,${.35+.45*cz})`);if(x+1<34)P(x+1,3,1,6,`rgba(255,240,200,${.18*cz})`);}
+      const mk=ph%(Math.PI*2),ms=Math.sin(mk);if(Math.cos(mk)>0){const x=Math.round(18+ms*16);if(x>=2&&x<=33)P(x,3,1,6,off?'#6b6178':'#ffd400');} // the gold notch shows it turning
+      P(0,12,36,3,'#0d0a08');P(1,13,Math.round(34*vol),1,off?'#6b6178':vol>.85?'#ff9a2a':'#ffd400');}; // how loud
+    drawWheel();
+    const turn=dx=>{if(!soundOn&&b.classList.contains('off'))b.click(); /* touching the wheel turns the sound back on */
+      const nv=clamp(vol+dx/150,0,1),used=(nv-vol)*150;setVol(nv);ph+=used/9;spin=used;vb.setAttribute('aria-valuenow',Math.round(vol*100));
+      const tk=Math.floor(ph/.35);if(tk!==tickAt){tickAt=tk;initAudio();if(AC&&soundOn){const a=AC.currentTime;tone(a,.018,1800+vol*900,1500,'square',.05);noise(a,.012,4200,2,.12);}}
+      drawWheel();};
+    let drag=null;
+    vb.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();drag=e.clientX;initAudio();try{vb.setPointerCapture(e.pointerId);}catch(_){}});
+    vb.addEventListener('pointermove',e=>{if(drag==null)return;const dx=e.clientX-drag;drag=e.clientX;if(dx)turn(dx);});
+    const up=()=>{drag=null;};vb.addEventListener('pointerup',up);vb.addEventListener('pointercancel',up);
     vb.addEventListener('click',e=>e.stopPropagation());
-    vb.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();e.stopPropagation();pick(volLv+1);}else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();pick(volLv-1);}});} /* ...goes off after the smash is heard */
+    vb.addEventListener('wheel',e=>{e.preventDefault();e.stopPropagation();turn(-(e.deltaY||e.deltaX)/4);},{passive:false});
+    vb.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();e.stopPropagation();turn(15);}else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();turn(-15);}});
+    b.addEventListener('click',()=>setTimeout(drawWheel,0));} /* ...goes off after the smash is heard */
   // once the logo is playing, a tap anywhere skips it
   ov.addEventListener('pointerdown',function h(){if(done){ov.removeEventListener('pointerdown',h);return;}if(stage2)finish();});
   addEventListener('keydown',onKey);}
