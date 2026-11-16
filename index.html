@@ -1192,23 +1192,28 @@ function makeSlab(n){
   const vibP=n<vibFrom?0:Math.min(.4,.12+n*.004)*D.vib;
   const prev=slabs[n-1],prev2=slabs[n-2];
   const vibRun=prev&&prev.type==='vibranium'&&prev2&&prev2.type==='vibranium';
-  const thickNear=[1,2,3,4,5,6,7].some(k=>slabs[n-k]&&slabs[n-k].type==='thick');
+  const thickNear=[1,2,3,4,5,6,7].some(k=>slabs[n-k]&&slabs[n-k].type==='thick');let dig=null;
   if(n%10===0)type='boss';
-  else if(n>=DIG_FROM&&n%10!==9&&!thickNear&&Math.random()<(n<20?DIG_P*2:DIG_P))type='thick'; /* v70: a thick wall now and then, to dig through */
+  else if(prev&&prev.dig&&prev.dig.idx<prev.dig.run-1){type='thick';dig={run:prev.dig.run,idx:prev.dig.idx+1,h:36,n0:prev.dig.n0};} /* v71: the same wall goes on up */
+  else if(n>=DIG_FROM&&n%10!==9&&!thickNear&&Math.random()<(n<20?DIG_P*2:DIG_P)){type='thick'; /* v70: a thick wall now and then, to dig through */
+    const q=Math.random();dig=q<.25?{run:1,idx:0,h:20,n0:n}:{run:q<.6?1:q<.85?2:3,idx:0,h:36,n0:n};} /* v71: half a storey, or 1 / 2 / 3 storeys of earth */
   else if(!vibRun&&Math.random()<vibP)type='vibranium';
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
   const base=10+Math.floor(n*.8);
-  const raw=type==='thick'?DIG_HP*(.8+.2*D.hp)/D.hp:type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
+  const raw=type==='thick'?(dig.h<36?DIG_HP_HALF:dig.run>1?DIG_HP_RUN:DIG_HP)*(.8+.2*D.hp)/D.hp:type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
   const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
-  return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:n<SKILL_AT.walk&&!skillOn('walk')?Math.round(W/2):newWeakX(null),ww:D.weakW*WEAK_WIDEN,weakHits:0,wflash:0,wFrom:null,wT:1};
+  return {n,type,hp,max:hp,broken:false,flash:0,bump:0,cracks:genCracks(),wx:n<SKILL_AT.walk&&!skillOn('walk')?Math.round(W/2):newWeakX(null),ww:D.weakW*WEAK_WIDEN,weakHits:0,wflash:0,wFrom:null,wT:1,dig};
 }
 /* v70 THICK WALL (DIG): a whole storey of packed earth. Any punch anywhere digs; alternating hands dig twice as fast.
    A tunnel bores up into it and the boxer climbs in after it, until he breaks through the top. No weak point, no misses. */
-const DIG_FROM=8,DIG_P=.13,DIG_HP=30,DIG_H=34,T_DIG=.1;
-const digDepth=s=>s&&s.type==='thick'&&!s.broken?(1-s.hp/s.max)*DIG_H:0;
+const DIG_FROM=8,DIG_P=.13,DIG_HP=30,DIG_HP_RUN=22,DIG_HP_HALF=16,T_DIG=.1;
+const sameDig=(a,b)=>!!(a&&b&&a.dig&&b.dig&&a.dig.n0===b.dig.n0);
+const digColX=s=>{if(s.digX!=null)return s.digX;const b=slabs[s.n-1];return sameDig(s,b)?digColX(b):null;}; /* one shaft runs straight up the whole wall */
+const digDepth=s=>s&&s.type==='thick'&&!s.broken?(1-s.hp/s.max)*((s.dig?s.dig.h:36)-2):0;
 const digLift=()=>{const s=tgt();return s&&s.type==='thick'&&!s.broken&&mode==='play'?Math.max(0,digDepth(s)-6)*.9:0;};
 function digHit(s,side,charged,power,alt){
-  if(s.digX==null){s.digX=clamp(Math.round(pl.x),WALL+9,W-WALL-9);pop(popX(40),pl.feet-34,'DIG DIG DIG!','#ffb060',1);}
+  if(s.digX==null){const cx=digColX(s);s.digX=cx!=null?cx:clamp(Math.round(pl.x),WALL+9,W-WALL-9);
+    if(cx==null)pop(popX(40),pl.feet-34,s.dig&&s.dig.run>1?'DEEP DIG x'+s.dig.run+'!':'DIG DIG DIG!','#ffb060',1);}
   let dmg=charged?Math.ceil(2+4*power):alt?2:1;if(fever>0)dmg*=2;
   s.hp=Math.max(0,s.hp-dmg);s.flash=.35;s.bump=1;s.digT=now();
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;weakStreak=0;
@@ -1763,6 +1768,7 @@ function update(dt){
   if(tiltOn&&tiltG!=null&&mode==='play'&&!(superReady&&together)){const d=tiltG-tiltZero,a=Math.abs(d);
     if(a>TILT_DEAD)pl.tx+=Math.sign(d)*Math.min(1,(a-TILT_DEAD)/TILT_FULL)*MOVE_SPD*1.4*mdt;}
   pl.tx=clamp(pl.tx,XMIN,XMAX);
+  {const s=tgt();if(s&&s.type==='thick'&&!s.broken&&mode==='play'&&kingT<=0){const cx=digColX(s);if(cx!=null&&(digDepth(s)>6||sameDig(s,slabs[s.n-1])))pl.tx=clamp(pl.tx,cx-3,cx+3);}} /* v71: inside the shaft he can't walk off into the earth */
   if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,mdt*(dashT>0?36:16));
   // the hop up to the next floor never waits for hit-stop: chained weak hits would otherwise freeze the boxer
   // on the floor below while the floors above him get smashed
@@ -2074,18 +2080,22 @@ function drawWeak(s,sy){
     R(ix,uy,1,1,'#ff3a5a');R(ix-1,uy+1,3,1,'#ff3a5a');R(ix-2,uy+2,5,1,'#ff3a5a');}  // below, pointing up
 }
 function drawThick(s,sy){
-  const x0=WALL,top=sy-26,bot=sy+10,Hh=bot-top,[a,b,c]=SLABC.thick;
+  const g=s.dig||{run:1,idx:0,h:36,n0:s.n},x0=WALL,bot=sy+10,top=bot-g.h,Hh=g.h,[a,b,c]=SLABC.thick;
+  const below=sameDig(s,slabs[s.n-1]),above=sameDig(s,slabs[s.n+1]);
   R(x0,top,IN,Hh,a);
   for(let y=top;y<bot;y+=6){R(x0,y,IN,1,b);for(let i=0;i<10;i++)R(x0+((hash(s.n*7+y,i)*IN)|0),y+2+((hash(i,y)*3)|0),2,1,i%3?b:c);} // packed earth in layers
-  for(let i=0;i<9;i++){const px=x0+((hash(s.n,i+40)*(IN-6))|0),py=top+3+((hash(i+40,s.n)*(Hh-8))|0);R(px,py,4,3,'#6e6a66');R(px,py,4,1,'#a8a29a');R(px,py+2,4,1,'#3e3a38');} // stones in it
-  R(x0,top,IN,2,c);R(x0,bot-1,IN,1,'#1a100a');
-  if(!s.digT&&s.n===tgtN()&&mode==='play'&&((gt*3)|0)%2)text('DIG!',W/2,sy-6,2,'#ffcf8a','c','#2e1c12'); // what to do: just dig
-  const d=Math.round(digDepth(s));
-  if(d>0){const x=s.digX!=null?s.digX:Math.round(pl.x),w=14,ty=bot-d;
-    R(x-w/2-1,ty,w+2,d,'#2e1c12');R(x-w/2,ty+1,w,d,'#140a06');                 // the tunnel
+  for(let i=0;i<(g.h<36?5:9);i++){const px=x0+((hash(s.n,i+40)*(IN-6))|0),py=top+3+((hash(i+40,s.n)*(Hh-8))|0);R(px,py,4,3,'#6e6a66');R(px,py,4,1,'#a8a29a');R(px,py+2,4,1,'#3e3a38');} // stones in it
+  if(!above)R(x0,top,IN,2,c);if(!below)R(x0,bot-1,IN,1,'#1a100a');                // crust only at the very top and bottom of the whole wall
+  if(g.run>1&&!below&&!s.digT&&s.n===tgtN()&&mode==='play')text('x'+g.run,W-WALL-3,top-8+Hh,1,'#ffcf8a','r','#2e1c12'); // how many storeys deep
+  if(!s.broken&&!s.digT&&s.n===tgtN()&&mode==='play'&&((gt*3)|0)%2&&!below)text('DIG!',W/2,sy-6,2,'#ffcf8a','c','#2e1c12'); // what to do: just dig
+  const d=s.broken?Hh:Math.round(digDepth(s)),cx=digColX(s);
+  if(d>0&&cx!=null){const x=cx,w=14,ty=bot-d;
+    R(x-w/2-1,ty,w+2,d,'#2e1c12');R(x-w/2,ty+(s.broken?0:1),w,d,'#140a06');     // the tunnel
     for(let y=ty;y<bot;y+=3){R(x-w/2-2+((hash(y,s.n)*2)|0),y,1,2,c);R(x+w/2+1-((hash(s.n,y)*2)|0),y,1,2,c);} // crumbly walls
-    R(x-w/2,ty,w,1,'#8a6040');
-    const fresh=s.digT?now()-s.digT:9;if(fresh<.12){ctx.globalAlpha=1-fresh/.12;R(x-w/2,ty,w,3,'#ffcf8a');ctx.globalAlpha=1;}}
+    if(s.broken){R(x-w/2,sy-1,w,2,'#8a6040');R(x-w/2,sy+1,w,1,'#2e1c12');}       // the ledge he stands on inside the shaft
+    else R(x-w/2,ty,w,1,'#8a6040');
+    const fresh=s.digT?now()-s.digT:9;if(!s.broken&&fresh<.12){ctx.globalAlpha=1-fresh/.12;R(x-w/2,ty,w,3,'#ffcf8a');ctx.globalAlpha=1;}}
+  if(s.broken)return;
   if(s.flash>0){ctx.globalAlpha=s.flash*.35;R(x0,top,IN,Hh,'#fff');ctx.globalAlpha=1;}
   if(s.n===tgtN()&&(mode==='play'||mode==='count')){const r=clamp(s.hp/s.max,0,1),cut=Math.round(IN*r);
     R(x0,bot,IN,3,'#0d0a08');R(x0,bot+1,cut,1,r>.5?'#ffb060':r>.25?'#ffd400':'#ff3a5a');} /* HP: a thin strip under the wall */
@@ -2093,10 +2103,10 @@ function drawThick(s,sy){
 function drawSlab(s){
   const sy=Math.round(-s.n*FH-camY-s.bump);if(sy>H+26||sy<-14)return;
   const x0=WALL,z=zoneOfLevel(s.n);
+  if(s.type==='thick'&&(!s.broken||sameDig(s,slabs[s.n+1]))){drawThick(s,sy);return;} /* a dug storey under more earth stays a shaft */
   if(s.broken){
     for(let x=0;x<IN;x+=2){const h=(hash(s.n,x)*3)|0;R(x0+x,sy+h,2,10-h,z.wallD);if(hash(x,s.n)>.8)R(x0+x,sy+h,2,1,z.wallL);}
     R(x0,sy+9,IN,1,'rgba(0,0,0,.4)');return;}
-  if(s.type==='thick'){drawThick(s,sy);return;}
   const [a,b,c]=slabCol(s);
   if(plain(s)){drawMat(matOf(s.n),x0,sy,s.n);if(s.type==='stone')drawTough(x0,sy,matOf(s.n));}
   else R(x0,sy,IN,10,a);
