@@ -1021,8 +1021,8 @@ function tiltWake(){ // from any tap: browsers that need a permission prompt get
 // HINTS: a tip pops up only at the moment a move is needed, and retires for good once you've pulled it off a few times.
 // Progress is kept on this device; "힌트 다시 보기" on the how-to screen resets it, and the title has an on/off toggle.
 let hintsOn=true;try{hintsOn=localStorage.getItem('punchtower.hints')!=='off';}catch(e){}
-const HINT_GOAL={alt:10,walk:3,dash:2,king:1,ki:1,tap:1,vib:1};
-let learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0,vib:0};try{Object.assign(learned,JSON.parse(localStorage.getItem('punchtower.learned')||'{}'));}catch(e){}
+const HINT_GOAL={alt:10,walk:3,dash:2,king:1,ki:1,tap:1,vib:1,aim:1};
+let learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0,vib:0,aim:0};try{Object.assign(learned,JSON.parse(localStorage.getItem('punchtower.learned')||'{}'));}catch(e){}
 function saveLearned(){try{localStorage.setItem('punchtower.learned',JSON.stringify(learned));}catch(e){}}
 const knows=k=>learned[k]>=HINT_GOAL[k];
 let hint=null;const hintCool={};let sameSide=0,offHits=0;
@@ -1214,6 +1214,20 @@ const fistX=side=>pl.x+(side?4:-4);
 const REACH_MAX=3,REACH_MOVE=5; /* px walked away from where the stretch began that ends it */
 const tgtN=()=>pl.level+1+(pl.reach||0),tgt=()=>slabs[tgtN()];
 const alignedUnder=s=>s&&!s.broken&&s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
+/* v65 FIRST AIM (A): the first time a weak point sits away from the boxer (walking open, no practice floor, no move being
+   tried), the world drops to slow motion for a moment, a dotted arrow drops from the weak point to the spot under it and the
+   hint bar says to walk there; once he's under it, '지금 쳐!'. Retires for good after the first weak hit it led to.
+   (B) Standing under any weak point lights a pillar from the crack down to his head (drawPlayer). */
+let aimG=null,aimSlowUsed=false,aimGlow=0;const AIM_SLOW=1.6,AIM_TS=.35;
+function aimTick(real){
+  const s=tgt();
+  const ok=mode==='play'&&started&&hintsOn&&skillOn('walk')&&!knows('aim')&&!newCard&&!landing()&&kingT<=0&&!superReady&&!(tryK&&tryK!=='king')&&!practicing()&&s&&!s.broken&&s.wT>=1;
+  if(!ok){aimG=null;return;}
+  if(aimG&&aimG.n!==s.n)aimG=null;
+  if(!aimG){if(pl.jt<0&&Math.abs(pl.x-s.wx)>wkW(s)/2+6){aimG={n:s.n,t:0,slow:aimSlowUsed?0:AIM_SLOW};aimSlowUsed=true;
+      if(aimG.slow&&AC){const t0=AC.currentTime;tone(t0,.12,1318,1318,'square',.05);tone(t0+.09,.2,1760,1760,'triangle',.05);}}
+    return;}
+  aimG.t+=real;if(alignedUnder(s))aimG.slow=0;else aimG.slow=Math.max(0,aimG.slow-real);}
 function hopTo(dest){pl.from=pl.feet;pl.to=-dest*FH;pl.jt=0;pl.jd=.13+.07*Math.max(0,dest-pl.level-1);pl.level=dest;pl.reach=0;sfx.jump();
   if(!skillOn('walk'))for(let n=dest+1;n<SKILL_AT.walk;n++){const s=slabs[n];if(s&&!s.broken)s.wx=Math.round(pl.tx);}} /* taps only: the weak point stays over his head */
 
@@ -1292,6 +1306,7 @@ function hit(side,power){
   if(fever>0)chip(fx,fy,'#fff',2,110);
   sfx.hit(combo,crit,s.type,plain(s)?matOf(s.n):null);
   if(charged)sfx.kipunch(power);
+  if(weak&&aimG&&kingT<=0){learn('aim');aimG=null;}
   if(weak){weakCount++;weakStreak++;s.weakHits++;s.wflash=1;sfx.weak(weakStreak);weakFX(s.wx,fy,dmg);
     addTime(T_WEAK*tMul());} // (lava 'chill' removed: the time you gain already pushes the lava back)
   else if(charged){weakStreak=0;
@@ -1656,7 +1671,8 @@ function update(dt){
   const real=dt;
   if(vsOn()&&!vsBeat&&pl.level>vs.floor&&(mode==='play'||mode==='super')){vsBeat=vsWon=true;pop(W/2,pl.feet-56,'RECORD BEAT!','#ffd400',1,true);sfx.coin();vibe([40,30,90]);vsRip();} /* passed the friend's floor */
   // charge: world barely slows; once it's full, time slams to a crawl for the 'kingSlow' beat, then the punch fires
-  const tsTarget=kingSlowT>0?.07:(bothT>0&&mode==='play')?.85:1;
+  aimTick(real);const aimSlow=!!(aimG&&aimG.slow>0);
+  const tsTarget=kingSlowT>0?.07:aimSlow?AIM_TS:(bothT>0&&mode==='play')?.85:1;
   timeScale+=(tsTarget-timeScale)*Math.min(1,real*(kingSlowT>0?18:10));
   if(kingSlowT>0){kingSlowT-=real;if(kingSlowT<=0){kingSlowT=0;timeScale=1;doSuper(true,true);}}
   dt*=timeScale;
@@ -1706,11 +1722,12 @@ function update(dt){
       parts.push({x:pl.x+Math.cos(a)*r,y:pl.feet-8+Math.sin(a)*r*.8,vx:-Math.cos(a)*r/l,vy:-Math.sin(a)*r*.8/l,life:l,max:l,s:Math.random()<.4?2:1,g:0,fire:true});}
     if(bothT>=BOTH_HOLD)fireKing();}
   else{if(bothT>0)kingGrowl(false);bothT=0;}
-  if(dir&&mode==='play'&&!(superReady&&together))pl.tx+=Math.sign(dir)*MOVE_SPD*dt;
+  const mdt=aimG&&timeScale<1&&kingSlowT<=0?real:dt; /* first-aim slow motion: the world crawls, the boxer doesn't */
+  if(dir&&mode==='play'&&!(superReady&&together))pl.tx+=Math.sign(dir)*MOVE_SPD*mdt;
   if(tiltOn&&tiltG!=null&&mode==='play'&&!(superReady&&together)){const d=tiltG-tiltZero,a=Math.abs(d);
-    if(a>TILT_DEAD)pl.tx+=Math.sign(d)*Math.min(1,(a-TILT_DEAD)/TILT_FULL)*MOVE_SPD*1.4*dt;}
+    if(a>TILT_DEAD)pl.tx+=Math.sign(d)*Math.min(1,(a-TILT_DEAD)/TILT_FULL)*MOVE_SPD*1.4*mdt;}
   pl.tx=clamp(pl.tx,XMIN,XMAX);
-  if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,dt*(dashT>0?36:16));
+  if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,mdt*(dashT>0?36:16));
   // the hop up to the next floor never waits for hit-stop: chained weak hits would otherwise freeze the boxer
   // on the floor below while the floors above him get smashed
   if(pl.jt>=0){pl.jt+=dt/pl.jd;if(pl.jt>=1){pl.jt=-1;pl.feet=pl.to;chip(pl.x-4,pl.feet,'rgba(220,210,230,.6)',3,40);chip(pl.x+4,pl.feet,'rgba(220,210,230,.6)',3,40);}
@@ -2134,8 +2151,30 @@ function drawPlayer(){
   // aim line from fist reach to target slab (faint)
   if(mode==='play'&&pl.jt<0){const s=tgt();if(s&&!s.broken){
     const cx=Math.round(pl.x);const on=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
-    ctx.globalAlpha=on?.6+.3*Math.sin(gt*20):.16;
-    const aimTop=Math.round(-tgtN()*FH-camY+12);for(let y=top-4;y>Math.min(top-26,aimTop);y-=3)R(cx,y,1,1,on?'#ff3a5a':'#f4efe8');
+    const aimTop=Math.round(-tgtN()*FH-camY+12);
+    /* (B) v65 light pillar: under the weak point, a beam of its light runs from the crack down to his head */
+    aimGlow+=((on?1:0)-aimGlow)*(on?.35:.2);
+    if(aimGlow>.02&&aimTop<top-2){const y0=aimTop,y1=top+1,L=y1-y0,hw=clamp(Math.round(wkW(s)/2)-1,2,6),g=aimGlow;
+      ctx.globalCompositeOperation='lighter';
+      for(let y=y0;y<=y1;y++){const f=(y-y0)/Math.max(1,L),wv=.8+.2*Math.sin(gt*12-y*.35),a=g*wv*(.95-.45*f);
+        ctx.globalAlpha=a*.35;R(cx-hw,y,hw*2+1,1,'#ff5a3a');
+        ctx.globalAlpha=a*.7;R(cx-2,y,5,1,'#ffd04a');
+        ctx.globalAlpha=a;R(cx-1,y,3,1,'#fff6c8');R(cx,y,1,1,'#ffffff');}
+      ctx.globalAlpha=g*.9;R(cx-3,y1,7,1,'#fff3a0');R(cx-1,y1-1,3,1,'#ffffff'); // where it meets his head
+      for(let i=0;i<4;i++){const yy=y1-((gt*55+i*L/4)%Math.max(1,L)),xx=cx+Math.round(Math.sin(i*2.3+gt*3)*(hw-1));ctx.globalAlpha=g*.8;R(xx,Math.round(yy),1,1,'#ffffff');} // motes rising up the beam
+      ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
+    if(!on){ctx.globalAlpha=.16;for(let y=top-4;y>Math.min(top-26,aimTop);y-=3)R(cx,y,1,1,'#f4efe8');}
+    /* (A) v65 first aim: a dotted arrow drops from the weak point to the floor under it, chevrons lead him there */
+    if(aimG&&!on&&s.n===aimG.n){const ix=Math.round(s.wx),fl=Math.round(pl.feet-camY),bl=((gt*5)|0)%2,ac=bl?'#ffd400':'#ffffff',fl0=((gt*24)|0)%4;
+      ctx.globalAlpha=1;
+      const ah=fl-20;for(let y=aimTop+1+fl0;y<ah;y+=4)R(ix,y,1,2,ac);                     // the drop, flowing down to head height
+      for(let i=0;i<4;i++)R(ix-3+i,ah+i,7-2*i,1,ac);                                      // arrowhead: his head goes here
+      const hw=Math.round(wkW(s)/2);R(ix-hw,fl-1,3,1,ac);R(ix+hw-2,fl-1,3,1,ac);R(ix-hw,fl-2,1,1,ac);R(ix+hw,fl-2,1,1,ac); // where to stand
+      const dir=ix>pl.x?1:-1,gap=Math.abs(ix-pl.x)-8;                                       // chevrons from him toward it
+      for(let k=0;k<3;k++){const d=8+((k*7+((gt*20)|0))%Math.max(8,gap|0));if(d>gap)continue;const hx=Math.round(pl.x+dir*d),hy=fl-7;
+        ctx.globalAlpha=.9;for(let i=0;i<3;i++){R(hx+dir*i,hy-2+i,1,1,ac);R(hx+dir*i,hy+2-i,1,1,ac);}}
+      ctx.globalAlpha=1;}
+    ctx.globalAlpha=on?.9:.16;
     if(on){text('L',cx-9,top-3,1,lastSide===0?'#ff3a5a':'#ffe27a',false);text('R',cx+7,top-3,1,lastSide===1?'#ff3a5a':'#ffe27a',false);}
     ctx.globalAlpha=1;}}
   const PB=bodyRows();
@@ -2780,6 +2819,9 @@ function drawHint(){
   const hitMark=()=>{const s=tgt();if(!s||s.broken)return;const hw=wkW(s)/2,right=s.wx<W/2+8,ay=Math.round(-s.n*FH-camY-s.bump)+7,ax=Math.round(right?s.wx+hw+9:s.wx-hw-9)+(right?bob:-bob);
     side(ax,ay,right?-1:1);text('HIT!',right?ax+8:ax-8,ay-4,2,col,right?undefined:'r','#0d0a08');}; /* this red mark is what to punch */
   if(coaching()){const sd=tapFX[0]>=tapFX[1]?0:1;down(fx(sd),fy-6);label(sd?'R':'L',fx(sd));hitMark();return;} // the leaf: fists demo L R L R
+  if(aimG&&mode==='play'&&hintsOn){const s=tgt();if(s&&!s.broken&&s.n===aimG.n){hint=null; /* v65 first aim */
+    if(alignedUnder(s)){tap(lastSide===0?1:0,'TAP!');hintMsg='지금 쳐! 왼손 오른손 번갈아!';}
+    else{hold(toWeak());hintMsg='꾹 눌러서 여기 밑으로!';}return;}}
   if(mode==='play'&&started&&!knows('tap')){showHint('tap');if(hintsOn)hitMark();} // the very first run: tap a fist = punch the floor above
   if(dashFar&&tryK==='dash'&&mode==='play'){const s=tgt();if(s&&s.practice){dashFar=false;}else if(s&&!s.broken&&s.hp===s.max){const h=wkW(s)/2;s.wFrom=null;s.wT=1;s.wx=Math.round(pl.x<W/2?W-WALL-4-h:WALL+4+h);dashFar=false;}}
   if(tryK&&tryK!=='king'&&mode==='play')showHint(tryK); // a move that just opened: the arrows stay until it's done once
@@ -3801,7 +3843,7 @@ function showHowto(){menuMusic();showOverlay(`
   <div class="ezbtns one"><button class="ezb go" type="button" data-act="back">돌아가기</button></div>
   <button class="ghost" type="button" data-act="rehint">게임 중 힌트 처음부터 다시 받기</button>
   ${CREDIT}`,{back:()=>{cancelAnimationFrame(howRAF);showTitle();},
-    rehint:()=>{learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0,vib:0,got:{}};runOpen={};saveLearned();hintsOn=true;try{localStorage.setItem('punchtower.hints','on');}catch(e){}
+    rehint:()=>{learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0,vib:0,aim:0,got:{}};runOpen={};saveLearned();hintsOn=true;try{localStorage.setItem('punchtower.hints','on');}catch(e){}
       sfx.select();const b=ov.querySelector('[data-act="rehint"]');if(b){b.textContent='다음 판부터 처음부터 다시 배워요!';b.disabled=true;}}});
   const card=ov.querySelector('#hcard'),cv=card.querySelector('canvas'),g2=cv.getContext('2d'),tabs=[...ov.querySelectorAll('.hsel button')];
   const pick=i=>{const h=HINT_BOOK[i];tabs.forEach((b,n)=>b.setAttribute('aria-selected',n===i));
