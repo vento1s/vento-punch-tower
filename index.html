@@ -1219,6 +1219,9 @@ const alignedUnder=s=>s&&!s.broken&&s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
    hint bar says to walk there; once he's under it, '지금 쳐!'. Retires for good after the first weak hit it led to.
  */
 let aimG=null,aimSlowUsed=false;const AIM_SLOW=1.6,AIM_TS=.35;
+/* v68: on the first 5 floors of EVERY run (hints on or off) the same arrows show whenever the weak point is away from him */
+const EARLY_AIM=5;
+const earlyAim=s=>mode==='play'&&started&&!landing()&&!newCard&&kingT<=0&&skillOn('walk')&&!!s&&!s.broken&&s.wT>=1&&s.n<=EARLY_AIM&&!alignedUnder(s);
 function aimTick(real){
   const s=tgt();
   const ok=mode==='play'&&started&&hintsOn&&skillOn('walk')&&!knows('aim')&&!newCard&&!landing()&&kingT<=0&&!superReady&&!(tryK&&tryK!=='king')&&!practicing()&&s&&!s.broken&&s.wT>=1;
@@ -2154,7 +2157,7 @@ function drawPlayer(){
     const aimTop=Math.round(-tgtN()*FH-camY+12);
     ctx.globalAlpha=on?.6+.3*Math.sin(gt*20):.16;for(let y=top-4;y>Math.min(top-26,aimTop);y-=3)R(cx,y,1,1,on?'#ff3a5a':'#f4efe8'); /* aim line (v67: the light pillar is gone) */
     /* (A) v65 first aim: a dotted arrow drops from the weak point to the floor under it, chevrons lead him there */
-    if(aimG&&!on&&s.n===aimG.n){const ix=Math.round(s.wx),fl=Math.round(pl.feet-camY),bl=((gt*5)|0)%2,ac=bl?'#ffd400':'#ffffff',fl0=((gt*24)|0)%4;
+    if(!on&&(aimG&&s.n===aimG.n||earlyAim(s))){const ix=Math.round(s.wx),fl=Math.round(pl.feet-camY),bl=((gt*5)|0)%2,ac=bl?'#ffd400':'#ffffff',fl0=((gt*24)|0)%4;
       ctx.globalAlpha=1;
       const ah=fl-20;for(let y=aimTop+1+fl0;y<ah;y+=4)R(ix,y,1,2,ac);                     // the drop, flowing down to head height
       for(let i=0;i<4;i++)R(ix-3+i,ah+i,7-2*i,1,ac);                                      // arrowhead: his head goes here
@@ -2811,6 +2814,7 @@ function drawHint(){
   if(aimG&&mode==='play'&&hintsOn){const s=tgt();if(s&&!s.broken&&s.n===aimG.n){hint=null; /* v65 first aim */
     if(alignedUnder(s)){tap(lastSide===0?1:0,'TAP!');hintMsg='지금 쳐! 왼손 오른손 번갈아!';}
     else{hold(toWeak());hintMsg='꾹 눌러서 여기 밑으로!';}return;}}
+  if(earlyAim(tgt()))hold(toWeak()); /* v68: first 5 floors, every run: HOLD over the fist that walks him there */
   if(mode==='play'&&started&&!knows('tap')){showHint('tap');if(hintsOn)hitMark();} // the very first run: tap a fist = punch the floor above
   if(dashFar&&tryK==='dash'&&mode==='play'){const s=tgt();if(s&&s.practice){dashFar=false;}else if(s&&!s.broken&&s.hp===s.max){const h=wkW(s)/2;s.wFrom=null;s.wT=1;s.wx=Math.round(pl.x<W/2?W-WALL-4-h:WALL+4+h);dashFar=false;}}
   if(tryK&&tryK!=='king'&&mode==='play')showHint(tryK); // a move that just opened: the arrows stay until it's done once
