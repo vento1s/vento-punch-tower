@@ -2417,10 +2417,13 @@ function drawImpactFrame(){
   // first frames: inverted burst, then fades into radial speed lines
   if(a>.6&&K>.15){ctx.globalAlpha=.55*K;R(0,0,W,H,'#ffffff');ctx.globalAlpha=1;} /* the whole-screen flash only once the streak builds */
   ctx.fillStyle=a>.6?'#1a0a18':'rgba(255,255,255,'+(a*.8)+')';
+  /* v77: each ray is a spike of its own length - swells, then tapers to a point - so there is no round edge;
+     at full streak they fly right off the screen, behind the HUD */
   for(let i=0;i<nL;i++){const ang=i/nL*Math.PI*2+hash(i,(gt*30)|0)*.2;
-    const r0=(10+hash(i,3)*8)*(.5+.5*sz),r1=24+116*sz,wd=(.035+hash(i,9)*.03)*(1+(1-K)*.6);
+    const r0=(10+hash(i,3)*8)*(.5+.5*sz),r1=(24+296*sz)*(.6+.8*hash(i,17)),rm=r0+(r1-r0)*(.35+.2*hash(i,5)),wd=(.04+hash(i,9)*.035)*(1+(1-K)*.6);
     ctx.beginPath();ctx.moveTo(x+Math.cos(ang)*r0,y+Math.sin(ang)*r0);
-    ctx.lineTo(x+Math.cos(ang-wd)*r1,y+Math.sin(ang-wd)*r1);ctx.lineTo(x+Math.cos(ang+wd)*r1,y+Math.sin(ang+wd)*r1);ctx.closePath();ctx.fill();}
+    ctx.lineTo(x+Math.cos(ang-wd)*rm,y+Math.sin(ang-wd)*rm);ctx.lineTo(x+Math.cos(ang)*r1,y+Math.sin(ang)*r1);
+    ctx.lineTo(x+Math.cos(ang+wd)*rm,y+Math.sin(ang+wd)*rm);ctx.closePath();ctx.fill();}
   // starburst core
   const cs=Math.round((6*a+3)*(.55+.45*sz));R(x-cs,y-1,cs*2+1,3,'#ffffff');R(x-1,y-cs,3,cs*2+1,'#ffffff');
   R(x-cs+2,y,cs*2-3,1,'#ffe27a');R(x,y-cs+2,1,cs*2-3,'#ffe27a');
