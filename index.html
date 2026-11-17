@@ -1213,7 +1213,7 @@ function makeSlab(n){
   else if(prev&&prev.dig&&prev.dig.idx<prev.dig.run-1){type='thick';dig={run:prev.dig.run,idx:prev.dig.idx+1,h:36,n0:prev.dig.n0};} /* v71: the same wall goes on up */
   else if(n>=DIG_FROM&&n%10!==9&&!thickNear&&Math.random()<(n<20?DIG_P*2:DIG_P)){type='thick'; /* v70: a thick wall now and then, to dig through */
     const q=Math.random();dig=q<.25?{run:1,idx:0,h:20,n0:n}:{run:q<.6?1:q<.85?2:3,idx:0,h:36,n0:n};} /* v71: half a storey, or 1 / 2 / 3 storeys of earth */
-  if(dig&&dig.h>=36&&Math.random()<DIG_ITEM_P)dig.item={k:'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(12+Math.random()*(dig.h-18)),got:false}; /* v78: something buried in the earth */
+  if(dig&&dig.h>=36&&Math.random()<DIG_ITEM_P)dig.item={k:'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78: something buried in the earth */
   else if(!vibRun&&Math.random()<vibP)type='vibranium';
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
   const base=10+Math.floor(n*.8);
@@ -1226,7 +1226,10 @@ function makeSlab(n){
 const DIG_FROM=8,DIG_P=.13,DIG_ITEM_P=.6,DIG_LOCK=3,DIG_HP=30,DIG_HP_RUN=22,DIG_HP_HALF=16,T_DIG=.1;
 const sameDig=(a,b)=>!!(a&&b&&a.dig&&b.dig&&a.dig.n0===b.dig.n0);
 const digColX=s=>{if(s.digX!=null)return s.digX;const b=slabs[s.n-1];return sameDig(s,b)?digColX(b):null;}; /* one shaft runs straight up the whole wall */
-const digDepth=s=>s&&s.type==='thick'&&!s.broken?(1-s.hp/s.max)*((s.dig?s.dig.h:36)-2):0;
+/* v79: earth is earth, bricks are bricks - the top storey of a wall stops 10px short of the brick above, so they never touch */
+const DIG_TOP_H=26;
+const digH=s=>{const h=s.dig?s.dig.h:36;return sameDig(s,slabs[s.n+1])?h:Math.min(h,DIG_TOP_H);};
+const digDepth=s=>s&&s.type==='thick'&&!s.broken?(1-s.hp/s.max)*(digH(s)-2):0;
 const digLift=()=>{const s=tgt();return s&&s.type==='thick'&&!s.broken&&mode==='play'?Math.max(0,digDepth(s)-6)*.9:0;};
 function digHit(s,side,charged,power,alt){
   {const inh=sameDig(s,slabs[s.n-1])?digColX(slabs[s.n-1]):null; /* v78: the first couple of punches only scratch - walk and the hole follows; then it locks */
@@ -1244,10 +1247,10 @@ function digHit(s,side,charged,power,alt){
   addTime(T_DIG*tMul());
   digItem(s);
   if(s.hp<=0){const lift=digLift();breakSlab(s);if(pl.jt>=0)pl.from-=lift; /* the hop starts up in the tunnel */
-    pop(popX(50),pl.feet-36,'BREAKTHROUGH!','#ffd400',2);}}
+    pop(W/2,pl.feet-36,'BREAKTHROUGH!','#ffd400',1);}}
 /* v78 the buried KING orb: dig a shaft through it and it's yours - one more KING level (one cell of the gauge) */
 function digItem(s){const it=s.dig&&s.dig.item;if(!it||it.got||s.digX==null)return;
-  const dep=s.hp<=0?s.dig.h:digDepth(s);if(dep<it.dy-3||Math.abs(s.digX-it.x)>9)return;
+  const dep=s.hp<=0?digH(s):digDepth(s);if(dep<it.dy-3||Math.abs(s.digX-it.x)>9)return;
   it.got=true;const wx=it.x,wy=-s.n*FH+10-it.dy;
   for(let i=0;i<22;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.4+Math.random()*.4,col:i%3?'#ffd400':'#ffffff',s:i%4?1:2,g:120});}
   rings.push({x:wx,y:wy,life:.4,max:.4,big:true,col:'#ffd400'});
@@ -1798,7 +1801,7 @@ function update(dt){
   if(tiltOn&&tiltG!=null&&mode==='play'&&!(superReady&&together)){const d=tiltG-tiltZero,a=Math.abs(d);
     if(a>TILT_DEAD)pl.tx+=Math.sign(d)*Math.min(1,(a-TILT_DEAD)/TILT_FULL)*MOVE_SPD*1.4*mdt;}
   pl.tx=clamp(pl.tx,XMIN,XMAX);
-  {const s=tgt();if(s&&s.type==='thick'&&!s.broken&&mode==='play'&&kingT<=0){const cx=digColX(s);if(cx!=null&&(s.digLock||sameDig(s,slabs[s.n-1])))pl.tx=clamp(pl.tx,cx-3,cx+3);}} /* v71: inside the shaft he can't walk off into the earth */
+  {const s=tgt();if(s&&s.type==='thick'&&!s.broken&&mode==='play'&&kingT<=0){const cx=digColX(s);if(cx!=null&&(s.digLock&&digDepth(s)>4||sameDig(s,slabs[s.n-1])&&slabs[s.n-1].broken&&digColX(slabs[s.n-1])!=null))pl.tx=clamp(pl.tx,cx-3,cx+3);}} /* v71: inside the shaft he can't walk off into the earth */
   if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,mdt*(dashT>0?36:16));
   // the hop up to the next floor never waits for hit-stop: chained weak hits would otherwise freeze the boxer
   // on the floor below while the floors above him get smashed
@@ -2110,11 +2113,11 @@ function drawWeak(s,sy){
     R(ix,uy,1,1,'#ff3a5a');R(ix-1,uy+1,3,1,'#ff3a5a');R(ix-2,uy+2,5,1,'#ff3a5a');}  // below, pointing up
 }
 function drawThick(s,sy){
-  const g=s.dig||{run:1,idx:0,h:36,n0:s.n},x0=WALL,bot=sy+10,top=bot-g.h,Hh=g.h,[a,b,c]=SLABC.thick;
+  const g=s.dig||{run:1,idx:0,h:36,n0:s.n},x0=WALL,bot=sy+10,Hh=digH(s),top=bot-Hh,[a,b,c]=SLABC.thick;
   const below=sameDig(s,slabs[s.n-1]),above=sameDig(s,slabs[s.n+1]);
   R(x0,top,IN,Hh,a);
   for(let y=top;y<bot;y+=6){R(x0,y,IN,1,b);for(let i=0;i<10;i++)R(x0+((hash(s.n*7+y,i)*IN)|0),y+2+((hash(i,y)*3)|0),2,1,i%3?b:c);} // packed earth in layers
-  for(let i=0;i<(g.h<36?5:9);i++){const px=x0+((hash(s.n,i+40)*(IN-6))|0),py=top+3+((hash(i+40,s.n)*(Hh-8))|0);R(px,py,4,3,'#6e6a66');R(px,py,4,1,'#a8a29a');R(px,py+2,4,1,'#3e3a38');} // stones in it
+  for(let i=0;i<(Hh<30?5:9);i++){const px=x0+((hash(s.n,i+40)*(IN-6))|0),py=top+3+((hash(i+40,s.n)*(Hh-8))|0);R(px,py,4,3,'#6e6a66');R(px,py,4,1,'#a8a29a');R(px,py+2,4,1,'#3e3a38');} // stones in it
   if(!above)R(x0,top,IN,2,c);if(!below)R(x0,bot-1,IN,1,'#1a100a');                // crust only at the very top and bottom of the whole wall
   if(g.run>1&&!below&&!s.digT&&s.n===tgtN()&&mode==='play')text('x'+g.run,W-WALL-3,top-8+Hh,1,'#ffcf8a','r','#2e1c12'); // how many storeys deep
   if(!s.broken&&!s.digT&&s.n===tgtN()&&mode==='play'&&((gt*3)|0)%2&&!below)text('DIG!',W/2,sy-6,2,'#ffcf8a','c','#2e1c12'); // what to do: just dig
@@ -2139,7 +2142,7 @@ function drawThick(s,sy){
 function drawSlab(s){
   const sy=Math.round(-s.n*FH-camY-s.bump);if(sy>H+26||sy<-14)return;
   const x0=WALL,z=zoneOfLevel(s.n);
-  if(s.type==='thick'&&(!s.broken||sameDig(s,slabs[s.n+1]))){drawThick(s,sy);return;} /* a dug storey under more earth stays a shaft */
+  if(s.type==='thick'&&(!s.broken||(sameDig(s,slabs[s.n+1])&&digColX(s)!=null&&!slabs[s.n+1].broken))){drawThick(s,sy);return;} /* v79: a dug storey is a shaft only while there's still earth above it */ /* a dug storey under more earth stays a shaft */
   if(s.broken){
     for(let x=0;x<IN;x+=2){const h=(hash(s.n,x)*3)|0;R(x0+x,sy+h,2,10-h,z.wallD);if(hash(x,s.n)>.8)R(x0+x,sy+h,2,1,z.wallL);}
     R(x0,sy+9,IN,1,'rgba(0,0,0,.4)');return;}
