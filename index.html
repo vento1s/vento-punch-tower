@@ -427,6 +427,12 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .sndbtn.off{color:var(--muted);box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
 .sndbtn.off i::after{content:"x";border:0;right:-9px;top:-1px;width:auto;height:auto;font-size:9px;color:var(--weak)}
 .sndbtn:focus-visible{outline:3px dashed var(--gold);outline-offset:5px}
+/* v81 install */
+.instchip{display:block;margin:12px auto 0;padding:8px 14px;background:transparent;border:2px solid var(--gold);color:var(--gold);font:inherit;font-size:13px;letter-spacing:.04em;cursor:pointer;box-shadow:3px 3px 0 #0d0a08}
+.instchip:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #0d0a08}
+.instchip[hidden],.tog[hidden]{display:none}
+.insthelp{margin:8px auto 0;max-width:280px;padding:8px 10px;border:1px dashed #6b6178;color:#e8e0f0;font-size:12px;line-height:1.55;text-align:center}
+.insthelp b{color:var(--gold);font-weight:inherit}
 /* v73 volume: a horizontal thumbwheel beside the speaker - drag it left/right to turn it */
 .volbar{position:absolute;left:calc(50% + 88px);bottom:calc(30px + env(safe-area-inset-bottom,0px));padding:10px 6px;touch-action:none;cursor:ew-resize;-webkit-user-select:none;user-select:none}
 .volbar canvas{display:block;width:72px;height:30px;image-rendering:pixelated;image-rendering:crisp-edges}
@@ -3057,6 +3063,27 @@ function wireDiff(){ov.querySelectorAll('.diff button[data-i]').forEach(b=>b.add
   ov.querySelectorAll('.diff button[data-i]').forEach(x=>x.setAttribute('aria-pressed',x===b));
   ov.querySelector('#ddesc').textContent=D.desc;const bl=ov.querySelector('#bestline');if(bl)bl.innerHTML=bestLine();sfx.select();if(onDiff)onDiff();}));}
 let ovGen=0,onDiff=null;
+/* v81 INSTALL: Chrome/Edge/Samsung give us the install prompt (beforeinstallprompt) - we keep it and show our own button.
+   We do NOT preventDefault, so Chrome may still show its own mini bar too. iPhone and in-app browsers (KakaoTalk...) can't
+   prompt, so the button explains how instead. Hidden once the game already runs as an app. */
+let instEvt=null;
+const UA=navigator.userAgent||'';
+const isIOS=/iPhone|iPad|iPod/.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const inApp=/KAKAOTALK|NAVER\(inapp|Instagram|FBAN|FBAV|Line\/|DaumApps|everytimeApp/i.test(UA);
+const isStandalone=()=>{try{return matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;}catch(e){return false;}};
+const canInstall=()=>!isStandalone()&&!!(instEvt||isIOS||inApp);
+function refreshInstall(){document.querySelectorAll('[data-act="install"]').forEach(b=>{b.hidden=!canInstall();});}
+addEventListener('beforeinstallprompt',e=>{instEvt=e;refreshInstall();});
+addEventListener('appinstalled',()=>{instEvt=null;refreshInstall();document.querySelectorAll('.insthelp').forEach(h=>h.remove());});
+async function doInstall(btn){try{sfx.select();}catch(e){}
+  if(instEvt&&!inApp){const ev=instEvt;try{ev.prompt();const r=await ev.userChoice;if(r&&r.outcome==='accepted')instEvt=null;}catch(e){}refreshInstall();return;}
+  const b=btn||document.querySelector('[data-act="install"]');if(!b)return;
+  let h=b.nextElementSibling;if(h&&h.classList.contains('insthelp')){h.remove();return;}
+  h=document.createElement('p');h.className='insthelp';
+  h.innerHTML=inApp?'이 앱 안에서는 설치가 안 돼요.<br><b>⋯ 메뉴 → 다른 브라우저로 열기</b> 한 다음 설치해 주세요.'
+    :isIOS?'<b>공유 버튼(네모에 위 화살표) → 홈 화면에 추가</b><br>Safari·크롬 어디서든 돼요.'
+    :'브라우저 메뉴 <b>⋮ → 앱 설치</b> 또는 <b>홈 화면에 추가</b>를 눌러 주세요.';
+  b.after(h);}
 function showOverlay(html,acts){ov.classList.remove('black');ov.innerHTML=html;ov.hidden=false;ov.scrollTop=0;ovGen++;onDiff=null;wireDiff();
   ov.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>{initAudio();acts[b.dataset.act]();}));
   const main=ov.querySelector('.btn,.ezb.go');setTimeout(()=>{try{main&&main.focus({preventScroll:true});}catch(e){}},50);}
@@ -3939,8 +3966,9 @@ function showTitle(){menuMusic();showOverlay(`
     <div class="dsel" role="group" aria-label="난이도"><button class="darr" type="button" data-act="dprev" aria-label="쉬운 난이도">◀</button><b id="dname" aria-live="polite"></b><button class="darr" type="button" data-act="dnext" aria-label="어려운 난이도">▶</button></div>
     <div class="stat best" id="bestline"></div>
     <div class="icons"><button class="ico" type="button" data-act="rank">${pxIcon('rank')}<span>랭킹</span></button><button class="ico" type="button" data-act="howto">${pxIcon('howto')}<span>힌트</span></button><button class="ico" type="button" data-act="settings">${pxIcon('set')}<span>설정</span></button></div>
+    <button class="instchip" type="button" data-act="install"${canInstall()?'':' hidden'}>앱으로 설치하기</button>
   </div>
-  ${CREDIT}`,{go:startGame,rank:()=>showRanking(),howto:showHowto,settings:showSettings,dprev:()=>stepDiff(-1),dnext:()=>stepDiff(1)});
+  ${CREDIT}`,{install:()=>doInstall(ov.querySelector('.instchip')),go:startGame,rank:()=>showRanking(),howto:showHowto,settings:showSettings,dprev:()=>stepDiff(-1),dnext:()=>stepDiff(1)});
   syncDiff();
   const g=ovGen,onKey=e=>{if(ovGen!==g){removeEventListener('keydown',onKey);return;}
     if(ov.hidden||mode==='play'||mode==='super'||mode==='count')return; /* the title is gone (game running): arrows are punches, not the difficulty */
@@ -3962,11 +3990,12 @@ function showSettings(){menuMusic();showOverlay(`
     <span class="lbl" style="--d:2">소리 · 조작</span>
     <div class="setgrid" style="--d:2">${togHTML('bgmbtn','music','음악',bgmOn)}${togHTML('sndlink','sound','소리',soundOn)}${togHTML('tiltbtn','tilt','기울기',tiltOn)}${togHTML('hintbtn','hints','힌트',hintsOn)}</div>
     <button class="tog setstory" id="shakebtn" type="button" data-act="shakelv" style="--d:2"><span>화면 흔들림</span><b>${SHAKE_KO[shakeLv]}</b></button>
+    <button class="tog setstory" id="instbtn" type="button" data-act="install" style="--d:2"${canInstall()?'':' hidden'}><span>앱으로 설치</span><b>설치</b></button>
     <span class="lbl" style="--d:3">스토리</span>
     <button class="tog setstory" type="button" data-act="story" style="--d:3"><span>스토리 다시 보기</span><b>PLAY</b></button>
   </div>
   <div class="ezbtns one"><button class="ezb go" type="button" data-act="back">돌아가기</button></div>
-  ${CREDIT}`,{back:showTitle,
+  ${CREDIT}`,{back:showTitle,install:()=>doInstall(ov.querySelector('#instbtn')),
     story:()=>{sfx.select();playStory(()=>{if(story2Seen())playStory2(()=>{});});}, /* chapter 2 too, once it has been earned */
     sound:()=>{setSound(!soundOn);setTog('sndlink',soundOn);if(soundOn){sfx.select();menuMusic();}},
     music:()=>{toggleBgm();setTog('bgmbtn',bgmOn);},
