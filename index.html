@@ -1213,9 +1213,10 @@ function makeSlab(n){
   else if(prev&&prev.dig&&prev.dig.idx<prev.dig.run-1){type='thick';dig={run:prev.dig.run,idx:prev.dig.idx+1,h:36,n0:prev.dig.n0};} /* v71: the same wall goes on up */
   else if(n>=DIG_FROM&&n%10!==9&&!thickNear&&Math.random()<(n<20?DIG_P*2:DIG_P)){type='thick'; /* v70: a thick wall now and then, to dig through */
     const q=Math.random();dig=q<.25?{run:1,idx:0,h:20,n0:n}:{run:q<.6?1:q<.85?2:3,idx:0,h:36,n0:n};} /* v71: half a storey, or 1 / 2 / 3 storeys of earth */
-  if(dig&&dig.h>=36&&Math.random()<DIG_ITEM_P)dig.item={k:'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78: something buried in the earth */
   else if(!vibRun&&Math.random()<vibP)type='vibranium';
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
+  if(type!=='thick')dig=null; /* v80: only earth carries a dig record */
+  if(dig&&dig.h>=36&&Math.random()<DIG_ITEM_P)dig.item={k:'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78 (v80: after the type chain - it used to cut the else-if chain and turn earth into metal): something buried in the earth */
   const base=10+Math.floor(n*.8);
   const raw=type==='thick'?(dig.h<36?DIG_HP_HALF:dig.run>1?DIG_HP_RUN:DIG_HP)*(.8+.2*D.hp)/D.hp:type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
   const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
@@ -1224,7 +1225,7 @@ function makeSlab(n){
 /* v70 THICK WALL (DIG): a whole storey of packed earth. Any punch anywhere digs; alternating hands dig twice as fast.
    A tunnel bores up into it and the boxer climbs in after it, until he breaks through the top. No weak point, no misses. */
 const DIG_FROM=8,DIG_P=.13,DIG_ITEM_P=.6,DIG_LOCK=3,DIG_HP=30,DIG_HP_RUN=22,DIG_HP_HALF=16,T_DIG=.1;
-const sameDig=(a,b)=>!!(a&&b&&a.dig&&b.dig&&a.dig.n0===b.dig.n0);
+const sameDig=(a,b)=>!!(a&&b&&a.type==='thick'&&b.type==='thick'&&a.dig&&b.dig&&a.dig.n0===b.dig.n0);
 const digColX=s=>{if(s.digX!=null)return s.digX;const b=slabs[s.n-1];return sameDig(s,b)?digColX(b):null;}; /* one shaft runs straight up the whole wall */
 /* v79: earth is earth, bricks are bricks - the top storey of a wall stops 10px short of the brick above, so they never touch */
 const DIG_TOP_H=26;
