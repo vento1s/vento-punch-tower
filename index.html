@@ -1031,7 +1031,8 @@ let altStreak=0,superReady=false,sup=null,superCount=0,flashO=0,flashCol='#fff3c
 // a press punches at once; keep holding and the boxer walks that way while ki builds; release = ki punch
 const holds=new Map();let bothT=0,chargeOsc=null,chargeGain=null;
 const HOLD_T=.16,CHARGE_T=.9,MOVE_SPD=42;
-let ghosts=[],dashCD=0,dashT=0;
+let ghosts=[],dashCD=0,dashT=0,powerLv=0,echoFX=[0,0],lastAltV=false; /* v88 power-up: powerLv 1 = every punch is followed by a second (the 'echo') */
+const ECHO_MS=70;
 let dashFar=false; /* the try-out has just moved on to the dash: put the next weak point on the far side */
 let shareSnap=null,shareBlob=null,shareText=''; // result share: last game frame, the ready-made card image and its message
 let vs=null,vsBeat=false,vsWon=false; /* challenge link (?f=floor&d=diff&by=name): the friend's record to beat, passed this run, passed at all this visit */
@@ -1223,7 +1224,7 @@ function makeSlab(n){
   else if(!vibRun&&Math.random()<vibP)type='vibranium';
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
   if(type!=='thick')dig=null; /* v80: only earth carries a dig record */
-  if(dig&&dig.h>=36&&Math.random()<DIG_ITEM_P)dig.item={k:'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78 (v80: after the type chain - it used to cut the else-if chain and turn earth into metal): something buried in the earth */
+  if(dig&&dig.h>=36&&Math.random()<DIG_ITEM_P)dig.item={k:Math.random()<.5?'power':'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78 (v80: after the type chain - it used to cut the else-if chain and turn earth into metal): something buried in the earth */
   const base=10+Math.floor(n*.8);
   const raw=type==='thick'?(dig.h<36?DIG_HP_HALF:dig.run>1?DIG_HP_RUN:DIG_HP)*(.8+.2*D.hp)/D.hp:type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
   const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
@@ -1262,7 +1263,10 @@ function digItem(s){const it=s.dig&&s.dig.item;if(!it||it.got||s.digX==null)retu
   it.got=true;const wx=it.x,wy=-s.n*FH+10-it.dy;
   for(let i=0;i<22;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.4+Math.random()*.4,col:i%3?'#ffd400':'#ffffff',s:i%4?1:2,g:120});}
   rings.push({x:wx,y:wy,life:.4,max:.4,big:true,col:'#ffd400'});
-  if(skillOn('king')&&kingLevel<KL_NEED.length){kingLevel++;superReady=true;if(kingLevel>=KL_NEED.length)altStreak=0;sfx.ready();kingLevelUp(kingLevel);pop(clamp(wx,WALL+34,W-WALL-34),wy-8,'KING +1!','#ffd400',2);}
+  if(it.k==='power'&&powerLv<1){powerLv=1;pop(clamp(wx,WALL+40,W-WALL-40),wy-8,'DOUBLE PUNCH!','#7af0ff',2); /* v88 */
+    for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,sp=50+Math.random()*80;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.5,col:i%2?'#7af0ff':'#ffffff',s:2,g:60});}
+    if(AC){const a=AC.currentTime;[523,784,1047,1568].forEach((f,i)=>tone(a+i*.06,.1,f,f,'square',.07));}}
+  else if(it.k==='king'&&skillOn('king')&&kingLevel<KL_NEED.length){kingLevel++;superReady=true;if(kingLevel>=KL_NEED.length)altStreak=0;sfx.ready();kingLevelUp(kingLevel);pop(clamp(wx,WALL+34,W-WALL-34),wy-8,'KING +1!','#ffd400',2);}
   else{addTime(1.5*tMul());pop(clamp(wx,WALL+34,W-WALL-34),wy-8,'BONUS!','#ffd400',2);if(AC){const a=AC.currentTime;tone(a,.08,880,880,'square',.08);tone(a+.08,.12,1320,1320,'square',.08);}}
   vibe([20,30,40]);}
 function ensureSlabs(upTo){while(slabs.length<=upTo)slabs.push(makeSlab(slabs.length));}
@@ -1275,7 +1279,7 @@ function newGame(){
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;impactK=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;powerLv=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -1330,19 +1334,22 @@ function weakFX(x,y,dmg){
   vibe(45);
 }
 
-function hit(side,power){
+function hit(side,power,echo){
   if(mode!=='play'||kingSlowT>0)return;
   power=power||0;const charged=power>0;
+  if(!echo&&!charged&&powerLv>=1)setTimeout(()=>hit(side,0,true),ECHO_MS); /* v88 DOUBLE PUNCH: a second blow right behind it */
+  if(echo){echoFX[side]=1;ghosts.push({x:pl.x+(side?3:-3),life:.16});}
   const t=now();
   if(!started){started=true;tStart=t;}
   const s=tgt();if(!s)return;
   const inWin=t-lastTap<=D.win;
   if(!inWin)combo=0;
   let alt=false;
-  if(!charged){alt=inWin&&lastSide!==-1&&side!==lastSide;lastSide=side;}
+  if(echo)alt=lastAltV; /* the echo keeps its punch's rhythm: an alternating punch's echo still counts as alternating */
+  else if(!charged){alt=inWin&&lastSide!==-1&&side!==lastSide;lastSide=side;lastAltV=alt;}
   combo++;maxCombo=Math.max(maxCombo,combo);lastTap=t;
   comboFX={dx:side?13:-13,at:t};
-  if(!charged)pl.tx=clamp(pl.tx+(side?NUDGE:-NUDGE),XMIN,XMAX);
+  if(!charged&&!echo)pl.tx=clamp(pl.tx+(side?NUDGE:-NUDGE),XMIN,XMAX);
   if(s.type==='thick'&&kingT<=0){digHit(s,side,charged,power,alt);return;} /* v70: digging */
   const fx=fistX(side),fy=-tgtN()*FH+10;
   // weak point = the boxer's body lined up under it, hit with alternating hands
@@ -1646,7 +1653,7 @@ function updateSuper(dt){
 const BURN_LIVES=2,BURN_SAFE=1.3,DIE_CHAR=.55; // 3rd touch: white-hot, burnt black for DIE_CHAR seconds, then he drops into the lava
 function lavaBurn(){
   if(timeUp||burns>=BURN_LIVES){die();return;}
-  burns++;burnT=BURN_SAFE;
+  burns++;burnT=BURN_SAFE;if(powerLv>0){powerLv=0;pop(W/2,pl.feet-60,'POWER DOWN','#7af0ff',1);} /* v88 */
   {const d=Math.random()<.5?-1:1;cloth.push(burns===1?{rows:PANTS_FLY,x:pl.x,y:pl.feet-4,vx:d*(30+Math.random()*25),vy:-170,life:1.4}:{rows:TOP_FLY,x:pl.x,y:pl.feet-9,vx:d*(30+Math.random()*25),vy:-190,life:1.5});} /* the burning clothes fly off */
   playClip(BURN_VOICES[Math.min(burns,BURN_VOICES.length)-1],1.56);vibe([40,30,80]);shake=8;flashO=.5;flashCol='#ff7a1a';
   if(AC){const t=AC.currentTime;noise(t,.35,1400,.8,.35,'bandpass',300);tone(t,.25,220,880,'square',.08);}
@@ -1766,7 +1773,7 @@ function update(dt){
   for(const p of pops){p.y-=22*dt;p.life-=dt;}
   pops=pops.filter(p=>p.life>0);
   for(const r of rings)r.life-=dt;rings=rings.filter(r=>r.life>0);
-  tapFX[0]=Math.max(0,tapFX[0]-dt*6);tapFX[1]=Math.max(0,tapFX[1]-dt*6);
+  tapFX[0]=Math.max(0,tapFX[0]-dt*6);tapFX[1]=Math.max(0,tapFX[1]-dt*6);echoFX[0]=Math.max(0,echoFX[0]-dt*6);echoFX[1]=Math.max(0,echoFX[1]-dt*6);
   shake=Math.max(0,shake-dt*22);impact=Math.max(0,impact-dt);zoom=Math.max(0,zoom-dt*.6);
   pl.weakT=Math.max(0,pl.weakT-dt);burnT=Math.max(0,burnT-dt);
   if(burns>0&&mode==='play'&&Math.random()<.08*burns)parts.push({x:pl.x+(Math.random()-.5)*6,y:pl.feet-3,vx:(Math.random()-.5)*6,vy:-14-Math.random()*10,life:.6,col:'rgba(120,110,110,.55)',s:1,g:-10}); // smouldering trousers
@@ -2133,7 +2140,12 @@ function drawThick(s,sy){
   if(g.run>1&&!below&&!s.digT&&s.n===tgtN()&&mode==='play')text('x'+g.run,W-WALL-3,top-8+Hh,1,'#ffcf8a','r','#2e1c12'); // how many storeys deep
   if(!s.broken&&!s.digT&&s.n===tgtN()&&mode==='play'&&((gt*3)|0)%2&&!below)text('DIG!',W/2,sy-6,2,'#ffcf8a','c','#2e1c12'); // what to do: just dig
   const it=g.item;
-  if(it&&!it.got){const ox=it.x,oy=bot-it.dy,pu=.5+.5*Math.sin(gt*5+s.n); /* the buried KING orb glows through the earth */
+  if(it&&!it.got&&it.k==='power'){const ox=it.x,oy=bot-it.dy,pu=.5+.5*Math.sin(gt*5+s.n); /* v88 DOUBLE PUNCH: two cyan fists, dash-afterimage style */
+    ctx.globalAlpha=.25+.2*pu;R(ox-7,oy-5,15,11,'#7af0ff');ctx.globalAlpha=1;
+    for(const [dx,c] of [[-3,'#3aa8c8'],[2,'#7af0ff']]){const fx=ox+dx;
+      R(fx-3,oy-3,6,6,'#0d0a08');R(fx-2,oy-2,4,5,c);R(fx-2,oy-2,4,1,'#e8fbff');R(fx-2,oy,1,1,'#0d0a08');R(fx,oy,1,1,'#0d0a08');}
+    if(((gt*4+s.n)|0)%5===0){R(ox+6,oy-5,1,1,'#ffffff');R(ox-7,oy+3,1,1,'#bff6ff');}}
+  else if(it&&!it.got){const ox=it.x,oy=bot-it.dy,pu=.5+.5*Math.sin(gt*5+s.n); /* the buried KING orb glows through the earth */
     ctx.globalAlpha=.25+.2*pu;R(ox-5,oy-5,11,11,'#ff9a2a');ctx.globalAlpha=1;
     R(ox-2,oy-3,5,7,'#0d0a08');R(ox-3,oy-2,7,5,'#0d0a08');
     R(ox-1,oy-2,3,5,'#ffb000');R(ox-2,oy-1,5,3,'#ffb000');R(ox-1,oy-1,3,3,'#ffd400');R(ox-1,oy-1,1,1,'#ffffff');
@@ -2520,7 +2532,11 @@ function drawHUD(){
     const goal=Math.round(live*SC_FLOOR*mul/10)*10;
     if(goal<hudSc)hudSc=goal;else if(goal>hudSc){hudSc=Math.min(goal,hudSc+Math.max(400*mul,(goal-hudSc)*10)*hdt);hudScT=.12;}
     hudScT=Math.max(0,hudScT-hdt);
-    text('SCORE',W/2-4,2,1,'#a597b8','c',false);text(String(Math.round(hudSc/10)*10),W/2-4,10,1,hudScT>0?'#fff6b0':'#ffd04a','c');}
+    /* v88: the score sits in the gap between the difficulty tag and the pause button; a number too long for it shortens (1.25M) */
+    const L=4+tw(fl,2)+4+tw(D.tag,1)+3,Rr=82,v=Math.round(hudSc/10)*10;let s=String(v);
+    if(tw(s,1)>Rr-L)s=v>=1e6?(v/1e6).toFixed(v>=1e7?1:2)+'M':(v/1e3).toFixed(v>=1e5?0:1)+'K';
+    const cx=clamp(W/2-4,L+tw(s,1)/2,Rr-tw(s,1)/2),lx=clamp(cx,L+tw('SCORE',1)/2,Rr-tw('SCORE',1)/2);
+    text('SCORE',lx,2,1,'#a597b8','c',false);text(s,cx,10,1,hudScT>0?'#fff6b0':'#ffd04a','c');}
   { // TIME = seconds until the lava reaches you. gains roll the number up so you can see your punches buying time
     if(timeLeft>dispT&&started)dispT=Math.min(timeLeft,dispT+Math.max(2.5,(timeLeft-dispT)*10)*hdt);else dispT=timeLeft;
     const T=dispT,low=T<=2,blink=low&&((gt*(T<=1?8:4))|0)%2,rx=W-4; // the pause button sits below the bar now, so TIME can use the corner
@@ -2705,6 +2721,9 @@ function drawClassicFists(){
     ctx.drawImage(sprCanvas(SP,pal),x0,y0);
     if(lit){ctx.globalAlpha=1;fistFire(SP,x0,y0,fireLv,true);}
     if(hit){ctx.globalAlpha=.8;for(let k=0;k<3;k++)R(x0+6+k*10,y0-6-(k%2)*2,2,4,'#fff3a0');}  // little speed ticks above the fist
+    if(echoFX[sd]>0){const e=echoFX[sd];ctx.globalAlpha=e*.65;ctx.drawImage(sprCanvas(SP,null,'#7af0ff'),x0+(sd?-5:5),y0-4-Math.round(10*e)); /* v88: the second punch, a cyan afterimage like the dash */
+      ctx.globalAlpha=e*.35;ctx.drawImage(sprCanvas(SP,null,'#ffffff'),x0+(sd?-5:5),y0-4-Math.round(10*e));}
+    if(powerLv>=1&&mode==='play'){ctx.globalAlpha=1;text('x2',sd?x0+2:x0+w*sc-2,y0+2,1,'#7af0ff',sd?'l':'r','#0d0a08');}
     if(mashOpen()){ctx.globalAlpha=1;hudFlames(x0+w*sc/2,y0+14,w*sc*.9,26);hudFlames(x0+w*sc/2,y0+4,w*sc*.6,12);}
     if(maxed){ctx.globalAlpha=.85;blueFlames(x0+w*sc/2,y0+6,w*sc*.7,10,10);ctx.globalAlpha=1;}           // and a few in front
   }
