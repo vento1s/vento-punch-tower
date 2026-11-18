@@ -1024,7 +1024,7 @@ const zoneAtY=y=>zoneOfLevel(Math.floor(-y/FH)+1);
 const ROOF=-TOP*FH;
 
 let hsLag=0; /* time the world sat frozen in hit-stop: the lava and FEVER clock catch up on it, and a chain of hit-stops can't freeze it for more than .25s */
-let lavaOff=null,lavaVel=0,lavaSurged=false; /* v85 drawn lava surface (see lavaSY) */
+let lavaOff=null,lavaVel=0,lavaSurged=false,lavaBub=[],lavaBubT=0,lavaDropT=0; /* v85 drawn lava surface (see lavaSY) */
 let impactK=1; /* v76 impact-burst size from the weak streak */
 let slabs,pl,mode='title',started,lavaY,combo,lastTap,lastSide,fever,camY,shake,hitstop,parts,pops,rings,tStart,tNow,warnT,endT,clearTime,maxCombo,gt=0,tapFX,impact,impactX,impactY,zoom,weakCount,weakStreak;
 let altStreak=0,superReady=false,sup=null,superCount=0,flashO=0,flashCol='#fff3c0';
@@ -2450,17 +2450,33 @@ function lavaSY(){const real=lavaY-camY;if(!(mode==='play'||mode==='count'||mode
   return fy+lavaOff;}
 function drawLava(){
   const sy=Math.round(lavaSY());if(sy>H+4)return;
-  const k=(mode==='play'||mode==='count')?lavaDanger():1,hot=lavaSurged?.5+.5*Math.sin(gt*14):0;
+  const k=(mode==='play'||mode==='count')?lavaDanger():1,hot=lavaSurged?.6+.15*Math.sin(gt*5):0; /* v86: a slow steady glow, no flicker */
   /* colour: a calm, darker red far off -> hotter and redder as it nears -> white-hot pulsing once it has surged */
   const cTop=mixC(mixC('#e8803a','#ffe27a',k),'#ffffff',hot*.6),cMid=mixC('#b8401a','#ff6a1a',k),cDeep=mixC('#7a2012','#d82a10',k),cSpot=mixC('#4a1008','#8a1c10',k);
   const ga=.18+.32*k+.15*hot,gh=30+30*k;
   const g=ctx.createLinearGradient(0,sy-gh,0,sy);g.addColorStop(0,'rgba(255,60,20,0)');g.addColorStop(1,`rgba(255,${Math.round(90-50*k)},20,${ga})`);
   ctx.fillStyle=g;ctx.fillRect(0,sy-gh,W,gh);
-  const amp=1+k*.8+hot*.8,spd=4+k*3;
-  for(let x=0;x<W;x++){const w=Math.round((Math.sin(x*.28+gt*spd)*1.3+Math.sin(x*.09-gt*2.2)*1.2)*amp);const y=Math.round(sy+w);
+  const amp=1+k*.35,spd=4; /* v86: the surface no longer speeds up and buzzes as it nears - bubbles do the talking */
+  const surf=x=>Math.round(sy+(Math.sin(x*.28+gt*spd)*1.3+Math.sin(x*.09-gt*2.2)*1.2)*amp);
+  for(let x=0;x<W;x++){const y=surf(x);
     R(x,y,1,2,cTop);R(x,y+2,1,4,cMid);R(x,y+6,1,H-y,cDeep);
     if(hash(x>>2,((gt*3)|0)+((y-camY)>>3))>.93)R(x,y+9+((hash(x,3)*30)|0),2,1,cSpot);}
-  if(Math.random()<.15+.35*k){parts.push({x:Math.random()*W,y:sy+camY-1,vx:0,vy:-20-Math.random()*(25+40*k),life:.4,col:k>.6?'#fff3a0':'#ffd04a',s:1,g:60});}
+  if(Math.random()<.1+.15*k){parts.push({x:Math.random()*W,y:sy+camY-1,vx:0,vy:-20-Math.random()*25,life:.4,col:'#ffd04a',s:1,g:60});}
+  /* v86 BUBBLES: blobs of air swell on the surface and POP - more and bigger the closer the lava gets */
+  const dt_=1/60;lavaBubT-=dt_;
+  if(lavaBubT<=0){lavaBubT=(1.4-1.1*k)*(.5+Math.random());if(lavaBub.length<7)lavaBub.push({x:6+Math.random()*(W-12),t:0,T:.7+Math.random()*.7,m:3+Math.round(Math.random()*(2+4*k))});}
+  for(let i=lavaBub.length-1;i>=0;i--){const b=lavaBub[i];b.t+=dt_;const bx=Math.round(b.x),by=surf(bx);
+    if(b.t<b.T){const r=Math.max(1,Math.round(b.m*Math.pow(b.t/b.T,.7)));
+      for(let dy=0;dy<=r+1;dy++){const rr=r+1,w=Math.round(Math.sqrt(Math.max(0,rr*rr-dy*dy)));R(bx-w,by-dy,w*2+1,1,cDeep);} // dark skin edge
+      for(let dy=0;dy<=r;dy++){const w=Math.round(Math.sqrt(r*r-dy*dy));R(bx-w,by-dy,w*2+1,1,dy>=r-1?cTop:mixC(cMid,cTop,.45));}
+      R(bx-Math.max(0,r-2),by-r+1,1,1,'#fff6c8');}                              // a glint on the swelling skin
+    else{lavaBub.splice(i,1); // POP
+      for(let j=0;j<4+b.m;j++){const a=-Math.PI*(.15+.7*Math.random()),sp=30+Math.random()*(30+b.m*14);parts.push({x:bx,y:by+camY-1,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.35+Math.random()*.25,col:j%2?cTop:cMid,s:b.m>3&&j<2?2:1,g:320});}
+      rings.push({x:bx,y:by+camY,life:.18,max:.18,big:false,col:cTop});
+      if(AC&&soundOn&&k>.35&&mode==='play'){const a=AC.currentTime,f=180+Math.random()*120-b.m*15;tone(a,.06,f*1.8,f,'sine',.12*k);noise(a,.03,1400,1.5,.06*k);}}}
+  /* v86 DROPS: now and then a gob of lava hops up off the surface and falls back in */
+  lavaDropT-=dt_;if(lavaDropT<=0){lavaDropT=(1.6-1.2*k)*(.4+Math.random());const x=8+Math.random()*(W-16);
+    const vy=70+Math.random()*(50+60*k);parts.push({x,y:surf(Math.round(x))+camY-1,vx:(Math.random()-.5)*20,vy:-vy,life:2*vy/300,col:Math.random()<.5?cTop:cMid,s:2,g:300});} /* gone right as it lands back in */
 }
 function drawRings(){
   for(const r of rings){const k=1-r.life/r.max;const rad=(r.big?4+k*30:2+k*14);const y=r.y-camY;
