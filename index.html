@@ -2435,7 +2435,7 @@ function drawGuard(pal,t){
 const LAVA_FAR=30; // px above the bottom edge where a far-away lava sits
 /* v85: the lava waits low and darkens/heats up as it closes in; once it's within SURGE_D of his feet it SURGES up ('chwak')
    to its true place with a splash. The drawn surface is a spring on 'distance below his feet', so it overshoots a little */
-const SURGE_D=26,LAVA_WARN=110;
+const SURGE_D=26,LAVA_WARN=110,LAVA_FILL0=.55,LAVA_FILL=1.1;
 const lavaDanger=()=>clamp(1-((lavaY-pl.feet)-SURGE_D)/(LAVA_WARN-SURGE_D),0,1);
 const mixC=(a,b,k)=>{const p=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)),A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*k).toString(16).padStart(2,'0')).join('');};
 function lavaSY(){const real=lavaY-camY;if(!(mode==='play'||mode==='count'||mode==='super'||mode==='title')){lavaOff=null;return real;}
@@ -2447,6 +2447,10 @@ function lavaSY(){const real=lavaY-camY;if(!(mode==='play'||mode==='count'||mode
     shake=Math.max(shake,4);if(AC){const a=AC.currentTime;noise(a,.28,900,.7,.45,'lowpass',220);noise(a+.02,.18,2600,1.2,.25,'bandpass');tone(a,.25,90,50,'sine',.5);}}
   else if(!surge&&d>SURGE_D+14)lavaSurged=false;
   lavaVel+=(tgtOff-lavaOff)*.3;lavaVel*=.6;lavaOff+=lavaVel;
+  /* v87: no pool before the pour - during the countdown the lava is only the fall behind; once it has drained down
+     (shortly after GO) the pool fills up from under the fists */
+  if(mode==='count'||mode==='title'||!started)return H+12;
+  if(tNow<LAVA_FILL0+LAVA_FILL){const f=clamp((tNow-LAVA_FILL0)/LAVA_FILL,0,1),e=1-Math.pow(1-f,3);return (H+12)+(fy+lavaOff-(H+12))*e;}
   return fy+lavaOff;}
 function drawLava(){
   const sy=Math.round(lavaSY());if(sy>H+4)return;
