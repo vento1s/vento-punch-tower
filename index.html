@@ -1024,6 +1024,7 @@ const zoneAtY=y=>zoneOfLevel(Math.floor(-y/FH)+1);
 const ROOF=-TOP*FH;
 
 let hsLag=0; /* time the world sat frozen in hit-stop: the lava and FEVER clock catch up on it, and a chain of hit-stops can't freeze it for more than .25s */
+let lavaOff=null,lavaVel=0,lavaSurged=false; /* v85 drawn lava surface (see lavaSY) */
 let impactK=1; /* v76 impact-burst size from the weak streak */
 let slabs,pl,mode='title',started,lavaY,combo,lastTap,lastSide,fever,camY,shake,hitstop,parts,pops,rings,tStart,tNow,warnT,endT,clearTime,maxCombo,gt=0,tapFX,impact,impactX,impactY,zoom,weakCount,weakStreak;
 let altStreak=0,superReady=false,sup=null,superCount=0,flashO=0,flashCol='#fff3c0';
@@ -1272,7 +1273,7 @@ function newGame(){
   runOpen={};newCard=null;tryK=null;practiceTo=-1;dashFar=false;brkFX=[];showBrk=0;demoPh=-1;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
-  started=false;lavaY=70;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;hsLag=0;
+  started=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;impactK=0;zoom=0;weakCount=0;weakStreak=0;
   altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
@@ -2432,17 +2433,34 @@ function drawGuard(pal,t){
    close in it's drawn true, further off it eases down toward the bottom edge. Only the picture moves - the lava itself,
    TIME and the burn all use the real lavaY. */
 const LAVA_FAR=30; // px above the bottom edge where a far-away lava sits
-function lavaSY(){const real=lavaY-camY;if(!(mode==='play'||mode==='count'||mode==='super'||mode==='title'))return real;
-  const fy=pl.feet-camY,maxOff=Math.max(8,H-LAVA_FAR-fy),near=maxOff*.35,d=lavaY-pl.feet;
-  if(d<=near)return real;const span=maxOff-near;return Math.min(real,fy+near+span*(1-Math.exp(-(d-near)/span)));}
+/* v85: the lava waits low and darkens/heats up as it closes in; once it's within SURGE_D of his feet it SURGES up ('chwak')
+   to its true place with a splash. The drawn surface is a spring on 'distance below his feet', so it overshoots a little */
+const SURGE_D=26,LAVA_WARN=110;
+const lavaDanger=()=>clamp(1-((lavaY-pl.feet)-SURGE_D)/(LAVA_WARN-SURGE_D),0,1);
+const mixC=(a,b,k)=>{const p=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)),A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*k).toString(16).padStart(2,'0')).join('');};
+function lavaSY(){const real=lavaY-camY;if(!(mode==='play'||mode==='count'||mode==='super'||mode==='title')){lavaOff=null;return real;}
+  const fy=pl.feet-camY,d=lavaY-pl.feet,farOff=Math.max(8,H-LAVA_FAR-fy);
+  const surge=d<=SURGE_D,tgtOff=surge?d:Math.max(SURGE_D+8,farOff-6*lavaDanger()); // far: sits low, creeping up only a few px as it nears
+  if(lavaOff==null){lavaOff=tgtOff;lavaVel=0;}
+  if(surge&&!lavaSurged&&started&&mode==='play'){lavaSurged=true;lavaVel-=5; // CHWAK: up it comes, with a splash
+    for(let i=0;i<34;i++){const x=Math.random()*W,sp=60+Math.random()*120,l=.4+Math.random()*.4;parts.push({x,y:pl.feet+tgtOff,vx:(Math.random()-.5)*40,vy:-sp,life:l,max:l,s:Math.random()<.4?2:1,g:260,fire:true});}
+    shake=Math.max(shake,4);if(AC){const a=AC.currentTime;noise(a,.28,900,.7,.45,'lowpass',220);noise(a+.02,.18,2600,1.2,.25,'bandpass');tone(a,.25,90,50,'sine',.5);}}
+  else if(!surge&&d>SURGE_D+14)lavaSurged=false;
+  lavaVel+=(tgtOff-lavaOff)*.3;lavaVel*=.6;lavaOff+=lavaVel;
+  return fy+lavaOff;}
 function drawLava(){
   const sy=Math.round(lavaSY());if(sy>H+4)return;
-  const g=ctx.createLinearGradient(0,sy-40,0,sy);g.addColorStop(0,'rgba(255,90,20,0)');g.addColorStop(1,'rgba(255,90,20,.35)');
-  ctx.fillStyle=g;ctx.fillRect(0,sy-40,W,40);
-  for(let x=0;x<W;x++){const w=Math.round(Math.sin(x*.28+gt*4)*1.3+Math.sin(x*.09-gt*2.2)*1.2);const y=Math.round(sy+w);
-    R(x,y,1,2,'#ffe27a');R(x,y+2,1,4,'#ff8a1a');R(x,y+6,1,H-y,'#c8341a');
-    if(hash(x>>2,((gt*3)|0)+((y-camY)>>3))>.93)R(x,y+9+((hash(x,3)*30)|0),2,1,'#8a1c10');}
-  if(Math.random()<.25){parts.push({x:Math.random()*W,y:sy+camY-1,vx:0,vy:-20-Math.random()*25,life:.4,col:'#ffd04a',s:1,g:60});}
+  const k=(mode==='play'||mode==='count')?lavaDanger():1,hot=lavaSurged?.5+.5*Math.sin(gt*14):0;
+  /* colour: a calm, darker red far off -> hotter and redder as it nears -> white-hot pulsing once it has surged */
+  const cTop=mixC(mixC('#e8803a','#ffe27a',k),'#ffffff',hot*.6),cMid=mixC('#b8401a','#ff6a1a',k),cDeep=mixC('#7a2012','#d82a10',k),cSpot=mixC('#4a1008','#8a1c10',k);
+  const ga=.18+.32*k+.15*hot,gh=30+30*k;
+  const g=ctx.createLinearGradient(0,sy-gh,0,sy);g.addColorStop(0,'rgba(255,60,20,0)');g.addColorStop(1,`rgba(255,${Math.round(90-50*k)},20,${ga})`);
+  ctx.fillStyle=g;ctx.fillRect(0,sy-gh,W,gh);
+  const amp=1+k*.8+hot*.8,spd=4+k*3;
+  for(let x=0;x<W;x++){const w=Math.round((Math.sin(x*.28+gt*spd)*1.3+Math.sin(x*.09-gt*2.2)*1.2)*amp);const y=Math.round(sy+w);
+    R(x,y,1,2,cTop);R(x,y+2,1,4,cMid);R(x,y+6,1,H-y,cDeep);
+    if(hash(x>>2,((gt*3)|0)+((y-camY)>>3))>.93)R(x,y+9+((hash(x,3)*30)|0),2,1,cSpot);}
+  if(Math.random()<.15+.35*k){parts.push({x:Math.random()*W,y:sy+camY-1,vx:0,vy:-20-Math.random()*(25+40*k),life:.4,col:k>.6?'#fff3a0':'#ffd04a',s:1,g:60});}
 }
 function drawRings(){
   for(const r of rings){const k=1-r.life/r.max;const rad=(r.big?4+k*30:2+k*14);const y=r.y-camY;
