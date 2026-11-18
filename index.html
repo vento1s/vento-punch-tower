@@ -2955,7 +2955,15 @@ function drawHint(){
   else if(hint.id==='dash'){let ws=-1;for(const h of holds.values())if(!h.used&&!h.drag&&h.t>=HOLD_T)ws=h.side;
     if(ws<0&&tryK==='dash'){hold(toWeak());hintMsg='꾹 눌러서 도움닫기…';return;}
     if(ws<0){hint=null;return;}
-    tap(ws?0:1,'TAP!');hintMsg='지금 반대쪽! 대시!';}
+    { /* v82: a BIG 'tap-tap' on the dash button: double-beat arrow, rings out of the shoe */
+      const sd=ws?0:1,x=fx(sd),ph=(gt*3.2)%1,beat=ph<.12||(ph>.24&&ph<.36),k=beat?1:0,cy=H-26-GAUGE_ROW,ay=fy-8+(beat?3:-2),c2=beat?'#ffffff':'#ffd400';
+      for(const r0 of [ph,(ph+.5)%1]){const rr=Math.round(8+r0*20);ctx.globalAlpha=(1-r0)*.9;
+        R(x-rr,cy-rr,rr*2,1,'#ffd400');R(x-rr,cy+rr,rr*2,1,'#ffd400');R(x-rr,cy-rr,1,rr*2,'#ffd400');R(x+rr,cy-rr,1,rr*2+1,'#ffd400');}
+      ctx.globalAlpha=1;
+      for(let i=0;i<7;i++){R(x-7+i,ay+i,15-2*i,1,'#0d0a08');R(x-6+i,ay+i,13-2*i,1,c2);}   // a fat arrow, dark rim
+      R(x-3,ay-11,7,11,'#0d0a08');R(x-2,ay-10,5,10,c2);
+      text('TAP TAP!',clamp(x,WALL+34,W-WALL-34),ay-24-k*2,2,c2,'c','#0d0a08');}
+    hintMsg='지금 반대쪽 버튼 탭탭! 대시!';}
   else if(hint.id==='king'){const lift=16+Math.min(kingLevel,5)*4,flow=Math.floor(((gt*2.2)%1)*8); // above the blaze; the arrows keep sliding down
     for(const sd of [0,1]){down(fx(sd),fy-6-lift+flow);text('HOLD',fx(sd),fy-18-lift,1,'#ffd400','c');}
     hintMsg='양쪽 같이 꾹! 그다음 연타!';}
