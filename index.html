@@ -45,7 +45,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
   touch-action:manipulation;-webkit-font-smoothing:none;font-smooth:never;font-synthesis:none}
 #wrap{height:100%;display:flex;align-items:center;justify-content:center}
-body.phone{padding:0}body.phone #stage{box-shadow:none}body.appfull #wrap{align-items:flex-start}
+body.phone{padding:0;background:#000}body.phone #stage{box-shadow:none}body.appfull #wrap{align-items:flex-start}
 #stage{position:relative;touch-action:none;overflow:hidden;container-type:size;
   box-shadow:0 0 0 2px var(--edge),0 0 40px rgba(255,122,26,.12)}
 #c{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;will-change:transform}
@@ -584,17 +584,21 @@ function applyH(h){if(h===H&&cv.height===H)return;
   H=h;HX=H-256;cv.height=H;stage.style.setProperty('--H',H);STROKE_MIN=.1*H;STROKE_FULL=.28*H;STRIP=H-34;}
 const appMode=()=>{try{return !!window.__forceApp||matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}catch(e){return false;}};
 const safeProbe=document.createElement('div');safeProbe.style.cssText='position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)';document.body.appendChild(safeProbe);
-if(PHONE){document.body.classList.add('phone');applyH(calcH(Math.min(screen.width,screen.height),Math.max(screen.width,screen.height)));}
+if(PHONE){document.body.classList.add('phone');applyH(calcH(innerWidth,innerHeight));} /* v96: from the real window - the status-bar strip may never be ours */
 else{const r=wrap.getBoundingClientRect();applyH(calcH(r.width||innerWidth,r.height||innerHeight));}
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let fitW=0,fitH=0;
 function fit(){
   const typing=/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'');
   if(PHONE){const vw=innerWidth,vh=innerHeight;
-    if(typing&&Math.abs(vw-fitW)<2&&vh<fitH)return; /* the keyboard: leave the game where it is */
+    /* v96: same width and a shorter window (the phone's bars, the keyboard) - leave the game exactly as it is; the bars lie on
+       top of it. A taller window (bars gone for good) grows it once. A new width (rotation) re-fits. */
+    if(Math.abs(vw-fitW)<2&&vh<=fitH*1.01&&fitH)return;
+    if(Math.abs(vw-fitW)<2&&vh>fitH*1.01&&fitH&&!typing)applyH(calcH(vw,vh));
+    if(Math.abs(vw-fitW)>=2&&fitW)applyH(calcH(vw,vh));
     fitW=vw;fitH=vh;
-    const full=appMode()||vh>=Math.max(screen.width,screen.height)*.96,s=full?vw/W:Math.min(vw/W,vh/H);
-    document.body.classList.toggle('appfull',full);
+    const full=true,s=Math.min(vw/W,vh/H);
+    document.body.classList.toggle('appfull',appMode());
     stage.style.width=Math.round(W*s)+'px';stage.style.height=Math.round(H*s)+'px';
     const st=full?parseFloat(getComputedStyle(safeProbe).paddingTop)||0:0;HUDY=Math.ceil(st/s);stage.style.setProperty('--hudy',HUDY);return;}
   wrap.style.height='';const r=wrap.getBoundingClientRect();
@@ -3432,6 +3436,21 @@ function pixWord(txt,pal,drop){
   for(const [dx,dy,col] of drop)for(const [a,b] of cells)P(a+1+dx,b+1+dy,col);
   for(const [a,b] of cells)P(a+1,b+1,b===0?pal.hi:b<3?pal.face:pal.lo);
   return c;}
+/* v96: the same chunky treatment for Hangul - the embedded 11px bitmap face, thresholded into cells */
+function pixWordKR(txt,pal,drop){
+  drop=drop||[[2,2,pal.e2],[1,1,pal.e1]];
+  const m=document.createElement('canvas'),mg=m.getContext('2d');mg.font='11px "PunchTowerKR"';const w=Math.ceil(mg.measureText(txt).width)+2;
+  m.width=w;m.height=14;mg.font='11px "PunchTowerKR"';mg.textBaseline='top';mg.fillStyle='#fff';mg.fillText(txt,0,1);
+  const d=mg.getImageData(0,0,w,14).data,cells=[];let y0=99,y1=0;
+  for(let y=0;y<14;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>110){cells.push([x,y]);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+  for(const c of cells)c[1]-=y0;const hh=y1-y0+1,ww=Math.max(1,...cells.map(c=>c[0]+1));
+  const mx=Math.max(0,...drop.map(q=>q[0])),my=Math.max(0,...drop.map(q=>q[1]));
+  const c=document.createElement('canvas');c.width=ww+mx+2;c.height=hh+my+2;const g=c.getContext('2d'),P=(a,b,col)=>{g.fillStyle=col;g.fillRect(a,b,1,1);};
+  const solid=cells.slice();for(const [dx,dy] of drop)for(const [a,b] of cells)solid.push([a+dx,b+dy]);
+  if(pal.ink)for(const [a,b] of solid)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)P(a+1+dx,b+1+dy,pal.ink);
+  for(const [dx,dy,col] of drop)for(const [a,b] of cells)P(a+1+dx,b+1+dy,col);
+  for(const [a,b] of cells)P(a+1,b+1,b===0?pal.hi:b<hh*.5?pal.face:pal.lo);
+  return c;}
 /* VENTO for the button cap: the AI STUDIO colours (cream, red drop, deep-red drop) in big dots, squashed to lie on the cap */
 function ventoWord(){if(ventoFlat)return ventoFlat;
   const src=pixWord('VENTO',{ink:null,e2:'#6e2a00',e1:'#c24e00',hi:'#fff3a0',face:'#ffd400',lo:'#ffb000'},[[1,4,'#6e2a00'],[1,3,'#a33f00'],[0,2,'#c24e00'],[0,1,'#e07a00']]); /* thick block letters: their front walls show below them */
@@ -3977,7 +3996,20 @@ function playStory2(done){
     if(e>=END){end();return;}
     requestAnimationFrame(frame);};
   requestAnimationFrame(frame);}
-function showSplash(){
+function launchCard(){
+  if(!(PHONE&&appMode())||RM)return; /* only when started from the home-screen icon */
+  const el=document.createElement('div');el.id='launch';
+  el.innerHTML='<img src="/icons/icon-512.png?v=96" alt=""><canvas aria-hidden="true"></canvas>';
+  Object.assign(el.style,{position:'fixed',inset:'0',zIndex:'99',background:'#000',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'22px',transition:'opacity .35s'});
+  const im=el.querySelector('img');Object.assign(im.style,{width:'38vw',maxWidth:'200px',imageRendering:'pixelated',borderRadius:'22%'});
+  const cvv=el.querySelector('canvas');Object.assign(cvv.style,{width:'64vw',maxWidth:'320px',imageRendering:'pixelated'});
+  document.body.appendChild(el);
+  const draw=()=>{const src=pixWordKR('상남자 김주먹',{ink:'#0d0a08',e2:'#6e2a00',e1:'#c24e00',hi:'#fff3a0',face:'#ffd400',lo:'#ffb000'});
+    cvv.width=src.width;cvv.height=src.height;cvv.getContext('2d').drawImage(src,0,0);};
+  (document.fonts&&document.fonts.load?document.fonts.load('11px "PunchTowerKR"'):Promise.resolve()).catch(()=>{}).then(draw);
+  const bye=()=>{if(!el.isConnected)return;el.style.opacity='0';setTimeout(()=>el.remove(),380);};
+  el.addEventListener('pointerdown',e=>{e.stopPropagation();bye();});setTimeout(bye,1500);}
+function showSplash(){launchCard();
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
       <div class="pushcue" aria-hidden="true"><canvas class="pushtxt" id="pushcv" aria-hidden="true"></canvas><div class="pusharrow"></div></div>
