@@ -570,16 +570,20 @@ const stage=document.getElementById('stage'),wrap=document.getElementById('wrap'
 /* v89 TALL SCREENS: the game is always 144 wide; its height follows the phone (256 = 9:16 ... 320 = 9:20), so an installed app
    fills a long screen instead of sitting between black bars. Fixed once at start-up. Everything that was laid out for 256
    now hangs off the top (HUD) or the bottom (fists, gauge, lava) - the extra rows show more of the tower. */
-const H=(()=>{const r=wrap.getBoundingClientRect(),w=r.width||innerWidth,h=r.height||innerHeight;return Math.min(360,Math.max(256,Math.round(W*h/w/2)*2)); /* v91: up to 9:22.5 - long phones like the Galaxy S2x+ need ~332 */})();
-const HX=H-256; // the extra rows (0 on a 9:16 screen)
-cv.height=H;stage.style.setProperty('--H',H);
+/* v92: and it follows the screen live - when Android hides its own bars (immersive full screen) the window grows and the
+   game grows with it, so there are no leftover bands. Recomputed on every real resize (not for the on-screen keyboard). */
+let H=256,HX=0,STROKE_MIN=25.6,STROKE_FULL=71.7,STRIP=222;
+const calcH=r=>{const w=r.width||innerWidth,h=r.height||innerHeight;return Math.min(360,Math.max(256,Math.round(W*h/w/2)*2));}; /* up to 9:22.5 - long phones like the Galaxy S2x+ */
+function applyH(r){const h=calcH(r);if(h===H&&cv.height===H)return;
+  H=h;HX=H-256;cv.height=H;stage.style.setProperty('--H',H);STROKE_MIN=.1*H;STROKE_FULL=.28*H;STRIP=H-34;}
+applyH(wrap.getBoundingClientRect());
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* the cabinet size stays put while the on-screen keyboard is up: at the same width a shorter window is the keyboard, not a new screen */
 let fitW=0,fitH=0;
 function fit(){wrap.style.height='';const r=wrap.getBoundingClientRect(),typing=/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'');
   if(Math.abs(r.width-fitW)<2&&r.height<fitH&&(typing||fitH-r.height>150)){wrap.style.height=fitH+'px';return;}
-  fitW=r.width;fitH=r.height;const s=Math.min(r.width/W,r.height/H);
+  fitW=r.width;fitH=r.height;applyH(r);const s=Math.min(r.width/W,r.height/H);
   stage.style.width=Math.floor(W*s)+'px';stage.style.height=Math.floor(H*s)+'px';}
 addEventListener('resize',fit);fit();
 addEventListener('focusout',()=>setTimeout(()=>{if(!/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'')){fitW=0;fitH=0;fit();scrollTo(0,0);}},350));
@@ -1589,7 +1593,7 @@ const rubLeft=()=>!sup?0:sup.mashEnd?Math.max(0,sup.mashEnd-now()):(sup.rubDur||
 function startRubClock(){if(sup&&!sup.mashEnd){sup.rubOn=true;sup.mashEnd=now()+sup.rubDur;}}
 // a stroke = one sweep up or down. Only BIG sweeps count: full credit at STROKE_FULL of the screen height
 // (about 3cm above and below the middle on a 10cm phone), nothing under STROKE_MIN. Credit lands when the sweep turns.
-const STROKE_MIN=.1*H,STROKE_FULL=.28*H; // short, joystick-sized flicks count now (was 60% of the screen)
+// STROKE_MIN / STROKE_FULL now live with H (applyH) - short, joystick-sized flicks count now (was 60% of the screen)
 function creditStroke(L){
   const w=clamp01((L-STROKE_MIN)/(STROKE_FULL-STROKE_MIN));sup.lastW=w;sup.wFlash=w>=1?.25:0;
   if(sup.mashEnd&&rubLeft()>0&&w>0){sup.earn=(sup.earn||0)+STROKE_FLOORS*sup.pw*w*(sup.maxed?MAX_MUL:1);kingAward();}
@@ -1677,7 +1681,7 @@ function die(){mode='dead';endT=0;pl.vs=0;pl.fall=0;pl.spl=0;bgmStop();sfx.die()
 // two thumbs only: left half of the screen = left hand, right half = right hand.
 // tap = punch · hold = walk that way + charge ki · release = ki punch
 // KING FIST: when charged, hold both sides together for a moment.
-const STRIP=H-34,BTN_L=44,BTN_R=W-44,BOTH_HOLD=1.2,KING_SYNC=.3; // hold both sides this long to fire the KING PUNCH (long enough to feel the build-up)
+const BTN_L=44,BTN_R=W-44,BOTH_HOLD=1.2,KING_SYNC=.3; // hold both sides this long to fire the KING PUNCH (long enough to feel the build-up)
 // dash: while walking (holding one side), tap the other side to burst forward in the walking direction
 const NUDGE=2.5; // px per punch toward the punching hand (alternate to stay put)
 const DASH=16,DASH_CD=.22,DASH_T=.12;
