@@ -495,11 +495,11 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 .newsk.coach b{font-size:clamp(26px,10cqw,40px)}
 .newsk.coach em{animation:none}
 /* hint bar: the sentence for whatever tip is up, just above the fists (same face and gold rim as the cards) */
-.hintbar{position:absolute;left:0;right:0;top:calc(84 / 256 * 100%);margin:0 auto;width:max-content;max-width:calc(100% - 16px);box-sizing:border-box;
+.hintbar{position:absolute;left:0;right:0;top:calc(84 / var(--H,256) * 100%);margin:0 auto;width:max-content;max-width:calc(100% - 16px);box-sizing:border-box;
   padding:5px 10px 4px;background:rgba(13,10,8,.88);box-shadow:0 2px 0 var(--gold),0 -2px 0 var(--gold);pointer-events:none;z-index:2;
   font-family:var(--f-display);font-size:clamp(12px,4.4cqw,17px);line-height:1.2;color:var(--gold);text-align:center}
 .hintbar[hidden]{display:none}
-.hintbar.hi{top:calc(126 / 256 * 100%)}
+.hintbar.hi{top:calc(126 / var(--H,256) * 100%)}
 /* NEW! card when a move opens up mid-run (the game is frozen behind it) */
 .newsk{position:absolute;left:0;right:0;top:32%;display:grid;justify-items:center;gap:10px;padding:14px 8px 16px;pointer-events:none;z-index:2;
   background:rgba(13,10,8,.9);box-shadow:0 3px 0 var(--gold),0 -3px 0 var(--gold),0 7px 0 var(--ink),0 -7px 0 var(--ink);animation:newIn .3s steps(6) both}
@@ -521,7 +521,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 @keyframes mashShake{50%{transform:translate(3px,-2px) scale(1.06);color:#fff}}
 @media (prefers-reduced-motion:reduce){.mash{animation:none}}
 /* pause: small pixel 'II' button in the HUD gap between the difficulty tag and the clock */
-.pausebtn{position:absolute;left:calc(84 / 144 * 100%);top:calc(3 / 256 * 100%);width:calc(13 / 144 * 100%);height:calc(13 / 256 * 100%);
+.pausebtn{position:absolute;left:calc(84 / 144 * 100%);top:calc(3 / var(--H,256) * 100%);width:calc(13 / 144 * 100%);height:calc(13 / var(--H,256) * 100%);
   z-index:4;border:0;border-radius:0;padding:0;cursor:pointer;background:rgba(13,10,8,.7);
   box-shadow:0 -2px 0 0 var(--edge),0 2px 0 0 var(--edge),-2px 0 0 0 var(--edge),2px 0 0 0 var(--edge)}
 .pausebtn[hidden]{display:none}
@@ -563,10 +563,16 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
 <script>
 (()=>{
 'use strict';
-const W=144,H=256,FH=36,TOP=1e9 /* endless: no roof */,WALL=14,IN=W-2*WALL,PUNCH=0.085;
+const W=144,FH=36,TOP=1e9 /* endless: no roof */,WALL=14,IN=W-2*WALL,PUNCH=0.085;
 const XMIN=WALL+6,XMAX=W-WALL-6;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const stage=document.getElementById('stage'),wrap=document.getElementById('wrap'),ov=document.getElementById('ov');
+/* v89 TALL SCREENS: the game is always 144 wide; its height follows the phone (256 = 9:16 ... 320 = 9:20), so an installed app
+   fills a long screen instead of sitting between black bars. Fixed once at start-up. Everything that was laid out for 256
+   now hangs off the top (HUD) or the bottom (fists, gauge, lava) - the extra rows show more of the tower. */
+const H=(()=>{const r=wrap.getBoundingClientRect(),w=r.width||innerWidth,h=r.height||innerHeight;return Math.min(320,Math.max(256,Math.round(W*h/w/2)*2));})();
+const HX=H-256; // the extra rows (0 on a 9:16 screen)
+cv.height=H;stage.style.setProperty('--H',H);
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* the cabinet size stays put while the on-screen keyboard is up: at the same width a shorter window is the keyboard, not a new screen */
@@ -1277,7 +1283,7 @@ function newGame(){
   runOpen={};newCard=null;tryK=null;practiceTo=-1;dashFar=false;brkFX=[];showBrk=0;demoPh=-1;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
-  started=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190;shake=0;hitstop=0;hsLag=0;
+  started=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190-HX;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;impactK=0;zoom=0;weakCount=0;weakStreak=0;
   altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;powerLv=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
@@ -1888,7 +1894,7 @@ function update(dt){
     if(Math.random()<dt*3){const fx=WALL+10+Math.random()*(IN-20),fy=ROOF-60-Math.random()*90;const col=['#ffd04a','#ffffff','#ff8a1a'][(Math.random()*3)|0];
       for(let i=0;i<26;i++){const a=i/26*Math.PI*2;parts.push({x:fx,y:fy,vx:Math.cos(a)*60,vy:Math.sin(a)*60,life:.9,col,s:1,g:40});}if(AC)noise(AC.currentTime,.3,1800,.7,.25,'lowpass',300);}
     if(endT>1.8&&ov.hidden)showClear();}
-  const target=(mode==='dead'?Math.min(pl.feet,lavaY):pl.feet)-(mode==='clear'?150:178);
+  const target=(mode==='dead'?Math.min(pl.feet,lavaY):pl.feet)-(mode==='clear'?150:178)-HX;
   camY+=(target-camY)*Math.min(1,dt*(mode==='super'?16:9));
 }
 
@@ -1911,9 +1917,9 @@ function skyCol(f){const key=Math.round(f*6);let c=skyCache.get(key);if(c)return
     const t=(f-a[0])/(b[0]-a[0]);v=a[1].map((x,j)=>Math.round(x+(b[1][j]-x)*t));}
   c=`rgb(${v[0]},${v[1]},${v[2]})`;if(skyCache.size<4000)skyCache.set(key,c);return c;}
 // screen y of a ground-rooted layer with parallax k (k=1 moves with the tower)
-const layerY=(k,d)=>(sceneG-camY)*k+(1-k)*179+d;
+const layerY=(k,d)=>(sceneG-camY)*k+(1-k)*(179+HX)+d;
 function drawScenery(){
-  const camR=camY,gl=GROUND-camR,camV=GROUND_V-(179+(gl-179)/ZS); // virtual camera for the sky side
+  const camR=camY,gl=GROUND-camR,camV=GROUND_V-(179+HX+(gl-179-HX)/ZS); // virtual camera for the sky side
   for(let sy=-8;sy<H+8;sy+=2){const f=-(camR+sy)/FH;R(-8,sy,W+16,2,f<SURF?dirtCol(f):skyCol(-(camV+sy)/FH));}
   if(gl>-8){
     ctx.save();ctx.beginPath();ctx.rect(-8,-8,W+16,Math.min(H+16,gl+8));ctx.clip();
@@ -3669,8 +3675,8 @@ function playStory(done){
   /* an old 2D-game cutscene: black bars, a typed caption. 1) seen from behind, he pounds a rock wall that fills the screen
      2) the ground rumbles and splits 3) he drops down a shaft past veins and falls of lava 4) he lands at the foot of the tower */
   if(storyOn)return;storyOn=true;
-  const cv=document.createElement('canvas');cv.width=W;cv.height=H;cv.id='storycv';
-  Object.assign(cv.style,{position:'absolute',inset:'0',width:'100%',height:'100%',imageRendering:'pixelated',zIndex:'2',background:'#000',cursor:'pointer'});
+  const cv=document.createElement('canvas');cv.width=W;cv.height=256;cv.id='storycv'; /* v89: the cutscenes stay 9:16, centred, with black above and below */
+  Object.assign(cv.style,{position:'absolute',left:'0',width:'100%',top:(HX/2/H*100)+'%',height:(256/H*100)+'%',boxShadow:'0 0 0 200vh #000',imageRendering:'pixelated',zIndex:'2',background:'#000',cursor:'pointer'});
   const cap=document.createElement('div');cap.className='storycap';Object.assign(cap.style,{top:'auto',bottom:'2%'});
   const sk=document.createElement('div');sk.className='storyskip';sk.textContent='TAP ▸ SKIP';Object.assign(sk.style,{bottom:'auto',top:'10px'});
   stage.append(cv,cap,sk);
@@ -3849,8 +3855,8 @@ const STORY2_KEY='punchtower.story2';
 function story2Seen(){try{return localStorage.getItem(STORY2_KEY)==='1';}catch(e){return false;}}
 function playStory2(done){
   if(storyOn)return;storyOn=true;
-  const cv=document.createElement('canvas');cv.width=W;cv.height=H;cv.id='storycv';
-  Object.assign(cv.style,{position:'absolute',inset:'0',width:'100%',height:'100%',imageRendering:'pixelated',zIndex:'40',background:'#000',cursor:'pointer'});
+  const cv=document.createElement('canvas');cv.width=W;cv.height=256;cv.id='storycv'; /* v89: the cutscenes stay 9:16, centred, with black above and below */
+  Object.assign(cv.style,{position:'absolute',left:'0',width:'100%',top:(HX/2/H*100)+'%',height:(256/H*100)+'%',boxShadow:'0 0 0 200vh #000',imageRendering:'pixelated',zIndex:'40',background:'#000',cursor:'pointer'});
   const cap=document.createElement('div');cap.className='storycap';Object.assign(cap.style,{top:'auto',bottom:'2%',zIndex:'41'});
   const sk=document.createElement('div');sk.className='storyskip';sk.textContent='TAP ▸ SKIP';Object.assign(sk.style,{bottom:'auto',top:'10px',zIndex:'41'});
   stage.append(cv,cap,sk);
