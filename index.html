@@ -45,7 +45,7 @@ body{background:var(--void);color:var(--gi);margin:0;overflow:hidden;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
   touch-action:manipulation;-webkit-font-smoothing:none;font-smooth:never;font-synthesis:none}
 #wrap{height:100%;display:flex;align-items:center;justify-content:center}
-body.appfull{padding-block:0;height:auto;min-height:100%}body.appfull #wrap{align-items:flex-start}
+body.phone{padding:0}body.phone #stage{box-shadow:none}body.appfull #wrap{align-items:flex-start}
 #stage{position:relative;touch-action:none;overflow:hidden;container-type:size;
   box-shadow:0 0 0 2px var(--edge),0 0 40px rgba(255,122,26,.12)}
 #c{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;will-change:transform}
@@ -571,37 +571,35 @@ const stage=document.getElementById('stage'),wrap=document.getElementById('wrap'
 /* v89 TALL SCREENS: the game is always 144 wide; its height follows the phone (256 = 9:16 ... 320 = 9:20), so an installed app
    fills a long screen instead of sitting between black bars. Fixed once at start-up. Everything that was laid out for 256
    now hangs off the top (HUD) or the bottom (fists, gauge, lava) - the extra rows show more of the tower. */
-/* v92: and it follows the screen live - when Android hides its own bars (immersive full screen) the window grows and the
-   game grows with it, so there are no leftover bands. Recomputed on every real resize (not for the on-screen keyboard). */
-let H=256,HX=0,STROKE_MIN=25.6,STROKE_FULL=71.7,STRIP=222;
-const calcH=r=>{const w=r.width||innerWidth,h=r.height||innerHeight;return Math.min(360,Math.max(256,Math.round(W*h/w/2)*2));}; /* up to 9:22.5 - long phones like the Galaxy S2x+ */
-function applyH(r){const h=calcH(r);if(h===H&&cv.height===H)return;
+/* v95 SCREEN FIT
+   PHONE: the game's height is fixed ONCE from the phone's screen shape (S26+ -> 320), and the cabinet loses its frame and
+   side margins - edge to edge like a native app. Installed (full screen) it fills the width from the very top, camera
+   cut-out included; the HUD steps down out of the cut-out, and the phone's bars only ever lie on top of the game (nothing is
+   resized or redrawn when they come and go). In a browser tab it fits inside the window instead.
+   DESKTOP: as before - a framed cabinet, height from the window, kept still while the on-screen keyboard is up. */
+let H=256,HX=0,STROKE_MIN=25.6,STROKE_FULL=71.7,STRIP=222,HUDY=0;
+const PHONE=(()=>{try{return matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<=560;}catch(e){return false;}})();
+const calcH=(w,h)=>Math.min(360,Math.max(256,Math.round(W*h/w/2)*2));
+function applyH(h){if(h===H&&cv.height===H)return;
   H=h;HX=H-256;cv.height=H;stage.style.setProperty('--H',H);STROKE_MIN=.1*H;STROKE_FULL=.28*H;STRIP=H-34;}
-applyH(wrap.getBoundingClientRect());
-const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/* the cabinet size stays put while the on-screen keyboard is up: at the same width a shorter window is the keyboard, not a new screen */
-let fitW=0,fitH=0;
-/* v94 INSTALLED APP: the cabinet is sized to the whole SCREEN, top edge to bottom edge, camera cut-out included, and never
-   to the window - so the phone's own bars coming and going can't move or redraw it, they just lie on top. The HUD steps
-   down out of the cut-out (HUDY game pixels). In a normal browser tab nothing changes. */
 const appMode=()=>{try{return !!window.__forceApp||matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}catch(e){return false;}};
 const safeProbe=document.createElement('div');safeProbe.style.cssText='position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)';document.body.appendChild(safeProbe);
-let HUDY=0,appKey='',appMax={};
-function fitApp(){
-  const sw=Math.min(screen.width,screen.height),sh=Math.max(screen.width,screen.height),port=innerHeight>=innerWidth;
-  const vw=port?sw:sh,o=port?'p':'l';appMax[o]=Math.max(appMax[o]||0,innerHeight,port?sh:sw);const vh=appMax[o],key=o+vw+'x'+vh; /* only ever the tallest it has been: bars appearing never shrink it */
-  document.body.classList.add('appfull');
-  if(key===appKey)return;appKey=key; /* same screen: nothing to do - no redraw, no flicker */
-  wrap.style.height=vh+'px';const r=wrap.getBoundingClientRect();applyH({width:r.width,height:vh});
-  const s=Math.min(r.width/W,vh/H);stage.style.width=Math.floor(W*s)+'px';stage.style.height=Math.floor(H*s)+'px';
-  const st=parseFloat(getComputedStyle(safeProbe).paddingTop)||0;HUDY=Math.ceil(st/s);stage.style.setProperty('--hudy',HUDY);}
-function fit(){if(appMode()){fitApp();return;}wrap.style.height='';const r=wrap.getBoundingClientRect(),typing=/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'');
-  /* v93: at the same width the cabinet never SHRINKS - when the keyboard or the phone's own bars come up they simply lie
-     over the game (the page keeps its full size underneath), the way other full-screen apps do. It only grows, or re-fits
-     when the width changes (rotation). So it never pumps bigger-smaller-bigger. */
-  if(Math.abs(r.width-fitW)<2&&r.height<fitH){wrap.style.height=fitH+'px';return;}
-  fitW=r.width;fitH=r.height;applyH(r);const s=Math.min(r.width/W,r.height/H);
+if(PHONE){document.body.classList.add('phone');applyH(calcH(Math.min(screen.width,screen.height),Math.max(screen.width,screen.height)));}
+else{const r=wrap.getBoundingClientRect();applyH(calcH(r.width||innerWidth,r.height||innerHeight));}
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let fitW=0,fitH=0;
+function fit(){
+  const typing=/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'');
+  if(PHONE){const vw=innerWidth,vh=innerHeight;
+    if(typing&&Math.abs(vw-fitW)<2&&vh<fitH)return; /* the keyboard: leave the game where it is */
+    fitW=vw;fitH=vh;
+    const full=appMode()||vh>=Math.max(screen.width,screen.height)*.96,s=full?vw/W:Math.min(vw/W,vh/H);
+    document.body.classList.toggle('appfull',full);
+    stage.style.width=Math.round(W*s)+'px';stage.style.height=Math.round(H*s)+'px';
+    const st=full?parseFloat(getComputedStyle(safeProbe).paddingTop)||0:0;HUDY=Math.ceil(st/s);stage.style.setProperty('--hudy',HUDY);return;}
+  wrap.style.height='';const r=wrap.getBoundingClientRect();
+  if(Math.abs(r.width-fitW)<2&&r.height<fitH&&(typing||fitH-r.height>150)){wrap.style.height=fitH+'px';return;}
+  fitW=r.width;fitH=r.height;const s=Math.min(r.width/W,r.height/H);
   stage.style.width=Math.floor(W*s)+'px';stage.style.height=Math.floor(H*s)+'px';}
 addEventListener('resize',fit);fit();
 addEventListener('focusout',()=>setTimeout(()=>{if(!/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'')){fitW=0;fitH=0;fit();scrollTo(0,0);}},350));
