@@ -582,7 +582,10 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* the cabinet size stays put while the on-screen keyboard is up: at the same width a shorter window is the keyboard, not a new screen */
 let fitW=0,fitH=0;
 function fit(){wrap.style.height='';const r=wrap.getBoundingClientRect(),typing=/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'');
-  if(Math.abs(r.width-fitW)<2&&r.height<fitH&&(typing||fitH-r.height>150)){wrap.style.height=fitH+'px';return;}
+  /* v93: at the same width the cabinet never SHRINKS - when the keyboard or the phone's own bars come up they simply lie
+     over the game (the page keeps its full size underneath), the way other full-screen apps do. It only grows, or re-fits
+     when the width changes (rotation). So it never pumps bigger-smaller-bigger. */
+  if(Math.abs(r.width-fitW)<2&&r.height<fitH){wrap.style.height=fitH+'px';return;}
   fitW=r.width;fitH=r.height;applyH(r);const s=Math.min(r.width/W,r.height/H);
   stage.style.width=Math.floor(W*s)+'px';stage.style.height=Math.floor(H*s)+'px';}
 addEventListener('resize',fit);fit();
