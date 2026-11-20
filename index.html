@@ -1062,7 +1062,7 @@ const ROOF=-TOP*FH;
 
 let hsLag=0; /* time the world sat frozen in hit-stop: the lava and FEVER clock catch up on it, and a chain of hit-stops can't freeze it for more than .25s */
 let lavaOff=null,lavaVel=0,lavaSurged=false,lavaBub=[],lavaBubT=0,lavaDropT=0; /* v85 drawn lava surface (see lavaSY) */
-let impactK=1; /* v76 impact-burst size from the weak streak */
+let impactK=1,endShown=false; /* v76 impact-burst size from the weak streak */
 let slabs,pl,mode='title',started,lavaY,combo,lastTap,lastSide,fever,camY,shake,hitstop,parts,pops,rings,tStart,tNow,warnT,endT,clearTime,maxCombo,gt=0,tapFX,impact,impactX,impactY,zoom,weakCount,weakStreak;
 let altStreak=0,superReady=false,sup=null,superCount=0,flashO=0,flashCol='#fff3c0';
 // a press punches at once; keep holding and the boxer walks that way while ki builds; release = ki punch
@@ -1314,7 +1314,7 @@ function newGame(){
   runOpen={};newCard=null;tryK=null;practiceTo=-1;dashFar=false;brkFX=[];showBrk=0;demoPh=-1;vibCardShown=false;cardHolds.clear();if(newEl)newEl.hidden=true;
   slabs=[null];ensureSlabs(40);
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
-  started=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190-HX;shake=0;hitstop=0;hsLag=0;
+  started=false;endShown=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190-HX;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;impactK=0;zoom=0;weakCount=0;weakStreak=0;
   altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;powerLv=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
@@ -1920,11 +1920,11 @@ function update(dt){
       pl.vs+=520*dt;pl.sink+=pl.vs*dt;
       if(!pl.spl&&pl.sink>8){pl.spl=1;shake=Math.max(shake,3);if(AC){const t=AC.currentTime;noise(t,.3,700,.8,.3,'lowpass',150);}
         for(let i=0;i<18;i++){const a=-Math.PI*Math.random(),sp=40+Math.random()*90;parts.push({x:pl.x,y:lavaY,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.5,max:.5,s:2,g:220,fire:true});}}}
-    if(endT>1.75&&ov.hidden)showOver();}
+    if(endT>1.75&&!endShown){endShown=true;showOver();}} /* v99: once, whatever the overlay was doing (an open card used to block the results forever) */
   else if(mode==='clear'){endT+=dt;
     if(Math.random()<dt*3){const fx=WALL+10+Math.random()*(IN-20),fy=ROOF-60-Math.random()*90;const col=['#ffd04a','#ffffff','#ff8a1a'][(Math.random()*3)|0];
       for(let i=0;i<26;i++){const a=i/26*Math.PI*2;parts.push({x:fx,y:fy,vx:Math.cos(a)*60,vy:Math.sin(a)*60,life:.9,col,s:1,g:40});}if(AC)noise(AC.currentTime,.3,1800,.7,.25,'lowpass',300);}
-    if(endT>1.8&&ov.hidden)showClear();}
+    if(endT>1.8&&!endShown){endShown=true;showClear();}}
   const target=(mode==='dead'?Math.min(pl.feet,lavaY):pl.feet)-(mode==='clear'?150:178)-HX;
   camY+=(target-camY)*Math.min(1,dt*(mode==='super'?16:9));
 }
@@ -3165,7 +3165,7 @@ function render(){
 }
 
 let last=performance.now();
-function loop(ts){const dt=Math.min(.05,(ts-last)/1000);last=ts;update(dt);render();requestAnimationFrame(loop);}
+function loop(ts){const dt=Math.min(.05,(ts-last)/1000);last=ts;try{update(dt);render();}catch(e){console.error(e);}requestAnimationFrame(loop);} /* v99: a bug in one frame must never stop the game */
 requestAnimationFrame(loop);
 
 /* ---------- overlays ---------- */
@@ -3724,7 +3724,7 @@ function playStory(done){
      2) the ground rumbles and splits 3) he drops down a shaft past veins and falls of lava 4) he lands at the foot of the tower */
   if(storyOn)return;storyOn=true;
   const cv=document.createElement('canvas');cv.width=W;cv.height=256;cv.id='storycv'; /* v89: the cutscenes stay 9:16, centred, with black above and below */
-  Object.assign(cv.style,{position:'absolute',left:'0',width:'100%',top:(HX/2/H*100)+'%',height:(256/H*100)+'%',boxShadow:'0 0 0 200vh #000',imageRendering:'pixelated',zIndex:'2',background:'#000',cursor:'pointer'});
+  Object.assign(cv.style,{position:'absolute',left:'0',width:'100%',top:((H-256)/2/H*100)+'%',height:(256/H*100)+'%',boxShadow:'0 0 0 200vh #000',imageRendering:'pixelated',zIndex:'2',background:'#000',cursor:'pointer'});
   const cap=document.createElement('div');cap.className='storycap';Object.assign(cap.style,{top:'auto',bottom:'2%'});
   const sk=document.createElement('div');sk.className='storyskip';sk.textContent='TAP ▸ SKIP';Object.assign(sk.style,{bottom:'auto',top:'10px'});
   stage.append(cv,cap,sk);
@@ -3904,7 +3904,7 @@ function story2Seen(){try{return localStorage.getItem(STORY2_KEY)==='1';}catch(e
 function playStory2(done){
   if(storyOn)return;storyOn=true;
   const cv=document.createElement('canvas');cv.width=W;cv.height=256;cv.id='storycv'; /* v89: the cutscenes stay 9:16, centred, with black above and below */
-  Object.assign(cv.style,{position:'absolute',left:'0',width:'100%',top:(HX/2/H*100)+'%',height:(256/H*100)+'%',boxShadow:'0 0 0 200vh #000',imageRendering:'pixelated',zIndex:'40',background:'#000',cursor:'pointer'});
+  Object.assign(cv.style,{position:'absolute',left:'0',width:'100%',top:((H-256)/2/H*100)+'%',height:(256/H*100)+'%',boxShadow:'0 0 0 200vh #000',imageRendering:'pixelated',zIndex:'40',background:'#000',cursor:'pointer'});
   const cap=document.createElement('div');cap.className='storycap';Object.assign(cap.style,{top:'auto',bottom:'2%',zIndex:'41'});
   const sk=document.createElement('div');sk.className='storyskip';sk.textContent='TAP ▸ SKIP';Object.assign(sk.style,{bottom:'auto',top:'10px',zIndex:'41'});
   stage.append(cv,cap,sk);
@@ -4397,7 +4397,7 @@ function shareSheet(){const old=ov.querySelector('.sharesheet');if(old)old.remov
       if(navigator.share)navigator.share({title:'펀치펀치 타워',text:shareText}).catch(er=>{if(!er||er.name!=='AbortError')copyText(shareText).then(ok);});
       else copyText(shareText).then(r=>{btn.textContent=r?'링크 복사했어요!':'복사가 안 돼요';});}});
   ov.appendChild(d);}
-function showOver(){if(pl.level>=SURF&&!story2Seen()&&!RM)playStory2(()=>resultScreen(false));else resultScreen(false);} /* first time past the surface: chapter 2, then the result */
+function showOver(){if(pl.level>=SURF&&!story2Seen()&&!RM){try{playStory2(()=>resultScreen(false));return;}catch(e){console.error(e);storyOn=false;document.querySelectorAll('#storycv,.storycap,.storyskip').forEach(x=>x.remove());}}resultScreen(false);} /* first time past the surface: chapter 2, then the result */
 function showClear(){resultScreen(true);}
 readVs();
 showSplash();
