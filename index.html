@@ -605,8 +605,9 @@ function fit(){
     const full=true,s=Math.min(vw/W,vh/H);
     document.body.classList.toggle('appfull',appMode());
     stage.style.width=Math.round(W*s)+'px';stage.style.height=Math.round(H*s)+'px';
-    const under=vh>=Math.max(screen.width,screen.height)-4; /* only when the page really runs under the status strip */
-    const st=under?parseFloat(getComputedStyle(safeProbe).paddingTop)||0:0;HUDY=Math.ceil(st/s);stage.style.setProperty('--hudy',HUDY);return;}
+    /* v98: the app runs 'standalone' now - Android keeps its status bar and the page starts below it, so the HUD never has
+       to dodge a camera cut-out (on Galaxy the cut-out strip shifted the page AND kept the full height, cutting the bottom off) */
+    HUDY=0;stage.style.setProperty('--hudy',HUDY);return;}
   wrap.style.height='';const r=wrap.getBoundingClientRect();
   if(Math.abs(r.width-fitW)<2&&r.height<fitH&&(typing||fitH-r.height>150)){wrap.style.height=fitH+'px';return;}
   fitW=r.width;fitH=r.height;const s=Math.min(r.width/W,r.height/H);
