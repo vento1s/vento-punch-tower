@@ -583,7 +583,7 @@ const calcH=(w,h)=>Math.min(360,Math.max(256,Math.round(W*h/w/2)*2));
 function applyH(h){if(h===H&&cv.height===H)return;
   H=h;HX=H-256;cv.height=H;stage.style.setProperty('--H',H);STROKE_MIN=.1*H;STROKE_FULL=.28*H;STRIP=H-34;}
 const appMode=()=>{try{return !!window.__forceApp||matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}catch(e){return false;}};
-const safeProbe=document.createElement('div');safeProbe.style.cssText='position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px)';document.body.appendChild(safeProbe);
+const safeProbe=document.createElement('div');safeProbe.style.cssText='position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)';document.body.appendChild(safeProbe);
 if(PHONE){document.body.classList.add('phone');applyH(calcH(innerWidth,innerHeight));} /* v96: from the real window - the status-bar strip may never be ours */
 else{const r=wrap.getBoundingClientRect();applyH(calcH(r.width||innerWidth,r.height||innerHeight));}
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -592,21 +592,18 @@ const lockFit=()=>{fitLock=true;};setTimeout(lockFit,2500);addEventListener('poi
 function fit(){
   const typing=/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'');
   if(PHONE){const vw=innerWidth,vh=innerHeight;
-    /* v96: same width and a shorter window (the phone's bars, the keyboard) - leave the game exactly as it is; the bars lie on
-       top of it. A taller window (bars gone for good) grows it once. A new width (rotation) re-fits. */
-    /* v97: until the size LOCKS (first touch, or 2.5 s after start) it simply follows the window - so a status strip that
-       settles in just after launch can't leave the bottom cut off. After the lock a shorter window (bars, keyboard) is
-       ignored and lies over the game; a taller one or a new width re-fits. */
-    const same=Math.abs(vw-fitW)<2;
-    if(same&&vh<fitH&&(typing||fitLock))return;
-    if(same&&Math.abs(vh-fitH)<1)return;
-    {const nh=calcH(vw,vh);if(Math.abs(nh-H)>=2)applyH(nh);}
+    /* v101 (fitted to real Galaxy S26+ numbers): Android does NOT lay its bars over a web app - it really shrinks the page
+       (832 -> 744 css px when the status + navigation bars show) and reserves the camera strip as a safe-area inset (37px).
+       So: the game's HEIGHT (H) is fixed once, at the lock, from the full screen; after that every change is a CSS-only
+       re-scale into whatever is visible (no canvas redraw, so no flash), centred, never under the camera strip or the
+       navigation bar. When the bars go away it eases back to full size. */
+    if(typing&&Math.abs(vw-fitW)<2&&vh<fitH)return;
+    const cs=getComputedStyle(safeProbe),st=parseFloat(cs.paddingTop)||0,sb=parseFloat(cs.paddingBottom)||0,ah=Math.max(200,vh-st-sb);
+    if(!fitLock||Math.abs(vw-fitW)>=2){const nh=calcH(vw,ah);if(Math.abs(nh-H)>=2)applyH(nh);}
     fitW=vw;fitH=vh;
-    const full=true,s=Math.min(vw/W,vh/H);
+    const s=Math.min(vw/W,ah/H),w=Math.round(W*s),h=Math.round(H*s);
+    Object.assign(stage.style,{position:'fixed',width:w+'px',height:h+'px',left:Math.round((vw-w)/2)+'px',top:Math.round(st+(ah-h)/2)+'px',transition:fitLock?'width .18s,height .18s,left .18s,top .18s':''});
     document.body.classList.toggle('appfull',appMode());
-    stage.style.width=Math.round(W*s)+'px';stage.style.height=Math.round(H*s)+'px';
-    /* v98: the app runs 'standalone' now - Android keeps its status bar and the page starts below it, so the HUD never has
-       to dodge a camera cut-out (on Galaxy the cut-out strip shifted the page AND kept the full height, cutting the bottom off) */
     HUDY=0;stage.style.setProperty('--hudy',HUDY);return;}
   wrap.style.height='';const r=wrap.getBoundingClientRect();
   if(Math.abs(r.width-fitW)<2&&r.height<fitH&&(typing||fitH-r.height>150)){wrap.style.height=fitH+'px';return;}
