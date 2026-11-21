@@ -2077,18 +2077,49 @@ function drawSpace(fc){
   const ss=(gt*.35)%1;if(ss<.12&&fc>42){const sx=W-((gt*.35|0)*53%W),t=ss/.12;
     for(let i=0;i<8;i++)R(sx-t*90+i*2,30+t*40+(hash(gt*.35|0,1)*60|0)-i,1,1,`rgba(255,255,255,${(1-i/8)*.9})`);}
 }
-function drawWalls(){
-  const r0=Math.floor(camY/6)-1,r1=Math.ceil((camY+H)/6)+1;
-  for(let r=r0;r<=r1;r++){
-    const wy=r*6,sy=wy-camY;
-    if(wy<ROOF-6)continue;
-    const z=zoneAtY(wy);
-    R(0,sy,WALL,6,z.wall);R(W-WALL,sy,WALL,6,z.wall);R(0,sy,WALL,1,z.wallD);R(W-WALL,sy,WALL,1,z.wallD);
-    const o2=(r&1)*4;
-    for(let x=o2-7;x<WALL;x+=7){if(x>=0){R(x,sy,1,6,z.wallD);R(W-WALL+x,sy,1,6,z.wallD);}
-      if(x+1>=0&&x+1<WALL){R(x+1,sy+1,Math.min(5,WALL-x-1),1,z.wallL);R(W-WALL+x+1,sy+1,Math.min(5,WALL-x-1),1,z.wallL);}}
-    R(WALL-1,sy,1,6,z.wallD);R(W-WALL,sy,1,6,z.wallD);
+/* v103 THEMED SIDE WALLS: the two side columns follow the climb - packed earth underground, a forest from the surface,
+   rocky cliffs in the mountains, piled clouds in the sky, and open space with stars and planets at the top. Drawn in 24px
+   tiles in world space (they scroll with the tower), chunky shapes so they read big; a dark inner edge keeps the play
+   area clear. */
+const WT=24;
+function wallTile(z,x0,sy,tile,side){
+  const X=x0,Y=sy,Wd=WALL,h=(i)=>hash(tile*7+side*131,i),P=(x,y,w,hh,c)=>{const l=Math.max(X,x),r=Math.min(X+Wd,x+w);if(r>l)R(l,y,r-l,hh,c);};
+  const blob=(cx,cy,rad,c,cHi,cLo)=>{for(let dy=-rad;dy<=rad;dy++){const w=Math.round(Math.sqrt(rad*rad-dy*dy));P(cx-w,cy+dy,w*2+1,1,dy>rad*.35?cLo:dy<-rad*.45?cHi:c);}};
+  if(z.name==='UNDERGROUND'){
+    R(X,Y,Wd,WT,'#4a3324');
+    for(let k=0;k<3;k++){const y=Y+k*8+((h(k)*3)|0);P(X,y,Wd,1,'#3a2618');P(X,y+1,Wd,1,'#5a3f2c');}           // soil layers
+    for(let k=0;k<2;k++){const x=X+((h(10+k)*(Wd-4))|0),y=Y+3+((h(20+k)*(WT-7))|0);P(x,y,4,3,'#6e6a66');P(x,y,4,1,'#a8a29a');P(x,y+2,4,1,'#3e3a38');} // stones
+    if(h(30)>.55){let x=X+((h(31)*Wd)|0);for(let y=Y;y<Y+WT;y++){if(h(40+y)>.7)x+=h(50+y)>.5?1:-1;P(x,y,1,1,'#2a1a10');}} // a root
+    if(h(60)>.85){const x=X+3+((h(61)*(Wd-8))|0),y=Y+8;P(x,y,5,1,'#e8dcc0');P(x-1,y-1,1,3,'#e8dcc0');P(x+5,y-1,1,3,'#e8dcc0');} // an old bone
+  }else if(z.name==='SURFACE'){
+    R(X,Y,Wd,WT,'#16361f');
+    const tx=X+((h(1)*(Wd-3))|0);P(tx,Y,3,WT,'#5a3a22');P(tx,Y,1,WT,'#7a5232');                               // a trunk behind
+    for(let k=0;k<2;k++){const cx=X+2+((h(2+k)*(Wd-4))|0),cy=Y+6+k*12+((h(4+k)*4)|0),rad=5+((h(6+k)*3)|0);
+      blob(cx,cy,rad,'#2f7a3a','#4fa85a','#1f5a2a');if(h(8+k)>.6)P(cx-1,cy-1,2,2,h(9+k)>.5?'#e8344a':'#ffd04a');} // leafy clumps, a fruit or a flower
+  }else if(z.name==='MOUNTAIN'){
+    R(X,Y,Wd,WT,'#4e5862');
+    for(let k=0;k<2;k++){const px=X+((h(2+k)*Wd)|0),py=Y+k*12,hh=12;                                           // rock faces
+      for(let i=0;i<hh;i++){const w=Math.round(i*.8);P(px-w,py+i,w,1,'#6e7c88');P(px,py+i,w,1,'#3a424a');}
+      P(px-1,py,2,1,'#eef2fa');if(h(5+k)>.5)P(px-2,py+1,4,1,'#dfe6ee');}                                          // a snowy tip
+    if(h(9)>.5){const x=X+2+((h(10)*(Wd-6))|0),y=Y+10;for(let i=0;i<8;i++){const w=Math.round(i*.45);P(x-w,y+i,w*2+1,1,i%3?'#1f4a2a':'#2f6a3a');}P(x,y+8,1,2,'#5a3a22');} // a little pine
+  }else if(z.name==='SKY'){
+    R(X,Y,Wd,WT,'#3f74d0');
+    for(let k=0;k<3;k++){const cx=X+((h(2+k)*Wd)|0),cy=Y+4+k*8,rad=5+((h(5+k)*3)|0);blob(cx,cy,rad,'#eef2fa','#ffffff','#b8c0d4');} // piled cloud puffs
+  }else{ // SPACE
+    R(X,Y,Wd,WT,'#06050f');
+    if(h(1)>.6){ctx.globalAlpha=.35;blob(X+((h(2)*Wd)|0),Y+12,9,'#3a1e5c','#5a2e7c','#2a1240');ctx.globalAlpha=1;} // a wisp of nebula
+    for(let k=0;k<5;k++){const x=X+((h(10+k)*Wd)|0),y=Y+((h(20+k)*WT)|0),tw=((gt*3+h(30+k)*9)|0)%4;P(x,y,1,1,tw?'#ffffff':'#7a8aaa');if(k===0&&tw===0){P(x-1,y,3,1,'#bff6ff');P(x,y-1,1,3,'#bff6ff');}}
+    if(h(40)>.88){const cx=X+((h(41)*Wd)|0),cy=Y+12;blob(cx,cy,4,'#e0a82a','#ffe27a','#8a5a0c');P(cx-7,cy,15,1,'#c8b8e8');} // a ringed planet
   }
+}
+function drawWalls(){
+  const t0=Math.floor(camY/WT)-1,t1=Math.ceil((camY+H)/WT)+1;
+  for(let tl=t0;tl<=t1;tl++){
+    const wy=tl*WT,sy=wy-camY;if(wy<ROOF-WT)continue;
+    const z=zoneAtY(wy+WT/2);
+    wallTile(z,0,sy,tl,0);wallTile(z,W-WALL,sy,tl,1);
+  }
+  R(WALL-1,0,1,H,'rgba(0,0,0,.45)');R(W-WALL,0,1,H,'rgba(0,0,0,.45)'); // dark inner edge: the play area stays clear
 }
 function drawSky(){
   const sy=ROOF-camY;if(sy<=0)return;
