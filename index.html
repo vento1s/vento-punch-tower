@@ -3925,6 +3925,7 @@ function playStory(done){
   const INTRO=3.4,TALK=2.2,GO=3.7,PT=[4.1,4.6,5.1,5.55,6.0,6.4,6.8],T1=7.3,T2=8.7,T3=9.7,T4=13.1,END=T4+3.9; /* her complaint, his answer, the blows, the rumble, the split, the fall, the landing */
   /* v105 the rock wall: a granite cliff (a Half Dome), painted once pixel by pixel. A sliver of sunset sky above, the sun
      hidden behind the dome rim, sheer faces in warm light and cool shadow, dark streaks running down, pines on the ridge */
+  const rim=new Float32Array(W);                                    /* the skyline, so the cracks stop at the stone's edge */
   const wall=document.createElement('canvas');wall.width=W;wall.height=WY-TOP;{const w=wall.getContext('2d'),WH=wall.height,img=w.createImageData(W,WH),D=img.data;
     const sm=t=>t*t*(3-2*t),vn=(x,y,s)=>{const xi=Math.floor(x),yi=Math.floor(y),fx=sm(x-xi),fy=sm(y-yi),a=hash(xi+s,yi),b=hash(xi+1+s,yi),c2=hash(xi+s,yi+1),d=hash(xi+1+s,yi+1);return a+(b-a)*fx+(c2-a)*fy+(a-b-c2+d)*fx*fy;};
     const fbm=(x,y,s)=>vn(x,y,s)*.6+vn(x*2.1,y*2.1,s+7)*.28+vn(x*4.3,y*4.3,s+13)*.12;
@@ -3934,6 +3935,7 @@ function playStory(done){
     const ridge=x=>{let y;
       if(x<14)y=46-x*1.9;else if(x<30)y=19-(x-14)*.45;else if(x<84){const u=(x-57)/27;y=10+u*u*6;}else if(x<92)y=16+(x-84)*1.9;else y=31+(x-92)*.12;
       return y+(fbm(x*.18,0,3)-.5)*4;};
+    for(let x=0;x<W;x++)rim[x]=TOP+ridge(x);
     const SKY=[hex('#5a3a78'),hex('#b0608a'),hex('#e88a7a'),hex('#f8c080')],SUNX=56;
     const RAMP=[hex('#24222e'),hex('#3c3a4c'),hex('#5c5a6c'),hex('#858294'),hex('#aaa2a8'),hex('#cfae98'),hex('#ebc6a2'),hex('#f8dcb8')];
     /* big facets: [right edge x, light] - lit faces warm, deep chimneys dark */
@@ -3963,8 +3965,23 @@ function playStory(done){
     for(let x=60;x<84;x+=6)if(hash(x,79)>.55)pine(x,Math.round(ridge(x))+1,3+(hash(x,80)*3|0));
     for(const [cx,cy,n] of [[6,WH-42,4],[22,WH-30,3],[118,WH-26,4],[134,WH-38,3]])for(let k=0;k<n;k++)pine(cx+k*4-n*2+(hash(k,cx)*3|0),cy+(hash(cx,k)*5|0),5+(hash(k,cy)*6|0));
     const sh=w.createLinearGradient(0,0,0,WH);sh.addColorStop(0,'rgba(10,6,20,0)');sh.addColorStop(.55,'rgba(10,6,20,0)');sh.addColorStop(1,'rgba(10,6,20,.5)');w.fillStyle=sh;w.fillRect(0,0,W,WH);}
-  const wcr=[];for(let i=0;i<11;i++){const a=-Math.PI*(i+.5)/11+(hash(i,31)-.5)*.3,pts=[];let x=CX,y=150;
-    for(let s=0;s<40;s++){x+=Math.cos(a)*3+(hash(i,s)-.5)*3;y+=Math.sin(a)*3+(hash(s,i+40)-.5)*3;if(y<TOP||y>WY-2||x<0||x>W)break;pts.push([x,y]);}wcr.push(pts);}
+  /* v106 cracks that belong to granite: a few main fractures from the blow, kinked and following the stone's vertical grain,
+     tapering, splitting into thin hairlines; each point remembers how far along it is, so the blows open it bit by bit */
+  const wcr=[],IX=CX,IY=150;{let seed=1;
+    /* each fracture keeps a heading and zigzags around it in short straight runs; the heading leans slowly toward the grain */
+    const grow=(x,y,h,w,o,dep,sd,maxLen,lean)=>{let len=0,px=x,py=y,off=0,run=0;
+      for(let s=0;len<maxLen;s++){
+        if(run<=0){off=(hash(sd,s*7+1)-.5)*.95;run=3+hash(sd,s*7+2)*5;}            /* a new short straight run, at a new small angle */
+        h+=(lean-h)*.012;const a=h+off,st=1;x+=Math.cos(a)*st;y+=Math.sin(a)*st;len+=st;o+=st;run-=st;
+        if(x<-3||x>W+3||y>WY-2||y<rim[Math.max(0,Math.min(W-1,x|0))]+2)break;
+        const taper=1-.7*len/maxLen,ww=Math.max(.8,w*taper*(dep?1:.7+hash(sd,s*7+3)*.6));   /* the main splits gape unevenly */
+        wcr.push({x,y,px,py,w:ww,o,d:dep,c:dep===0&&w>2&&hash(sd,s*7+4)<.05});px=x;py=y;
+        if(dep<1?hash(sd,s*7+5)<.022&&len>10:dep<2&&hash(sd,s*7+5)<.012&&len>6){const sg=hash(sd,s+77)<.5?-1:1;seed++;
+          const bh=h+sg*(.7+hash(sd,s+78)*.6);grow(x,y,bh,dep?.9:1.4,o,dep+1,seed*97+s,dep?8+hash(seed,1)*12:16+hash(seed,2)*28,bh);}}};
+    /* [heading, width, length, lean]: one big split straight up, two up the sides, two low ones running along the foot */
+    [[-1.58,3.4,150,-1.6],[-2.35,2.4,100,-2.2],[-.8,2.4,105,-.95],[-2.95,1.6,60,-3.05],[-.18,1.6,60,-.08]]
+      .forEach(([h,w,m,l],k)=>grow(IX+Math.cos(h)*4,IY+Math.sin(h)*3,h,w,0,0,1000+k*131,m,l));
+    wcr.sort((a,b)=>a.o-b.o);}
   let capFull='',capAt=0;
   const snd=f=>{try{if(AC&&soundOn)f(AC.currentTime);}catch(e){}};
   const say=t=>{if(capFull!==t){capFull=t;capAt=E;}const n=Math.min(t.length,Math.floor((E-capAt)*26)+1),s=t.slice(0,n); /* typed out, with a blip */
@@ -4017,8 +4034,15 @@ function playStory(done){
       else if(e>=T1&&e<T2){const k=(e-T1)/(T2-T1);shx=(Math.random()-.5)*(1.5+k*4);shy=(Math.random()-.5)*(1+k*3);}
       else if(e>=T2){shx=(Math.random()-.5)*5;shy=(Math.random()-.5)*4;}
       c.drawImage(wall,Math.round(shx),Math.round(TOP+shy));
-      {const show=calm?n*5:99,wd=calm?1:2;for(const pts of wcr){const m=Math.min(pts.length,show);for(let j=0;j<m;j++){const [x,y]=pts[j];P(x,y,wd+1,wd+1,'#1a1424');if(j){const [x0,y0]=pts[j-1];P((x+x0)/2,(y+y0)/2,wd+1,wd+1,'#1a1424');}}}
-        if(n){P(CX-5,146,10,8,'#1a1424');P(CX-3,144,6,12,'#1a1424');}}
+      {const R=calm?n*22:999,wf=calm?1:1.35;                      /* how far the cracks have run, and how far they gape */
+        for(const p of wcr){if(p.o>R)break;const w=p.w*wf,hw=w/2;
+          if(w>=1.8)P(p.x-hw-1,p.y-hw-.5,w+2,w+1,'rgba(18,12,26,.35)');                     /* crushed edge either side */
+          const cc=w>=2.4?'#0c0912':'#1c1826';P(p.x-hw,p.y-hw,w,w,cc);if(w<2.2)P((p.x+p.px)/2-hw,(p.y+p.py)/2-hw,w,w,cc);  /* the dark split itself */
+          if(p.d===0&&w>=1.5)P(p.x+hw,p.y+hw-1,1,1,'rgba(255,236,214,.5)');                   /* a lit lip on one side */
+          if(p.c){P(p.x+1,p.y-1,3,2,'#2a2434');P(p.x+2,p.y-2,1,1,'#d8ccc4');}}                /* a chip knocked out */
+        if(n){const cr=Math.min(7,2.5+n*.7)*(calm?1:1.2);                                    /* the crater the fists dug */
+          for(let a=0;a<24;a++){const an=a/24*Math.PI*2,rr=cr*(.75+hash(a,41)*.5);
+            for(let q=0;q<rr;q+=.8){const x=IX+Math.cos(an)*q,y=IY+Math.sin(an)*q*.8;P(x,y,1,1,q>rr-1.2?'#9a94a2':q>rr*.5?'#2a2434':'#0c0910');}}}}
       if(punching){const fx=CX+(side?16:-16),fy=152;c.globalAlpha=1-since/.16;P(fx-12,fy-1,24,3,'#fff');P(fx-1,fy-12,3,24,'#fff');for(const d of [-1,1])for(const q of [-1,1]){P(fx+d*6-1,fy+q*6-1,3,3,'#fff');P(fx+d*10,fy+q*10,2,2,'#ffe27a');}c.globalAlpha=1;}
       /* the meadow at the foot of the wall */
       P(0,WY,W,BOT-WY,'#58b848');P(0,WY,W,3,'#2f7a2a');P(0,WY+3,W,1,'#7ad060');
