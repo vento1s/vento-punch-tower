@@ -1065,6 +1065,15 @@ let altStreak=0,superReady=false,sup=null,superCount=0,flashO=0,flashCol='#fff3c
 // a press punches at once; keep holding and the boxer walks that way while ki builds; release = ki punch
 const holds=new Map();let bothT=0,chargeOsc=null,chargeGain=null;
 const HOLD_T=.16,CHARGE_T=.9,MOVE_SPD=42;
+let riseT=0,bolts=[],megaLv=-1; /* v108: DOUBLE PUNCH + MAX SHOW TIME - he tears upward: a long ice-blue afterimage, lightning striking down at him */
+const megaShow=()=>kingT>0&&mode==='play'&&kingShowLv>=6&&powerLv>=1;
+function spawnBolt(feet){if(bolts.length>5)return;
+  const pts=[],x1=pl.x+(Math.random()-.5)*4,y1=feet-15,y0=camY-6,x0=clamp(x1+(Math.random()-.5)*70,WALL+4,W-WALL-4),n=9;
+  for(let i=0;i<=n;i++){const k=i/n;pts.push([x0+(x1-x0)*k+(i&&i<n?(Math.random()-.5)*14:0),y0+(y1-y0)*k]);}
+  const br=[],j=2+((Math.random()*4)|0);let [bx,by]=pts[j];const d=Math.random()<.5?-1:1;br.push([bx,by]);
+  for(let i=0;i<4;i++){bx+=d*(4+Math.random()*6);by+=6+Math.random()*8;br.push([bx,by]);}
+  bolts.push({pts,br,life:.12,max:.12});flashO=Math.max(flashO,.14);flashCol='#bff6ff';shake=Math.max(shake,3);
+  if(AC&&soundOn){const t=AC.currentTime;noise(t,.09,3200,1.2,.14,'highpass');}}
 let ghosts=[],dashCD=0,dashT=0,powerLv=0,echoFX=[0,0],lastAltV=false; /* v88 power-up: powerLv 1 = every punch is followed by a second (the 'echo') */
 const ECHO_MS=70;
 let dashFar=false; /* the try-out has just moved on to the dash: put the next weak point on the far side */
@@ -1313,7 +1322,7 @@ function newGame(){
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;endShown=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190-HX;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;impactK=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];dashCD=0;dashT=0;powerLv=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];riseT=0;bolts=[];megaLv=-1;dashCD=0;dashT=0;powerLv=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -1817,6 +1826,10 @@ function update(dt){
   dashCD=Math.max(0,dashCD-dt);
   for(const g of ghosts)g.life-=dt;ghosts=ghosts.filter(g=>g.life>0);
   if(dashT>0){dashT-=dt;ghosts.push({x:pl.x,life:.16});}
+  if(kingT>0&&mode==='play'){const mega=megaShow(),f=pl.feet-digLift()-(pl.jt>=0?Math.sin(Math.PI*pl.jt)*10:0); /* v108 SHOW TIME afterimages */
+    if(megaLv>=0&&pl.level>megaLv){riseT=.45;if(mega)spawnBolt(f);}megaLv=pl.level;if(mega&&Math.random()<real*5)spawnBolt(f);}
+  else megaLv=-1;
+  riseT=Math.max(0,riseT-dt);for(const b of bolts)b.life-=dt;bolts=bolts.filter(b=>b.life>0);
   if(mode==='tut'){tutUpdate(real,dt);return;} /* v104 tutorial runs its own little world */
   // holds: walk toward the held side while ki gathers in that fist
   let dir=0,maxC=-1,hasL=false,hasR=false,bornL=-1,bornR=-1,newest=-1;const canWalk=skillOn('walk'),canKi=skillOn('ki');
@@ -1926,7 +1939,7 @@ function update(dt){
       for(let i=0;i<26;i++){const a=i/26*Math.PI*2;parts.push({x:fx,y:fy,vx:Math.cos(a)*60,vy:Math.sin(a)*60,life:.9,col,s:1,g:40});}if(AC)noise(AC.currentTime,.3,1800,.7,.25,'lowpass',300);}
     if(endT>1.8&&!endShown){endShown=true;showClear();}}
   const target=(mode==='dead'?Math.min(pl.feet,lavaY):pl.feet)-(mode==='clear'?150:178)-HX;
-  camY+=(target-camY)*Math.min(1,dt*(mode==='super'?16:9));
+  camY+=(target-camY)*Math.min(1,dt*(mode==='super'?16:kingT>0?26:9));
 }
 
 /* ---------- draw ---------- */
@@ -2339,6 +2352,17 @@ function drawPlayer(){
   const fev=fever>0;
   const pal={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:fev?'#ff9af4':'#f4efe8',G:fev?'#ffffff':'#c4bccd',b:'#1e1a24',d:'#3a2a24',u:'#e8344a'};
   if(mode==='dead'){const c=endT<.1?'#fff1a0':endT<.25?'#ff6a3a':'#1c1412';for(const k in pal)pal[k]=c;if(endT>=.25){pal.e='#ffffff';pal.k='#0a0606';}} /* white-hot, then burnt black (only the eyes left) */
+  if(riseT>0||bolts.length){const mega=megaShow(),rows=bodyRows(); /* v108 SHOW TIME afterimages: a gold smear, or at DOUBLE PUNCH + MAX a long ice-blue one */
+    if(mega){for(let i=0;i<12;i++){const x=WALL+2+hash(i,5)*(IN-4),y=((gt*520+i*61)%(H+60))-60,l=16+hash(i,6)*22;   /* the world rushing down past him */
+        ctx.globalAlpha=.45;R(Math.round(x),Math.round(y),1,l,i%3?'#bff6ff':'#ffffff');}ctx.globalAlpha=1;
+      const seg=(a,b,w,col)=>{const n=Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]))|0;for(let i=0;i<=n;i++){const k=n?i/n:0;R(Math.round(a[0]+(b[0]-a[0])*k-w/2),Math.round(a[1]+(b[1]-a[1])*k-camY-w/2),w,w,col);}};
+      for(const b of bolts){ctx.globalAlpha=Math.min(1,b.life/b.max*1.6);
+        for(const [w,col] of [[3,'#3aa8ff'],[1,'#ffffff']]){for(let i=1;i<b.pts.length;i++)seg(b.pts[i-1],b.pts[i],w,col);for(let i=1;i<b.br.length;i++)seg(b.br[i-1],b.br[i],w===3?2:1,col);}}
+      ctx.globalAlpha=1;}
+    {const n=mega?8:3,sp=mega?9:7,a0=Math.min(1,riseT/.2);                     /* a column of afterimages trailing below him: he is tearing upward */
+      for(let i=n;i>=1;i--){const gp={},c=mega?(i%3===1?'#ffffff':'#7af0ff'):'#ffd400';for(const q in pal)gp[q]=c;
+        ctx.globalAlpha=a0*(mega?.7:.35)*(1-(i-1)/n);sprite(rows,px+Math.round(Math.sin(gt*30+i)*(mega?1:0)),top+i*sp,gp,false);}}
+    ctx.globalAlpha=1;if(mega)aura(rows,px,top,((gt*20)|0)%2?'#bff6ff':'#ffffff',.9);}
   // dash afterimages
   if(ghosts.length){const gp={};for(const k in pal)gp[k]='#7af0ff';
     for(const g of ghosts){ctx.globalAlpha=g.life/.16*.4;sprite(bodyRows(),Math.round(g.x)-4,top,gp,false);}ctx.globalAlpha=1;}
@@ -3147,6 +3171,7 @@ function drawStrip(){
   }
 }
 function render(){
+  if(kingT>0&&mode==='play'&&pl.feet-camY<162+HX)camY=pl.feet-162-HX; /* v108: a SHOW TIME climb is too fast to chase (and hit-stops pause the camera): never let him leave the top */
   const sh=(RM?Math.min(shake,1):shake)*SHAKE_MUL[shakeLv];
   const ox=Math.round((Math.random()-.5)*sh*2),oy=Math.round((Math.random()-.5)*sh*2);
   const z=zoneAtY(camY+H/2);
@@ -4009,7 +4034,7 @@ function playStory(done){
   /* v107 him from above, falling away from us on his back: legs far and small, a screaming face, two big open hands reaching
      back up at the camera (nearest, so biggest); lit red from the lava underneath */
   const tun=document.createElement('canvas');tun.width=W;tun.height=BOT-TOP;const tc=tun.getContext('2d'),timg=tc.createImageData(W,BOT-TOP),TD=timg.data;
-  const faller=(cx,cy,k)=>{const SK=HP.s,SD='#c88a60',HI='#ffd0bd',RIM=`rgba(255,120,40,${.35+.5*k})`,fl=((E*12)|0)%2;
+  const faller=(cx,cy,k)=>{const SK=HP.s,SD='#c88a60',HI='#ffd0bd',RIM=`rgba(255,120,40,${.15+.2*k})`,fl=((E*12)|0)%2;
     for(const sd of [-1,1]){const lx=cx+sd*4+Math.round(Math.sin(E*13+sd*2)*2),ly=cy+9;          /* legs, kicking */
       P(lx-2,ly,4,6,'#f4efe8');P(sd>0?lx+1:lx-2,ly,1,6,'#c4bccd');P(lx-2,ly+6,4,2,'#3a2a24');P(lx-2,ly+8,4,1,RIM);}
     for(let r=0;r<14;r++){const w=16-Math.floor(r*.35);P(cx-w/2,cy-6+r,w,1,SK);P(cx+w/2-2,cy-6+r,2,1,SD);}  /* the torso */
@@ -4110,25 +4135,22 @@ function playStory(done){
       else say('땅이 먼저 갈라졌다!');
       if(e>T3-.14){c.globalAlpha=Math.min(1,(e-(T3-.14))/.14);c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
     } else if(e<T4){ /* ---------- 4: v107 down the shaft, seen from above: he falls away from us, the lava far below grows ---------- */
-      const tt=e-T3,k=tt/(T4-T3),scroll=(tt*120+tt*tt*75)/38,zL=26/(1+k*k*22),TH=BOT-TOP,VX=72,VY=124;
+      const tt=e-T3,k=tt/(T4-T3),scroll=(tt*120+tt*tt*75)/38,zL=26/(1+k*k*3),TH=BOT-TOP,VX=72,VY=124;
       shx=(Math.random()-.5)*1.5;
       for(let y=0;y<TH;y++)for(let x=0;x<W;x++){const dx=x-VX,dy=y-VY,r=Math.hypot(dx,dy)+.01,an=Math.atan2(dy,dx),v=(an/(Math.PI*2)+.5)*40;
         const z=46/(r*(1+(hash(Math.floor(v*1.5),3)-.5)*.16)),i=(y*W+x)*4;let R,G,B;
         if(z>zL){const w2=Math.sin(x*.31+tt*2.2+Math.sin(y*.2))+Math.sin(y*.27-tt*2.8+Math.sin(x*.17))*.9;  /* the lava pool, churning */
-          if(w2>1.1){R=255;G=226;B=122;}else if(w2>-.2){R=255;G=138;B=26;}else{R=200;G=52;B=26;}
-          if(hash(x>>1,(y>>1)+((tt*10)|0))>.985){R=255;G=244;B=200;}}
+          if(w2>1.1){R=255;G=170;B=80;}else if(w2>-.2){R=210;G=90;B=26;}else{R=150;G=36;B=20;}
+          const dim=.45+.25*k;R*=dim;G*=dim;B*=dim;}                           /* v108: just a dim glimmer, far down */
         else{const u=z+scroll,band=Math.floor(u*1.4),vb=v+(band%2)*.5,h=hash(Math.floor(vb),band);
           const fu=(u*1.4)%1;let b=.7+h*.35;if(fu<.09)b*=.45;else if(fu<.2)b*=1.3;if(vb%1<.06)b*=.65; /* rough rings of rock lining the shaft: a dark seam, a lit ledge */
           R=92*b;G=70*b;B=84*b;
           const f=Math.min(1,z/zL),fog=1-Math.min(.8,z*.09);R*=fog;G*=fog;B*=fog;   /* darker the deeper, then... */
-          const gl=f*f*f*(.6+.4*k);R+=(255-R)*gl*.85;G+=(110-G)*gl*.7;B+=(30-B)*gl*.6; /* ...red-hot near the pool */
-          const vc=Math.floor(v/2.5);                                          /* lava pouring down the walls, toward the pool */
-          if(hash(vc,41)>.72&&Math.abs(v/2.5-vc-.5)<.16){const fl=hash(vc,Math.floor((u*3-tt*9)))>.4;R=fl?255:200;G=fl?138:52;B=26;}
-          else if(hash(Math.floor(v/4),Math.floor(u*.7)+7)>.86&&Math.abs((v/4)%1-.5)<.07){R=255;G=(u*4|0)%2?208:138;B=40;}} /* veins */
+          const gl=f*f*f*f*.3;R+=(220-R)*gl;G+=(80-G)*gl*.8;B+=(30-B)*gl*.6;}    /* ...a faint warm cast right by the pool */
         TD[i]=R;TD[i+1]=G;TD[i+2]=B;TD[i+3]=255;}
       tc.putImageData(timg,0,0);c.drawImage(tun,Math.round(shx),TOP);
-      for(let i=0;i<22;i++){const an=hash(i,61)*Math.PI*2,rr=((tt*(60+hash(i,62)*80)+i*17)%110);   /* embers and heat rising toward us */
-        P(VX+Math.cos(an)*rr,TOP+VY+Math.sin(an)*rr,rr>60?2:1,rr>60?2:1,i%3?'#ff8a1a':'#ffe27a');}
+      for(let i=0;i<8;i++){const an=hash(i,61)*Math.PI*2,rr=((tt*(50+hash(i,62)*60)+i*17)%100);    /* a few embers drifting up */
+        c.globalAlpha=.6;P(VX+Math.cos(an)*rr,TOP+VY+Math.sin(an)*rr,1,1,i%3?'#ff8a1a':'#ffe27a');c.globalAlpha=1;}
       for(let i=0;i<12;i++){const an=hash(i,((e*14)|0))*Math.PI*2,r0=62+hash(i,9)*20;           /* air rushing past */
         for(let q=0;q<14;q+=2)P(VX+Math.cos(an)*(r0+q),TOP+VY+Math.sin(an)*(r0+q),1,1,'rgba(255,255,255,.45)');}
       faller(72+Math.round(Math.sin(e*3.1)*4),TOP+84+Math.round(Math.sin(e*2.3)*3),k);
