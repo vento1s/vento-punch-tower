@@ -4017,6 +4017,13 @@ function launchCard(){
 if(location.hash==='#diag'||/git-preview/.test(location.hostname)){ /* always on the test address, never on the real site */const d=document.createElement('pre');d.id='diag';
   Object.assign(d.style,{position:'fixed',left:'4px',top:'40%',zIndex:'999',margin:'0',padding:'6px 8px',background:'rgba(0,0,0,.85)',color:'#7f7',font:'12px/1.35 monospace',border:'1px solid #7f7',pointerEvents:'none',whiteSpace:'pre'});
   document.body.appendChild(d);
+  /* v102: a fold button - tap to hide / show the numbers (remembered) */
+  const fb=document.createElement('button');fb.type='button';
+  Object.assign(fb.style,{position:'fixed',left:'4px',top:'calc(40% - 26px)',zIndex:'1000',padding:'2px 8px',background:'rgba(0,0,0,.85)',color:'#7f7',font:'12px monospace',border:'1px solid #7f7',cursor:'pointer'});
+  let open=true;try{open=localStorage.getItem('punchtower.diag')!=='off';}catch(e){}
+  const setOpen=o=>{open=o;d.style.display=o?'':'none';edge.style.display=o?'':'none';fb.textContent=o?'DIAG ▾ 접기':'DIAG ▸';try{localStorage.setItem('punchtower.diag',o?'on':'off');}catch(e){}};
+  fb.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();setOpen(!open);});fb.addEventListener('click',e=>e.stopPropagation());
+  document.body.appendChild(fb);
   const edge=document.createElement('div');Object.assign(edge.style,{position:'fixed',left:'0',right:'0',bottom:'0',height:'4px',background:'#f0f',zIndex:'999',pointerEvents:'none'});document.body.appendChild(edge);
   const sp=document.createElement('div');sp.style.cssText='position:fixed;visibility:hidden;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';document.body.appendChild(sp);
   const dm=['fullscreen','standalone','minimal-ui','browser'].find(m=>matchMedia('(display-mode: '+m+')').matches)||'?';
@@ -4024,7 +4031,7 @@ if(location.hash==='#diag'||/git-preview/.test(location.hostname)){ /* always on
     d.textContent=['mode '+dm+'  dpr '+devicePixelRatio,'inner '+innerWidth+'x'+innerHeight,'client '+document.documentElement.clientWidth+'x'+document.documentElement.clientHeight,
       'vv '+(vv?Math.round(vv.width)+'x'+Math.round(vv.height)+' top '+Math.round(vv.offsetTop):'-'),'screen '+screen.width+'x'+screen.height+' avail '+screen.availWidth+'x'+screen.availHeight,
       'safe t'+cs.paddingTop+' b'+cs.paddingBottom,'stage '+Math.round(sr.top)+'..'+Math.round(sr.bottom)+' h'+Math.round(sr.height),'H '+H+' lock '+fitLock].join('\n');};
-  upd();addEventListener('resize',upd);if(window.visualViewport)visualViewport.addEventListener('resize',upd);setInterval(upd,500);}
+  setOpen(open);upd();addEventListener('resize',upd);if(window.visualViewport)visualViewport.addEventListener('resize',upd);setInterval(upd,500);}
 function showSplash(){launchCard();
   ov.classList.add('black');ov.hidden=false;
   ov.innerHTML=`<div class="arcade">
