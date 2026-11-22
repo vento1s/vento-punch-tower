@@ -4253,6 +4253,54 @@ function playStory(done){
     WPo([[head[0]-4.6,head[1]-2.4],[head[0]-9,head[1]-3.6+fl],[head[0]-8.6,head[1]-1.8+fl],[head[0]-4.6,head[1]-1.2]],RD);
     WPo([[head[0]-8.6,head[1]-3+fl],[head[0]-12,head[1]-3+fl*1.5],[head[0]-11.4,head[1]-1.6+fl*1.5],[head[0]-8.4,head[1]-2+fl]],'#a81c30');
     arm(pose==='near',true);};                                                                 /* the near arm, in front */
+  /* v116 him from behind. Units: feet at (0,0), about 40 tall; s = screen px per unit */
+  const armTo=(a,b,w0,w1,col,shd)=>{const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
+    POLY([[a[0]+nx*w0/2,a[1]+ny*w0/2],[b[0]+nx*w1/2,b[1]+ny*w1/2],[b[0]-nx*w1/2,b[1]-ny*w1/2],[a[0]-nx*w0/2,a[1]-ny*w0/2]],col);
+    POLY([[a[0]-nx*w0/2,a[1]-ny*w0/2],[b[0]-nx*w1/2,b[1]-ny*w1/2],[b[0]-nx*w1*.2,b[1]-ny*w1*.2],[a[0]-nx*w0*.2,a[1]-ny*w0*.2]],shd);
+    ELL(b[0],b[1],w1*.62,w1*.55,col);ELL(b[0]-nx*w1*.25,b[1]-ny*w1*.25-w1*.1,w1*.35,w1*.2,'#e8e0d0');PF(b[0]-w1*.4,b[1]-w1*.5,w1*.8,Math.max(1,w1*.12),'#a86a48');};  /* the fist, its tape and knuckles */
+  const backHero=(hx,hy,s,pose,t,ipx,ipy)=>{const H=(x,y)=>[hx+x*s,hy+y*s],SKN='#f2b68a',SKS='#c88a60',SKD='#a86a48',PN='#f4efe8',PNS='#c4bccd',RD='#e8344a',HR='#1e1418',fl=Math.sin(t*12);
+    const limb=(p,q,w,col)=>{const dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy)||1,nx=-dy/L*w*s/2,ny=dx/L*w*s/2;POLY([[p[0]+nx,p[1]+ny],[q[0]+nx,q[1]+ny],[q[0]-nx,q[1]-ny],[p[0]-nx,p[1]-ny]],col);ELL(q[0],q[1],w*s/2,w*s/2,col);};
+    /* legs, set wide */
+    const lf=pose==='fall'?[-6+fl,-2]:[-7,0],rf=pose==='fall'?[6-fl,-1]:[7,0];
+    limb(H(-3.5,-17),H(lf[0]*.8,-8),5,PN);limb(H(lf[0]*.8,-8),H(lf[0],lf[1]),4.4,PN);limb(H(3.5,-17),H(rf[0]*.8,-8),5,PNS);limb(H(rf[0]*.8,-8),H(rf[0],rf[1]),4.4,PNS);
+    limb(H(-1,-16),H(lf[0]*.7+1,-8),1,PNS);ELL(...H(lf[0],lf[1]+.6),2.6*s,1.2*s,SKS);ELL(...H(rf[0],rf[1]+.6),2.6*s,1.2*s,SKS);   /* heels */
+    /* the punching arm goes out ahead of him, into the picture: drawn first so his shoulder sits over it */
+    const sideP=pose==='R'?1:pose==='L'?-1:0;
+    if(sideP){const sp=H(8.5*sideP,-30),el=[sp[0]+(ipx-sp[0])*.45+sideP*2*s,sp[1]+(ipy-sp[1])*.45-1*s];limb(sp,el,3.6,SKN);armTo(el,[ipx,ipy],3.2*s,2.2*s,SKN,SKS);}
+    WPo0([H(-6.5,-17),H(6.5,-17),H(10,-30.5),H(-10,-30.5)],SKN);                                  /* the broad bare back */
+    ELL(...H(-8.6,-30),3.6*s,3.2*s,SKN);ELL(...H(8.6,-30),3.6*s,3.2*s,SKN);
+    WPo0([H(-6.5,-17),H(-3,-17),H(-5,-29),H(-10,-30.5)],SKS);WPo0([H(3,-17),H(6.5,-17),H(10,-30.5),H(5,-29)],SKS);  /* lats in shadow */
+    limb(H(0,-19),H(0,-29),.8,SKD);limb(H(-6,-28),H(-2.5,-24),.6,SKD);limb(H(6,-28),H(2.5,-24),.6,SKD);   /* spine, shoulder blades */
+    WPo0([H(-6.8,-16.6),H(6.8,-16.6),H(6.8,-18.6),H(-6.8,-18.6)],'#1e1a24');                          /* belt */
+    limb(H(-1,-17.5),H(-3.5+fl*.5,-13),1.1,'#1e1a24');limb(H(1,-17.5),H(3+fl*.5,-13.5),1.1,'#1e1a24');
+    /* the other arm(s): guard up by the face, or flung up as he drops, or braced */
+    const guard=sd=>{const sp=H(8.5*sd,-30),el=H(12*sd,-23.5),fs=H(6.5*sd,-31.5);limb(sp,el,3.6,SKN);limb(el,fs,3.1,SKN);limb([el[0]-sd*.6*s,el[1]],[fs[0]-sd*.6*s,fs[1]],.9,SKS);ELL(fs[0],fs[1],2.2*s,2*s,SKN);PF(fs[0]-1.6*s,fs[1]+1.2*s,3.2*s,.8*s,'#e8e0d0');};
+    for(const sd of [-1,1]){if(sd===sideP)continue;
+      if(pose==='fall'){const sp=H(8.5*sd,-30),el=H(12*sd,-38),hd=H((10+fl)*sd,-46);limb(sp,el,3.4,SKN);limb(el,hd,3,SKN);ELL(hd[0],hd[1],2.2*s,2.4*s,SKN);}
+      else if(pose==='brace'){const sp=H(8.5*sd,-30),el=H(12.5*sd,-22),hd=H(11*sd,-17);limb(sp,el,3.5,SKN);limb(el,hd,3.1,SKN);ELL(hd[0],hd[1],2.2*s,2*s,SKN);}
+      else guard(sd);}
+    WPo0([H(-2.3,-34),H(2.3,-34),H(2.6,-30.5),H(-2.6,-30.5)],SKS);                                    /* neck */
+    ELL(...H(-4.5,-36.2),1.1*s,1.6*s,SKN);ELL(...H(4.5,-36.2),1.1*s,1.6*s,SKN);                        /* ears */
+    ELL(...H(-3.9,-33.6),1.2*s,1.4*s,HR);ELL(...H(3.9,-33.6),1.2*s,1.4*s,HR);                          /* his beard, showing at the jaw */
+    ELL(...H(0,-37.2),4.5*s,4.9*s,HR);for(let i=0;i<4;i++)WPo0([H(-3.6+i*2.4,-40.6),H(-2.4+i*2.4,-43.4),H(-1.2+i*2.4,-40.6)],HR);  /* the back of his head */
+    ELL(...H(-1.4,-39.8),1.6*s,.8*s,'#3a3040');
+    WPo0([H(-4.7,-38.8),H(4.7,-38.8),H(4.7,-37.4),H(-4.7,-37.4)],RD);ELL(...H(0,-38.1),1.1*s,1*s,'#a81c30');  /* headband and its knot */
+    WPo0([H(.3,-38.4),H(5+fl,-35.5),H(4.6+fl,-34.4),H(.3,-37.6)],RD);WPo0([H(-.3,-38.4),H(3.5-fl,-33),H(2.6-fl,-32.4),H(-.6,-37.6)],'#a81c30');};
+  const WPo0=(pts,col)=>POLY(pts,col);
+  let frontTex=null;const FX0=-110,FY0=-160,FW=220,FH2=205;                         /* the rock face seen head-on, painted once */
+  const mkFront=()=>{const PX=3,tw=FW*PX,th=FH2*PX;frontTex=document.createElement('canvas');frontTex.width=tw;frontTex.height=th;const g=frontTex.getContext('2d'),im=g.createImageData(tw,th),D=im.data;
+    const sm=q=>q*q*(3-2*q),vn=(x,y,s)=>{const xi=Math.floor(x),yi=Math.floor(y),fx=sm(x-xi),fy=sm(y-yi),a=hash(xi+s,yi),b=hash(xi+1+s,yi),c2=hash(xi+s,yi+1),d=hash(xi+1+s,yi+1);return a+(b-a)*fx+(c2-a)*fy+(a-b-c2+d)*fx*fy;};
+    const RAMP=[[44,42,56],[64,62,80],[96,92,112],[136,130,148],[176,164,168],[210,178,154],[236,200,166]];
+    for(let py=0;py<th;py++)for(let px=0;px<tw;px++){const wx=FX0+px/PX,wy=FY0+py/PX,i=(py*tw+px)*4;
+      let b=.6+(vn(wx*.045,wy*.01,9)-.5)*.65+(vn(wx*.18,wy*.18,3)-.5)*.22+(hash(Math.floor(wx*1.2),Math.floor(wy*1.2))-.5)*.16;
+      if(wy>30)b-=(wy-30)*.02;const col=RAMP[Math.max(0,Math.min(6,Math.floor(b*7)))];D[i]=col[0];D[i+1]=col[1];D[i+2]=col[2];D[i+3]=255;}
+    g.putImageData(im,0,0);};
+  const fcr=[];{let sd=11;const grow=(x,y,h,w,o,dep,s,maxL,lean)=>{let len=0,px=x,py=y,off=0,run=0;
+      for(let i=0;len<maxL;i++){if(run<=0){off=(hash(s,i*7+1)-.5)*.9;run=2+hash(s,i*7+2)*4;}h+=(lean-h)*.015;const a=h+off;x+=Math.cos(a)*.8;y+=Math.sin(a)*.8;len+=.8;o+=.8;run-=.8;
+        if(y>39||y<FY0+2||Math.abs(x)>108)break;fcr.push({x,y,px,py,w:Math.max(.25,w*(1-.7*len/maxL)),o,d:dep});px=x;py=y;
+        if(dep<2&&hash(s,i*7+5)<(dep?.012:.022)&&len>6){sd++;const sg=hash(s,i+77)<.5?-1:1,bh=h+sg*(.6+hash(s,i+78)*.6);grow(x,y,bh,w*.5,o,dep+1,sd*97+i,dep?5+hash(sd,1)*8:10+hash(sd,2)*24,bh);}}};
+    [[-1.57,1.7,150,-1.6],[-2.3,1.4,110,-2],[-.85,1.4,110,-1.1],[-3,1.1,70,-3.1],[-.12,1.1,70,0],[2.3,1,36,2.1],[.8,1,36,1]].forEach(([h,w,m,l],k)=>grow(0,0,h,w*.8,0,0,900+k*61,m,l));
+    fcr.sort((a,b)=>a.o-b.o);}
   const punchShots=(e,dt)=>{
     let n=0;while(n<PT.length&&PT[n]<=e)n++;const since=n?e-PT[n-1]:9,calm=e<T1,punching=calm&&since<.16&&n>0;
     if(n!==lastN){lastN=n;const big=n===PT.length;snd(t=>{noise(t,.09,420,.9,big?.5:.34,'bandpass');tone(t,.1,big?120:150,50,'square',big?.16:.1);noise(t,.2,90,.7,big?.5:.3,'lowpass');});vibe(big?40:14);
@@ -4260,33 +4308,37 @@ function playStory(done){
     if(calm&&since<.2){const a=(1-since/.2)*(2+n*.5);shx=(Math.random()-.5)*a*2;shy=(Math.random()-.5)*a*2;}
     else if(!calm){const k=Math.min(1,(e-T1)/(T2-T1));shx=(Math.random()-.5)*(2+k*4);shy=(Math.random()-.5)*(1.5+k*3);}
     const DROP=T2+.15;
-    if(calm||e>=DROP){ /* ---- side-on: fist / back / wide, and later the drop ---- */
-      if(e<PT[2]+.45){cam.z=8;cam.x=1.5;cam.y=-26.5;}                                          /* fist and rock, nothing else */
-      else if(calm){const k=Math.min(1,(e-(PT[2]+.45))/(T1-(PT[2]+.45))),kk=k*k*(3-2*k);cam.z=3.4-kk*2.3;cam.x=-9+kk*2;cam.y=-26-kk*20;}
-      else{const k=Math.min(1,(e-DROP)/.5);cam.z=2;cam.x=-14;cam.y=-14+k*6;}
-      {const g=c.createLinearGradient(0,TOP,0,BOT);g.addColorStop(0,'#5a3a72');g.addColorStop(.6,'#b8708a');g.addColorStop(1,'#e89a80');c.fillStyle=g;c.fillRect(0,TOP,W,BOT-TOP);}
-      if(TY(0)<BOT){const gy=TY(0);c.fillStyle='#3a7a38';c.fillRect(0,gy+shy,W,BOT-gy+4);c.fillStyle='#5aa84a';c.fillRect(0,gy+shy,W,Math.max(.5,cam.z*.6));
-        for(let i=0;i<30;i++){const x=TX(-120+hash(i,9)*130),y=gy+hash(i,8)*Math.min(30,BOT-gy);PF(x,y,Math.max(.5,cam.z*.4),Math.max(.5,cam.z*.3),'#2a5a2a');}}
-      if(!rockTex)mkRock();
-      c.drawImage(rockTex,Math.round((TX(RX0)+shx)*2)/2,Math.round((TY(RY0)+shy)*2)/2,150*cam.z,205*cam.z);
-      const R=calm?n*20:999,wf=calm?.22+.78*Math.min(1,n/7):1.4;                              /* the cracks: hairlines first, gaping by the end */
-      for(const p of rc){if(p.o>R)break;const w=Math.max(.5,p.w*wf*cam.z*.5),x=TX(p.x),y=TY(p.y),x0=TX(p.px),y0=TY(p.py);
-        const col=w>3?'#0c0912':w>1.2?'#1c1826':'#2c2836',L=Math.hypot(x-x0,y-y0)||1,nx=-(y-y0)/L*w/2,ny=(x-x0)/L*w/2;
-        POLY([[x0+nx,y0+ny],[x+nx,y+ny],[x-nx,y-ny],[x0-nx,y0-ny]],col);if(w>1)ELL(x,y,w/2,w/2,col);
-        if(p.d===0&&w>2.2)POLY([[x0-nx,y0-ny],[x-nx,y-ny],[x-nx*1.4,y-ny*1.4+.5],[x0-nx*1.4,y0-ny*1.4+.5]],'rgba(255,236,214,.45)');}  /* a lit lip */
-      if(n){const cr=(.8+n*.35)*cam.z*(calm?1:1.2);ELL(TX(.6),TY(-26),cr*.6,cr,'#0c0910');ELL(TX(.9),TY(-26),cr*.3,cr*.55,'#2a2434');}   /* the dent the fists made */
-      if(e>=DROP){ /* the ground gives way: a black hole under him, red far down */
-        const k=Math.min(1,(e-DROP)/.25),l=TX(-30*k-12*(1-k)),r=TX(-2*k-12*(1-k)),gy=TY(0);
-        c.fillStyle='#0b0811';c.fillRect(l+shx,gy+shy,r-l,BOT-gy+4);c.fillStyle='rgba(200,52,26,.35)';c.fillRect(l+shx,BOT-6,r-l,6);
-        PF(l-1,gy-.5,1,1,'#6a4a2a');PF(r,gy-.5,1,1,'#6a4a2a');
-        once('split',()=>{sfx.boom();vibe([60,30,120]);});}
-      const fy=e>=DROP+.12?160*(e-DROP-.12)**2:0;if(e>=DROP+.12)once('fall',()=>snd(t=>tone(t,1.6,1100,170,'sine',.09)));
-      const pose=e>=DROP?'fall':!calm?'brace':punching?(n%2?'near':'far'):'guard';
-      sideHero(0,fy,pose,E);
-      if(punching){const fx=TX(0),fyy=TY(-26),s=Math.min(1,cam.z/3);c.globalAlpha=1-since/.16;
-        PF(fx-14*s,fyy,28*s,1,'#fff');PF(fx,fyy-14*s,1,28*s,'#fff');for(const d of [-1,1])for(const q of [-1,1])PF(fx+d*7*s,fyy+q*7*s,1.5,1.5,'#ffe27a');c.globalAlpha=1;}
-      for(const p of wchips){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=70*dt;const s=Math.max(.5,cam.z*.35);PF(TX(p.x),TY(p.y),s,s,p.l>.4?'#cfc6c8':'#8a8494');}
+    if(calm||e>=DROP){ /* ---- v116 from behind, over his shoulder (a survival-horror camera): fist on rock, pulling back ---- */
+      let zr,ipx,ipy,sh,hx,hy,k=0;
+      if(e<PT[2]+.45){zr=4.5;ipx=76;ipy=104;sh=0;}                                              /* fist and rock, nothing else */
+      else if(calm){k=Math.min(1,(e-(PT[2]+.45))/(T1-(PT[2]+.45)));k=k*k*(3-2*k);zr=2.2-1.55*k;ipx=86-12*k;ipy=104+56*k;sh=3.3-2.25*k;hx=48+16*k;hy=262-64*k;}
+      else{zr=.75;ipx=74;ipy=160;sh=1.3;hx=64;hy=200;}
+      {const g=c.createLinearGradient(0,TOP,0,BOT);g.addColorStop(0,'#5a3a72');g.addColorStop(1,'#b8708a');c.fillStyle=g;c.fillRect(0,TOP,W,BOT-TOP);}
+      if(!frontTex)mkFront();
+      c.drawImage(frontTex,Math.round((ipx+FX0*zr+shx)*2)/2,Math.round((ipy+FY0*zr+shy)*2)/2,FW*zr,FH2*zr);
+      const gy=ipy+40*zr;                                                                       /* where the rock meets the ground */
+      if(gy<BOT){const g=c.createLinearGradient(0,gy,0,BOT);g.addColorStop(0,'#2e6a30');g.addColorStop(1,'#4a9a3e');c.fillStyle=g;c.fillRect(0,gy+shy,W,BOT-gy+4);
+        c.fillStyle='#1e3a20';c.fillRect(0,gy+shy,W,Math.max(.5,zr*.8));
+        for(let i=0;i<40;i++){const d=hash(i,8),y=gy+d*d*(BOT-gy);PF(ipx+(hash(i,9)-.5)*300*(.3+d),y,1+d*2,.5+d,'#2a5a2a');}}
+      const R=calm?n*20:999,wf=calm?.22+.78*Math.min(1,n/7):1.4,FXs=x=>ipx+x*zr,FYs=y=>ipy+y*zr;
+      for(const p of fcr){if(p.o>R)break;const w=Math.max(1,p.w*wf*zr*.5),x=FXs(p.x),y=FYs(p.y),x0=FXs(p.px),y0=FYs(p.py);
+        const col=w>3?'#0c0912':w>1.4?'#1c1826':'#2c2836',L=Math.hypot(x-x0,y-y0)||1,nx=-(y-y0)/L*w/2,ny=(x-x0)/L*w/2;
+        POLY([[x0+nx,y0+ny],[x+nx,y+ny],[x-nx,y-ny],[x0-nx,y0-ny]],col);if(w>1.2)ELL(x,y,w/2,w/2,col);}
+      if(n){const cr=(1.2+n*.45)*zr*(calm?1:1.2);ELL(ipx,ipy,cr,cr*.85,'#0c0910');ELL(ipx-cr*.2,ipy-cr*.2,cr*.5,cr*.4,'#2a2434');}  /* the dent */
+      for(const p of wchips){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=60*dt;const s=Math.max(1,zr*.6);PF(ipx+p.x*zr*1.6,ipy+p.y*zr*1.6,s,s,p.l>.4?'#cfc6c8':'#8a8494');}
       for(let i=wchips.length-1;i>=0;i--)if((wchips[i].l-=dt)<=0)wchips.splice(i,1);
+      if(e>=DROP){const kk=Math.min(1,(e-DROP)/.25),l=hx-sh*(6+12*kk),r=hx+sh*(6+12*kk);   /* the ground gives way under him */
+        c.fillStyle='#0b0811';c.fillRect(l+shx,hy-4*sh+shy,r-l,BOT-hy+8*sh);c.fillStyle='rgba(200,52,26,.35)';c.fillRect(l+shx,BOT-6,r-l,6);
+        once('split',()=>{sfx.boom();vibe([60,30,120]);});}
+      const fy=e>=DROP+.12?170*(e-DROP-.12)**2:0;if(e>=DROP+.12)once('fall',()=>snd(t=>tone(t,1.6,1100,170,'sine',.09)));
+      const pose=e>=DROP?'fall':!calm?'brace':punching?(n%2?'R':'L'):'guard';
+      if(sh)backHero(hx,hy+fy,sh,pose,E,ipx,ipy);
+      else{ /* the extreme close-up: just a forearm and fist driving in from the bottom corner */
+        const side=n%2,ox=side?W+14:-14,dir=side?-1:1;
+        if(punching)armTo([ox+dir*10,BOT+30],[ipx-dir*6,ipy+6],46,26,'#f2b68a','#c88a60');
+        else armTo([ox+dir*6,BOT+40],[ox+dir*34,BOT-14],48,40,'#f2b68a','#c88a60');}
+      if(punching){const s=Math.min(1,zr/2.5);c.globalAlpha=1-since/.16;
+        PF(ipx-16*s,ipy,32*s,1.5,'#fff');PF(ipx,ipy-16*s,1.5,32*s,'#fff');for(const d of [-1,1])for(const q of [-1,1])PF(ipx+d*8*s,ipy+q*8*s,2,2,'#ffe27a');c.globalAlpha=1;}
     } else if(e<T1+.75){ /* ---- the rumble: the ground, close, from above - a crack tears straight across it ---- */
       const k=Math.min(1,(e-T1)/.55);
       c.fillStyle='#4a8a3a';c.fillRect(0,TOP,W,BOT-TOP);
@@ -4299,16 +4351,15 @@ function playStory(done){
         if(i%5===2){const bl=[[nx,ny]];for(let q=1;q<5;q++)bl.push([nx-q*2.5,ny+(i%2?1:-1)*q*2.2+(hash(i,q)-.5)*2]);for(let q=1;q<bl.length;q++)POLY([[bl[q-1][0],bl[q-1][1]-.6],[bl[q][0],bl[q][1]-.4],[bl[q][0],bl[q][1]+.4],[bl[q-1][0],bl[q-1][1]+.6]],'#0b0811');}
         px=nx;py=ny;}
       for(let i=0;i<14;i++){const u=((e-T1)*1.5+hash(i,61))%1,x=hash(i,62)*W;c.globalAlpha=.5*(1-u);ELL(x+shx,118+(hash(i,63)-.5)*20-u*16,3+u*6,2+u*3,'#b8a888');}c.globalAlpha=1;
-    } else { /* ---- his feet, close: the crack runs right between them and opens ---- */
-      const k=Math.min(1,(e-(T1+.75))/(DROP-(T1+.75)));cam.z=5;cam.x=-16;cam.y=-6;
-      {const g=c.createLinearGradient(0,TOP,0,BOT);g.addColorStop(0,'#6a4a7a');g.addColorStop(1,'#c88a8a');c.fillStyle=g;c.fillRect(0,TOP,W,BOT-TOP);}
-      const gy=TY(0);c.fillStyle='#3a7a38';c.fillRect(0,gy+shy,W,BOT-gy+4);c.fillStyle='#5aa84a';c.fillRect(0,gy+shy,W,3);
-      for(let i=0;i<40;i++){const x=hash(i,9)*W,y=gy+3+hash(i,8)*(BOT-gy);PF(x+shx,y+shy,2,1.5,'#2a5a2a');}
-      if(!rockTex)mkRock();c.drawImage(rockTex,Math.round((TX(RX0)+shx)*2)/2,Math.round((TY(RY0)+shy)*2)/2,150*cam.z,205*cam.z);
-      const cx=TX(-16.5),hw=.5+k*k*9;                                                         /* the crack, zig-zagging toward us */
-      c.fillStyle='#0b0811';for(let y=gy;y<BOT;y+=1){const d=(y-gy)/(BOT-gy),z=Math.sin(y*.35)*2*(1-d)+(hash(y|0,7)-.5)*1.5,w=hw*(.4+d);c.fillRect(cx+z-w+shx,y+shy,w*2,1);}
-      for(let i=0;i<8;i++){const u=((e*2.2)+hash(i,71))%1;PF(cx+(hash(i,72)-.5)*hw*2,gy+u*30,1,1,'#6a4a2a');}        /* grit dropping in */
-      sideHero(0,0,'brace',E);
+    } else { /* ---- his feet from behind: the crack comes from the rock, between his heels, and opens ---- */
+      const k=Math.min(1,(e-(T1+.75))/(DROP-(T1+.75)));
+      {const g=c.createLinearGradient(0,TOP,0,BOT);g.addColorStop(0,'#5a3a72');g.addColorStop(1,'#b8708a');c.fillStyle=g;c.fillRect(0,TOP,W,BOT-TOP);}
+      if(!frontTex)mkFront();const zr=1.1,ipx=72,ipy=40;c.drawImage(frontTex,Math.round((ipx+FX0*zr+shx)*2)/2,Math.round((ipy+FY0*zr+shy)*2)/2,FW*zr,FH2*zr);
+      const gy=ipy+40*zr;{const g=c.createLinearGradient(0,gy,0,BOT);g.addColorStop(0,'#2e6a30');g.addColorStop(1,'#4a9a3e');c.fillStyle=g;c.fillRect(0,gy+shy,W,BOT-gy+4);}
+      for(let i=0;i<60;i++){const d=hash(i,8),y=gy+d*d*(BOT-gy);PF((hash(i,9))*W,y,1+d*3,.5+d*1.5,'#2a5a2a');}
+      c.fillStyle='#0b0811';for(let y=gy;y<BOT;y+=1){const d=(y-gy)/(BOT-gy),z=Math.sin(y*.3)*3*d+(hash(y|0,7)-.5)*2*d,w=.5+d*(1+k*k*12);c.fillRect(72+z-w+shx,y+shy,w*2,1);}  /* the crack, widening toward us */
+      for(let i=0;i<8;i++){const u=((e*2.2)+hash(i,71))%1;PF(72+(hash(i,72)-.5)*k*20,170+u*30,1.5,1.5,'#6a4a2a');}
+      backHero(72,212,4.6,'brace',E,72,60);
     }
     if(calm)say(e<PT[4]?'해를 가리는 벽이라면\n부수면 된다.':'벽에 금이 간다!\n조금만 더!');
     else if(e<DROP){say('쿠구구구구…\n어? 벽이 아니라 땅이?!');once('rumble',()=>{snd(t=>{noise(t,1.6,70,.6,.6,'lowpass');tone(t,1.6,52,34,'sawtooth',.14);});vibe([80,40,80,40,140]);});}
