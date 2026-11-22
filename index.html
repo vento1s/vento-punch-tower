@@ -4351,31 +4351,32 @@ function playStory(done){
         if(i%5===2){const bl=[[nx,ny]];for(let q=1;q<5;q++)bl.push([nx-q*2.5,ny+(i%2?1:-1)*q*2.2+(hash(i,q)-.5)*2]);for(let q=1;q<bl.length;q++)POLY([[bl[q-1][0],bl[q-1][1]-.6],[bl[q][0],bl[q][1]-.4],[bl[q][0],bl[q][1]+.4],[bl[q-1][0],bl[q-1][1]+.6]],'#0b0811');}
         px=nx;py=ny;}
       for(let i=0;i<14;i++){const u=((e-T1)*1.5+hash(i,61))%1,x=hash(i,62)*W;c.globalAlpha=.5*(1-u);ELL(x+shx,118+(hash(i,63)-.5)*20-u*16,3+u*6,2+u*3,'#b8a888');}c.globalAlpha=1;
-    } else { /* ---- v117 looking down from his eye height at his feet: just calves, heels and the ground, the crack coming
-                 from the rock ahead, running between his feet and opening toward us ---- */
-      const k=Math.min(1,(e-(T1+.75))/(DROP-(T1+.75)));
+    } else { /* ---- v119 his own eyes, looking down at his feet (point of view): trouser legs coming in big from the top,
+                 bare feet planted on the grass, toes toward the rock - and the crack running up from it, between his feet ---- */
+      const k=Math.min(1,(e-(T1+.75))/(DROP-(T1+.75))),tr=Math.sin(E*40)*k*.7;
+      const RE=(cx,cy,rx,ry,a,col)=>{const pts=[];for(let i=0;i<20;i++){const t2=i/20*Math.PI*2,x=Math.cos(t2)*rx,y=Math.sin(t2)*ry;pts.push([cx+x*Math.cos(a)-y*Math.sin(a),cy+x*Math.sin(a)+y*Math.cos(a)]);}POLY(pts,col);};
       c.fillStyle='#3e7e38';c.fillRect(0,TOP,W,BOT-TOP);
-      c.save();c.translate(72,124);c.rotate(-.42);c.scale(1.4,1.4);c.translate(-72,-124);   /* v118: tilted - looking down at him from an angle */
-      {const g=c.createLinearGradient(0,TOP,0,TOP+18);g.addColorStop(0,'#4a4458');g.addColorStop(1,'#6a6278');c.fillStyle=g;c.fillRect(-60,TOP-60+shy,W+120,76);  /* the foot of the rock, just ahead */
-        c.fillStyle='#2a2634';c.fillRect(-60,TOP+16+shy,W+120,2);c.fillStyle='rgba(20,30,20,.35)';c.fillRect(-60,TOP+18+shy,W+120,10);}
-      for(let i=0;i<170;i++){const d=hash(i,8),y=TOP+20+d*(BOT-TOP+20),s=.6+d*1.6;PF(hash(i,9)*(W+80)-40,y,s,s*2.2,hash(i,10)<.5?'#2c6228':'#6ab04a');}   /* grass, bigger nearer */
-      for(let i=0;i<10;i++){const d=hash(i,18),y=TOP+24+d*(BOT-TOP-30);ELL(hash(i,19)*W,y,3+d*6,1.4+d*3,'#6a5236');}
-      let px=72,py=TOP+18;c.fillStyle='#0b0811';                                                      /* the crack, widening as it comes */
-      for(let y=TOP+18;y<BOT;y+=1){const d=(y-TOP-18)/(BOT-TOP-18),x=72+Math.sin(y*.21)*3+(hash(y|0,7)-.5)*2.5,w=(.6+d*2)*(.5+k*k*5);
+      for(let i=0;i<150;i++){const x=hash(i,9)*W,y=TOP+hash(i,8)*(BOT-TOP),s=.8+hash(i,7)*1.2;PF(x,y,s,s*2,hash(i,10)<.5?'#2c6228':'#6ab04a');}
+      for(let i=0;i<8;i++)ELL(hash(i,19)*W,TOP+hash(i,18)*(BOT-TOP),4+hash(i,17)*6,2+hash(i,16)*3,'#6a5236');
+      {const g=c.createLinearGradient(0,BOT-22,0,BOT);g.addColorStop(0,'#6a6278');g.addColorStop(1,'#4a4458');c.fillStyle=g;c.fillRect(0,BOT-20+shy,W,24);   /* the foot of the rock, just ahead of his toes */
+        PF(0,BOT-22,W,2,'#2a2634');c.fillStyle='rgba(20,30,20,.3)';c.fillRect(0,BOT-32+shy,W,10);}
+      for(let y=BOT-22;y>TOP+30;y-=1){const d=(BOT-22-y)/(BOT-TOP-52),x=80-d*26+Math.sin(y*.23)*3+(hash(y|0,7)-.5)*2.5,w=(2.2-d*1.4)*(.4+k*k*4.5);   /* the crack, from the rock up between his feet */
         PF(x-w-1,y,1,1,'#6a4a2a');PF(x+w,y,1,1,'#4a321e');PF(x-w,y,w*2,1,'#0b0811');
-        if((y|0)%23===0&&d>.2){for(let q=1;q<6;q++)PF(x+(y%2?q*2:-q*2),y+q*.8,1,1,'#0b0811');}}
-      for(let i=0;i<10;i++){const u=((e*2)+hash(i,71))%1;PF(72+(hash(i,72)-.5)*k*14,TOP+40+hash(i,73)*120+u*6,1.5,1.5,'#6a4a2a');}  /* grit dropping in */
-      /* his feet and calves, from above and behind: the feet small and far, the trouser legs widening toward us */
-      const tr=Math.sin(E*40)*k*.8;
-      for(const sd of [-1,1]){const fx=72+sd*24+tr,fy=118;
-        ELL(fx,fy+16,13,4,'rgba(16,40,16,.35)');                                                            /* his shadow on the grass */
-        ELL(fx+sd*.5,fy-6,10,17,'#f2b68a');ELL(fx-sd*3,fy-6,4,13,'#d8946c');                                /* the foot, reaching away */
-        for(let q=0;q<5;q++)ELL(fx-7+q*3.4,fy-22+Math.abs(q-1.5)*1.1,1.9,2.2,'#e8a07a');                   /* toes */
-        ELL(fx,fy+7,9,6,'#e0a07c');                                                                         /* heel */
-        POLY([[fx-10,fy+7],[fx+10,fy+7],[fx+sd*8+20,BOT+4],[fx+sd*8-20,BOT+4]],'#f4efe8');                    /* trouser leg, his calf in it */
-        POLY([[fx+(sd>0?3:-10),fy+7],[fx+(sd>0?10:-3),fy+7],[fx+sd*8+(sd>0?20:-6),BOT+4],[fx+sd*8+(sd>0?6:-20),BOT+4]],'#c4bccd');
-        PF(fx-10,fy+6,20,2,'#d8d0e0');PF(fx+sd*4,fy+16,1.5,BOT-fy-16,'#cfc6d6');}
-      c.restore();
+        if((y|0)%19===0)for(let q=1;q<6;q++)PF(x+((y|0)%2?q*2:-q*2),y-q*.7,1,1,'#0b0811');}
+      for(let i=0;i<10;i++){const u=((e*2)+hash(i,71))%1;PF(72+(hash(i,72)-.5)*k*16,TOP+60+hash(i,73)*100+u*6,1.5,1.5,'#6a4a2a');}
+      /* the far (right) foot and leg, then the near (left) one, bigger */
+      const foot=(hx,hy,a,L,Wd)=>{const ca=Math.cos(a),sa=Math.sin(a),P2=(u,v)=>[hx+tr+ca*u*L-sa*v,hy+sa*u*L+ca*v];   /* from the ankle (under the hem) out to the toes */
+        const prof=[[0,.5],[.25,.7],[.55,.95],[.8,1],[.93,.85],[1,.45]],side=s=>prof.map(([u,w])=>P2(u,s*w*Wd/2));
+        POLY(side(1).map(p=>[p[0]+3,p[1]+4]).concat(side(-1).reverse().map(p=>[p[0]+3,p[1]+4])),'rgba(16,40,16,.35)');   /* its shadow */
+        POLY(side(1).concat(side(-1).reverse()),'#f2b68a');
+        POLY(prof.map(([u,w])=>P2(u,w*Wd/2)).concat(prof.map(([u,w])=>P2(u,w*Wd*.12)).reverse()),'#d8946c');                   /* the outer side in shade */
+        PF(...P2(.3,-Wd*.12),Math.max(1,Wd*.08),Math.max(1,Wd*.3),'#e0a07c');                                                  /* a tendon */
+        for(let q=0;q<5;q++){const v=(q-2)*Wd*.19,[tx,ty]=P2(.97-Math.abs(q-1)*.03,v),r=q===0?Wd*.15:Wd*.1;ELL(tx,ty,r,r*1.1,'#e8a07a');ELL(tx,ty-r*.3,r*.55,r*.4,'#f8d0b0');}};
+      const leg=(x0,y0,x1,y1,w0,w1,col,shd)=>{POLY([[x0-w0/2,y0],[x0+w0/2,y0],[x1+w1/2,y1],[x1-w1/2,y1]],col);POLY([[x0+w0*.15,y0],[x0+w0/2,y0],[x1+w1/2,y1],[x1+w1*.2,y1]],shd);
+        for(let i=1;i<4;i++){const u=i/4;PF(x0+(x1-x0)*u-w0*.2,y0+(y1-y0)*u,w0*.3*(1-u)+w1*.3*u,1,shd);}                  /* creases */
+        POLY([[x1-w1/2-1,y1-4],[x1+w1/2+1,y1-4],[x1+w1/2+2,y1+1],[x1-w1/2-2,y1+1]],'#d8d0e0');PF(x1-w1/2-2,y1+1,w1+4,1,'#a8a0b4');};   /* the hem, over the ankle */
+      foot(101,126,1.38,30,18);leg(96+tr,TOP-6,101+tr,130,44,26,'#f4efe8','#c4bccd');
+      foot(58,150,1.5,40,24);leg(26+tr,TOP-6,58+tr,156,74,34,'#f4efe8','#c4bccd');
     }
     if(calm)say(e<PT[4]?'해를 가리는 벽이라면\n부수면 된다.':'벽에 금이 간다!\n조금만 더!');
     else if(e<DROP){say('쿠구구구구…\n어? 벽이 아니라 땅이?!');once('rumble',()=>{snd(t=>{noise(t,1.6,70,.6,.6,'lowpass');tone(t,1.6,52,34,'sawtooth',.14);});vibe([80,40,80,40,140]);});}
