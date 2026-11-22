@@ -3955,7 +3955,7 @@ function playStory(done){
   const KID=[".hhhh.","hhhhhh",".ssss.","sesses",".ssss.",".tttt.","tttttt",".tttt."];
   const KX={s:'#f2b68a',e:'#1a1020',b:'#ff9a9a',l:'#c84a4a',u:'#2a2a44',k:'#2a1a14'},K1={...KX,h:'#2a1a14',H:'#5a3a2a',t:'#3a8aff',T:'#2a6ad8'},K2={...KX,h:'#7a3a1a',H:'#b0602a',t:'#ffd400',T:'#d8a800'};
   const TOP=20,BOT=220,WY=200,GY=212,CX=72,FY=198;           /* bars, foot of the wall, his feet, centre, the tower floor */
-  const INTRO=3.4,TALK=2.8,GO=4.3,PT=[4.7,5.2,5.7,6.15,6.6,7.0,7.4],T1=7.9,T2=9.3,T3=10.3,T4=13.7,END=T4+3.9; /* her complaint, his answer, the blows, the rumble, the split, the fall, the landing */
+  const INTRO=3.4,KS=2.4,TALK=5.2,GO=6.7,PT=[7.1,7.6,8.1,8.55,9.0,9.4,9.8],T1=10.3,T2=11.7,T3=12.7,T4=16.1,END=T4+3.9; /* her complaint, his answer, the blows, the rumble, the split, the fall, the landing */
   /* v105 the rock wall: a granite cliff (a Half Dome), painted once pixel by pixel. A sliver of sunset sky above, the sun
      hidden behind the dome rim, sheer faces in warm light and cool shadow, dark streaks running down, pines on the ridge */
   const rim=new Float32Array(W);                                    /* the skyline, so the cracks stop at the stone's edge */
@@ -4134,6 +4134,44 @@ function playStory(done){
     if(e<1.7&&((e*8)|0)%2){ELL(X+1,Y+11.5,1.8,1.3,'#8a2a3a');PF(X,Y+12,2,.5,'#e86a7a');}                  /* talking */
     else{PF(X-1,Y+11,4,.5,'#b04a4a');PF(X,Y+11.5,2,.5,'#e08a8a');}                                         /* a pout */
   };
+  /* v111 the children at play, up close: seen from a grown-up's height, looking a little down on them as they chase each
+     other round the yard; the washing on the line at the side snapping in the wind */
+  const kidBig=(x,y,pal,dir,ph,k,girl,back)=>{const bob=Math.abs(Math.sin(ph))*2*k,hy=y-26*k-bob,sw=Math.sin(ph);
+    ELL(x,y,8*k,2.4*k,'rgba(16,40,20,.35)');                                                         /* shadow on the grass */
+    for(const s of [-1,1]){const fx=x+s*1.6*k+sw*s*4*k,fy=y-1*k-(s*sw>0?1.5*k:0);                 /* legs, running */
+      POLY([[x+s*2.2*k-1.2*k,y-9*k-bob],[x+s*2.2*k+1.2*k,y-9*k-bob],[fx+1.1*k,fy],[fx-1.1*k,fy]],pal.s);ELL(fx,fy,2*k,1.2*k,pal.k);}
+    POLY([[x-5*k,y-11*k-bob],[x+5*k,y-11*k-bob],[x+(girl?6.5:5.5)*k,y-7*k-bob],[x-(girl?6.5:5.5)*k,y-7*k-bob]],girl?pal.t:pal.u); /* shorts, or a skirt */
+    for(const s of [-1,1]){const hx=x+s*6.5*k-sw*s*3*k*dir,hy2=y-13*k-bob-(s*sw*dir<0?3*k:0);          /* arms swinging */
+      POLY([[x+s*4.5*k,y-19*k-bob],[x+s*5.5*k,y-18*k-bob],[hx+1*k,hy2],[hx-1*k,hy2]],pal.s);ELL(hx,hy2,1.3*k,1.3*k,pal.s);}
+    POLY([[x-5*k,y-19.5*k-bob],[x+5*k,y-19.5*k-bob],[x+5.5*k,y-10*k-bob],[x-5.5*k,y-10*k-bob]],pal.t);  /* shirt */
+    POLY([[x+1*k*dir,y-19.5*k-bob],[x+5*k*dir,y-19.5*k-bob],[x+5.5*k*dir,y-10*k-bob],[x+2*k*dir,y-10*k-bob]],pal.T);
+    if(girl)for(const s of [-1,1])ELL(x+s*8*k,hy-1*k+Math.sin(ph*1.5+s)*.8,2.4*k,3*k,pal.h);           /* her pigtails */
+    ELL(x,hy,7.5*k,7.8*k,pal.s);                                                                       /* head - from above, the crown shows */
+    ELL(x,hy-2.2*k,8*k,6.2*k,pal.h);POLY([[x-7.5*k,hy-1*k],[x+7.5*k,hy-1*k],[x+6*k,hy+1.5*k],[x+3*k,hy],[x,hy+1.8*k],[x-3*k,hy],[x-6*k,hy+1.5*k]],pal.h);
+    ELL(x-2*k,hy-5*k,3*k,1.4*k,pal.H);
+    if(back){ELL(x,hy+1*k,7.6*k,7*k,pal.h);ELL(x-2*k,hy-3*k,3*k,1.6*k,pal.H);return;}                /* running away from us: the back of the head */
+    const fx=x+dir*1.6*k;for(const s of [-1,1]){ELL(fx+s*2.6*k,hy+3*k,.9*k,1.3*k,'#1a1020');PF(fx+s*2.6*k-.2*k,hy+2.2*k,.5,.5,'#fff');}  /* eyes */
+    ELL(fx-4.3*k,hy+4.8*k,1.4*k,.7*k,'rgba(255,120,130,.5)');ELL(fx+4.3*k,hy+4.8*k,1.4*k,.7*k,'rgba(255,120,130,.5)');
+    ELL(fx,hy+5.6*k,1.4*k,1*k,'#c84a4a');};                                                          /* laughing */
+  const kidsShot=e=>{const wind=5+Math.sin(e*1.7)*2.5;
+    c.imageSmoothingEnabled=true;c.drawImage(wall,20,140,104,40,-8,TOP,160,40);c.imageSmoothingEnabled=false;   /* the foot of the cliff, soft, far up the frame */
+    c.fillStyle='rgba(40,30,70,.25)';c.fillRect(0,TOP,W,40);
+    {const g=c.createLinearGradient(0,TOP+30,0,BOT);g.addColorStop(0,'#3a7438');g.addColorStop(1,'#58a44a');c.fillStyle=g;c.fillRect(0,TOP+30,W,BOT-TOP-30);}
+    for(let r=0,y=TOP+32;y<BOT;r++,y+=2+r*.08){const n=8+(r>>1);for(let i=0;i<n;i++){const x=(hash(i,r)*W+r*7)%W,lean=Math.sin(e*4+x*.08+r*.3)*(.4+(y-TOP)/200)-.4;  /* grass, finer far off */
+      PF(x+lean,y,.5,1+(y-TOP)/120,hash(r,i)<.5?'#2f6a2e':'#7ac862');if(hash(i+50,r)>.985)ELL(x,y+1,.9,.6,hash(i,r+9)<.5?'#ffffff':'#ffe27a');}}
+    /* the two of them, chasing round and round; the nearer one drawn last and a touch bigger */
+    const ks=[0,1].map(i=>{const a=e*1.9-i*1.9,x=70+Math.cos(a)*32,y=170+Math.sin(a)*14;return {x,y,dir:-Math.sin(a)>=0?1:-1,back:Math.cos(a)<-.35,ph:e*14+i*1.6,k:1.3+(y-156)/28*.3,i};}).sort((a,b)=>a.y-b.y);
+    for(const q of ks)kidBig(q.x,q.y,q.i?K2:K1,q.dir,q.ph,q.k,q.i===1,q.back);
+    /* the washing at the side, close to us, flapping in the wind */
+    const ly=x=>TOP+4+(x-86)*.2;for(let x=86;x<W;x+=.5)PF(x,ly(x),.5,.6,'#e8e0d0');
+    const flap=(x0,w,h,col,sh,seed)=>{const top=[[x0,ly(x0)],[x0+w,ly(x0+w)]],bot=[];
+      for(let i=6;i>=0;i--){const u=i/6,wv=Math.sin(e*7+u*4+seed)*2.2;bot.push([x0+u*w-wind-wv*.6,ly(x0+u*w)+h+wv]);}
+      POLY(top.concat(bot),col);const mid=bot.slice(2,5);POLY([[x0+w*.55,ly(x0+w*.55)],[x0+w,ly(x0+w)]].concat(bot.slice(0,3)),sh);
+      PF(x0+1,ly(x0)-1,1,2.5,'#c49a5a');PF(x0+w-2,ly(x0+w)-1,1,2.5,'#c49a5a');};
+    flap(96,20,44,'#f4efe8','#cfc6d6',0);flap(119,18,54,'#ff8ab0','#d8608a',1.7);flap(139,16,40,'#3a8aff','#2a6ad8',3.1);
+    for(let i=0;i<10;i++){const u=(e*(.5+hash(i,3)*.4)+hash(i,4))%1,x=W+6-u*(W+20),y=TOP+30+hash(i,5)*150+Math.sin(e*5+i)*4;  /* bits blowing past */
+      PF(x,y,1,.5,i%3?'#9ad86a':'#ffd2e0');}
+  };
   /* ---------- 0: the title card of a hero: his face out of the dark, two lines, a drum under each ---------- */
   const FACE=["...k.kk..kk.k...","..kkkkkkkkkkkk..",".kkkkkkkkkkkkkk.",".rrrrrrrrrrrrrrr",".RRRRRRRRRRRRRRR",".kssssssssssssk.",".sBBssssssssBBS.",".ssBBBssssBBBSS.",".sseWesssseWeSS.",".kssssssssssssk.",".ksssssSSSssssk.",".kKssssssssssKk.","..KsssdmmdsssK..","..KKssssssssKK..","...KKKKKKKKKK...","..gggGssssGggg..",".ggggggGGggggggg"];
   const FP={K:'#3a2418',k:'#2a1a14',r:'#e8344a',R:'#a81c30',s:'#f2b68a',S:'#b87a54',B:'#2a1a14',e:'#1a1020',W:'#ffffff',d:'#5a2a20',m:'#8a4a3a',g:'#f4efe8',G:'#c4bccd'};
@@ -4154,7 +4192,8 @@ function playStory(done){
   const lavaRow=(y,amp)=>{for(let x=0;x<W;x++){const w=Math.round(Math.sin(x*.28+E*4)*amp+Math.sin(x*.09-E*2.2)*amp),yy=y+w;P(x,yy,1,2,'#ffe27a');P(x,yy+2,1,4,'#ff8a1a');P(x,yy+6,1,BOT-yy,'#c8341a');}};
   const frame=now=>{if(ended)return;const raw=(now-t0)/1000,e=E=raw-INTRO,dt=1/60;c.clearRect(0,0,W,H);shx=shy=0;
     if(raw<INTRO)intro(raw);
-    else if(e<TALK){closeup(e);say('아내: 여보, 저 암벽 때문에\n빨래가 안 말라.');}  /* v110: her line, up close */
+    else if(e<KS){kidsShot(e);say('꺄르르— 잡아 봐라!');}  /* v111: the children, up close */
+    else if(e<TALK){closeup(e-KS);say('아내: 여보, 저 암벽 때문에\n빨래가 안 말라.');}  /* v110: her line, up close */
     else if(e<T3){ /* ---------- 1-3: the wall, the rumble, the split ---------- */
       let n=0;while(n<PT.length&&PT[n]<=e)n++;
       const since=n?e-PT[n-1]:9,calm=e<T1,side=(n+1)%2,punching=calm&&since<.16;
