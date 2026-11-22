@@ -3953,7 +3953,7 @@ function playStory(done){
   const KID_HD=pad(["...hhhhhh","..hhHHhhhh",".hhhhhhhhhh",".hhsssssshh",".hsessssesh",".hssssssssh","..bssllssb","...ssssss","..tttttttt",".stTttttTts",".s.tttttt.s","...tttttt","...uuuuuu","...uu..uu"],12);
   const KID_LEG=[pad(["...ss..ss","...kk..kk"],12),pad(["..ss....ss","..kk....kk"],12)];
   const KID=[".hhhh.","hhhhhh",".ssss.","sesses",".ssss.",".tttt.","tttttt",".tttt."];
-  const KX={s:'#f2b68a',e:'#1a1020',b:'#ff9a9a',l:'#c84a4a',u:'#2a2a44',k:'#2a1a14'},K1={...KX,h:'#2a1a14',H:'#5a3a2a',t:'#3a8aff',T:'#2a6ad8'},K2={...KX,h:'#7a3a1a',H:'#b0602a',t:'#ffd400',T:'#d8a800'};
+  const KX={s:'#f2b68a',e:'#1a1020',b:'#ff9a9a',l:'#c84a4a',u:'#2a2a44',k:'#2a1a14'},K1={...KX,h:'#16121a',H:'#3a3650',t:'#3a8aff',T:'#2a6ad8'},K2={...KX,h:'#16121a',H:'#3a3650',t:'#ffd400',T:'#d8a800'},K3={...KX,h:'#16121a',H:'#3a3650',t:'#5ac85a',T:'#3a9a3a'}; /* v113: three of them */
   const TOP=20,BOT=220,WY=200,GY=212,CX=72,FY=198;           /* bars, foot of the wall, his feet, centre, the tower floor */
   const INTRO=3.4,KS=2.4,TALK=5.2,GO=6.7,PT=[7.1,7.6,8.1,8.55,9.0,9.4,9.8],T1=10.3,T2=11.7,T3=12.7,T4=16.1,END=T4+3.9; /* her complaint, his answer, the blows, the rumble, the split, the fall, the landing */
   /* v105 the rock wall: a granite cliff (a Half Dome), painted once pixel by pixel. A sliver of sunset sky above, the sun
@@ -4137,6 +4137,7 @@ function playStory(done){
   /* v112 the children at play, up close and low: side-on, running flat out across a meadow of yellow flowers after a big
      beach ball, the trees behind gone soft, flowers rushing past in front */
   const KS1={h:'#16121a',H:'#3a3650',s:'#f6c9a0',S:'#d9a47a',t:'#3a8aff',T:'#2a62c8',u:'#5a7aa8',U:'#46628c',k:'#2a1a14'};
+  const KS3={h:'#16121a',H:'#3a3650',s:'#f6c9a0',S:'#d9a47a',t:'#5ac85a',T:'#3a9a3a',u:'#e8a040',U:'#c08030',k:'#2a1a14'};
   const KS2={h:'#16121a',H:'#3a3650',s:'#f6c9a0',S:'#d9a47a',t:'#ffd400',T:'#d8a800',u:'#ffd400',U:'#d8a800',k:'#c84a5a'};
   const seg2=(x0,y0,a,l)=>[x0+Math.sin(a)*l,y0+Math.cos(a)*l];
   const limb=(p,q,w,col)=>{const dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy)||1,nx=-dy/L*w/2,ny=dx/L*w/2;POLY([[p[0]+nx,p[1]+ny],[q[0]+nx,q[1]+ny],[q[0]-nx,q[1]-ny],[p[0]-nx,p[1]-ny]],col);ELL(q[0],q[1],w/2,w/2,col);};
@@ -4177,12 +4178,13 @@ function playStory(done){
       for(let i=0;i<5+(r>>1);i++){const x=((hash(i,r)*(W+30)-e*sp)%(W+30)+W+30)%(W+30)-15,y=y0+(hash(i+40,r)-.5)*(2+d*14),col=hash(r,i)<.78?'#ffd21a':hash(r,i)<.9?'#ffffff':'#c890e8';
         PF(x,y-sz*2,.5,sz*2+.5,'#4a8a34');ELL(x,y-sz*2,sz,sz*.8,col);if(sz>1.2)PF(x-.25,y-sz*2-.25,.5,.5,'#a86a10');}}
     /* the ball, rolling ahead of them, and the two of them after it */
-    const bx=116+Math.sin(e*1.3)*4,bh=Math.abs(Math.sin(e*4.2))*7,by=176-bh,rot=e*6;
+    const bx=124+Math.sin(e*1.3)*3,bh=Math.abs(Math.sin(e*4.2))*7,by=176-bh,rot=e*6;
     ELL(bx,178,9*(1-bh/30),2,'rgba(20,50,20,.3)');ELL(bx,by-9,9,9,'#fffaf0');
     for(let j=0;j<4;j++){const a=rot+j*Math.PI/2,c1=['#ffd21a','#ff4a4a','#3a8aff','#ffffff'][j];POLY([[bx,by-9],[bx+Math.cos(a)*9,by-9+Math.sin(a)*9],[bx+Math.cos(a+.9)*9,by-9+Math.sin(a+.9)*9]],c1);}
     ELL(bx,by-9,2,2,'#fffaf0');ELL(bx-3,by-13,2.4,1.6,'rgba(255,255,255,.7)');
-    kidSide(30+Math.sin(e*1.1)*3,168,KS2,e*13+1.2,1.6,true,false);                                        /* her, a step behind */
-    kidSide(76+Math.sin(e*1.3+1)*3,184,KS1,e*13,1.9,false,true);                                           /* him, reaching for the ball */
+    kidSide(18+Math.sin(e*1.6+2)*3,160,KS3,e*15+2.4,1.25,false,false);                                    /* the little one, trailing */
+    kidSide(48+Math.sin(e*1.1)*3,172,KS2,e*13+1.2,1.6,true,false);                                        /* her, a step behind */
+    kidSide(86+Math.sin(e*1.3+1)*3,186,KS1,e*13,1.9,false,true);                                           /* him, reaching for the ball */
     for(let i=0;i<6;i++){const x=((hash(i,77)*(W+60)-e*120)%(W+60)+W+60)%(W+60)-30,y=206+hash(i,78)*14;      /* big soft flowers right in front of the lens */
       c.globalAlpha=.55;ELL(x,y,5,4,'#ffd21a');ELL(x,y,2,1.6,'#e8a010');c.globalAlpha=1;}
   };
@@ -4252,9 +4254,11 @@ function playStory(done){
       /* the children run about in front, and freeze */
       {const ek=Math.min(e,T1),u=(ek*24)%240,x0=u<120?8+u:8+240-u,dir=u<120?1:-1,u2=((ek-.4)*24+240)%240,x02=u2<120?8+u2:8+240-u2,d2=u2<120?1:-1;
         /* when the ground shakes they run off the middle - one to mum, one to the washing - and freeze there */
-        const run=calm?0:Math.min(1,(e-T1)/.55),ez=1-(1-run)*(1-run),x=Math.round(x0+(28-x0)*ez),x2=Math.round(x02+(100-x02)*ez),moving=!calm&&run<1;
+        const u3=((ek-.8)*20+240)%240,x03=u3<120?8+u3:8+240-u3,d3=u3<120?1:-1;
+        const run=calm?0:Math.min(1,(e-T1)/.55),ez=1-(1-run)*(1-run),x=Math.round(x0+(28-x0)*ez),x2=Math.round(x02+(100-x02)*ez),x3=Math.round(x03+(40-x03)*ez),moving=!calm&&run<1;
+        kid(K3,x3,219,calm?d3:moving?(40<x03?-1:1):-1,calm||moving);
         kid(K1,x,216,calm?dir:moving?(28<x0?-1:1):1,calm||moving);kid(K2,x2,218,calm?d2:moving?(100<x02?-1:1):-1,calm||moving);
-        if(!calm&&!moving&&((e*6)|0)%2){sbang(x+3,203);sbang(x2+3,205);}}
+        if(!calm&&!moving&&((e*6)|0)%2){sbang(x+3,203);sbang(x2+3,205);sbang(x3+3,206);}}
       chips=chips.filter(p=>(p.l-=dt)>0);for(const p of chips){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=260*dt;P(p.x,p.y,1,1,p.l>.35?'#b4b4c0':'#62626e');}
       if(e>=T1&&Math.random()<.5)chips.push({x:Math.random()*W,y:TOP,vx:0,vy:40,l:.9}); /* grit shaken off the wall */
       if(e<TALK)say('아내: 여보, 저 암벽 때문에\n빨래가 안 말라.');
