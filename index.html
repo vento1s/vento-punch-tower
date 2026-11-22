@@ -4134,43 +4134,57 @@ function playStory(done){
     if(e<1.7&&((e*8)|0)%2){ELL(X+1,Y+11.5,1.8,1.3,'#8a2a3a');PF(X,Y+12,2,.5,'#e86a7a');}                  /* talking */
     else{PF(X-1,Y+11,4,.5,'#b04a4a');PF(X,Y+11.5,2,.5,'#e08a8a');}                                         /* a pout */
   };
-  /* v111 the children at play, up close: seen from a grown-up's height, looking a little down on them as they chase each
-     other round the yard; the washing on the line at the side snapping in the wind */
-  const kidBig=(x,y,pal,dir,ph,k,girl,back)=>{const bob=Math.abs(Math.sin(ph))*2*k,hy=y-26*k-bob,sw=Math.sin(ph);
-    ELL(x,y,8*k,2.4*k,'rgba(16,40,20,.35)');                                                         /* shadow on the grass */
-    for(const s of [-1,1]){const fx=x+s*1.6*k+sw*s*4*k,fy=y-1*k-(s*sw>0?1.5*k:0);                 /* legs, running */
-      POLY([[x+s*2.2*k-1.2*k,y-9*k-bob],[x+s*2.2*k+1.2*k,y-9*k-bob],[fx+1.1*k,fy],[fx-1.1*k,fy]],pal.s);ELL(fx,fy,2*k,1.2*k,pal.k);}
-    POLY([[x-5*k,y-11*k-bob],[x+5*k,y-11*k-bob],[x+(girl?6.5:5.5)*k,y-7*k-bob],[x-(girl?6.5:5.5)*k,y-7*k-bob]],girl?pal.t:pal.u); /* shorts, or a skirt */
-    for(const s of [-1,1]){const hx=x+s*6.5*k-sw*s*3*k*dir,hy2=y-13*k-bob-(s*sw*dir<0?3*k:0);          /* arms swinging */
-      POLY([[x+s*4.5*k,y-19*k-bob],[x+s*5.5*k,y-18*k-bob],[hx+1*k,hy2],[hx-1*k,hy2]],pal.s);ELL(hx,hy2,1.3*k,1.3*k,pal.s);}
-    POLY([[x-5*k,y-19.5*k-bob],[x+5*k,y-19.5*k-bob],[x+5.5*k,y-10*k-bob],[x-5.5*k,y-10*k-bob]],pal.t);  /* shirt */
-    POLY([[x+1*k*dir,y-19.5*k-bob],[x+5*k*dir,y-19.5*k-bob],[x+5.5*k*dir,y-10*k-bob],[x+2*k*dir,y-10*k-bob]],pal.T);
-    if(girl)for(const s of [-1,1])ELL(x+s*8*k,hy-1*k+Math.sin(ph*1.5+s)*.8,2.4*k,3*k,pal.h);           /* her pigtails */
-    ELL(x,hy,7.5*k,7.8*k,pal.s);                                                                       /* head - from above, the crown shows */
-    ELL(x,hy-2.2*k,8*k,6.2*k,pal.h);POLY([[x-7.5*k,hy-1*k],[x+7.5*k,hy-1*k],[x+6*k,hy+1.5*k],[x+3*k,hy],[x,hy+1.8*k],[x-3*k,hy],[x-6*k,hy+1.5*k]],pal.h);
-    ELL(x-2*k,hy-5*k,3*k,1.4*k,pal.H);
-    if(back){ELL(x,hy+1*k,7.6*k,7*k,pal.h);ELL(x-2*k,hy-3*k,3*k,1.6*k,pal.H);return;}                /* running away from us: the back of the head */
-    const fx=x+dir*1.6*k;for(const s of [-1,1]){ELL(fx+s*2.6*k,hy+3*k,.9*k,1.3*k,'#1a1020');PF(fx+s*2.6*k-.2*k,hy+2.2*k,.5,.5,'#fff');}  /* eyes */
-    ELL(fx-4.3*k,hy+4.8*k,1.4*k,.7*k,'rgba(255,120,130,.5)');ELL(fx+4.3*k,hy+4.8*k,1.4*k,.7*k,'rgba(255,120,130,.5)');
-    ELL(fx,hy+5.6*k,1.4*k,1*k,'#c84a4a');};                                                          /* laughing */
-  const kidsShot=e=>{const wind=5+Math.sin(e*1.7)*2.5;
-    c.imageSmoothingEnabled=true;c.drawImage(wall,20,140,104,40,-8,TOP,160,40);c.imageSmoothingEnabled=false;   /* the foot of the cliff, soft, far up the frame */
-    c.fillStyle='rgba(40,30,70,.25)';c.fillRect(0,TOP,W,40);
-    {const g=c.createLinearGradient(0,TOP+30,0,BOT);g.addColorStop(0,'#3a7438');g.addColorStop(1,'#58a44a');c.fillStyle=g;c.fillRect(0,TOP+30,W,BOT-TOP-30);}
-    for(let r=0,y=TOP+32;y<BOT;r++,y+=2+r*.08){const n=8+(r>>1);for(let i=0;i<n;i++){const x=(hash(i,r)*W+r*7)%W,lean=Math.sin(e*4+x*.08+r*.3)*(.4+(y-TOP)/200)-.4;  /* grass, finer far off */
-      PF(x+lean,y,.5,1+(y-TOP)/120,hash(r,i)<.5?'#2f6a2e':'#7ac862');if(hash(i+50,r)>.985)ELL(x,y+1,.9,.6,hash(i,r+9)<.5?'#ffffff':'#ffe27a');}}
-    /* the two of them, chasing round and round; the nearer one drawn last and a touch bigger */
-    const ks=[0,1].map(i=>{const a=e*1.9-i*1.9,x=70+Math.cos(a)*32,y=170+Math.sin(a)*14;return {x,y,dir:-Math.sin(a)>=0?1:-1,back:Math.cos(a)<-.35,ph:e*14+i*1.6,k:1.3+(y-156)/28*.3,i};}).sort((a,b)=>a.y-b.y);
-    for(const q of ks)kidBig(q.x,q.y,q.i?K2:K1,q.dir,q.ph,q.k,q.i===1,q.back);
-    /* the washing at the side, close to us, flapping in the wind */
-    const ly=x=>TOP+4+(x-86)*.2;for(let x=86;x<W;x+=.5)PF(x,ly(x),.5,.6,'#e8e0d0');
-    const flap=(x0,w,h,col,sh,seed)=>{const top=[[x0,ly(x0)],[x0+w,ly(x0+w)]],bot=[];
-      for(let i=6;i>=0;i--){const u=i/6,wv=Math.sin(e*7+u*4+seed)*2.2;bot.push([x0+u*w-wind-wv*.6,ly(x0+u*w)+h+wv]);}
-      POLY(top.concat(bot),col);const mid=bot.slice(2,5);POLY([[x0+w*.55,ly(x0+w*.55)],[x0+w,ly(x0+w)]].concat(bot.slice(0,3)),sh);
-      PF(x0+1,ly(x0)-1,1,2.5,'#c49a5a');PF(x0+w-2,ly(x0+w)-1,1,2.5,'#c49a5a');};
-    flap(96,20,44,'#f4efe8','#cfc6d6',0);flap(119,18,54,'#ff8ab0','#d8608a',1.7);flap(139,16,40,'#3a8aff','#2a6ad8',3.1);
-    for(let i=0;i<10;i++){const u=(e*(.5+hash(i,3)*.4)+hash(i,4))%1,x=W+6-u*(W+20),y=TOP+30+hash(i,5)*150+Math.sin(e*5+i)*4;  /* bits blowing past */
-      PF(x,y,1,.5,i%3?'#9ad86a':'#ffd2e0');}
+  /* v112 the children at play, up close and low: side-on, running flat out across a meadow of yellow flowers after a big
+     beach ball, the trees behind gone soft, flowers rushing past in front */
+  const KS1={h:'#16121a',H:'#3a3650',s:'#f6c9a0',S:'#d9a47a',t:'#3a8aff',T:'#2a62c8',u:'#5a7aa8',U:'#46628c',k:'#2a1a14'};
+  const KS2={h:'#16121a',H:'#3a3650',s:'#f6c9a0',S:'#d9a47a',t:'#ffd400',T:'#d8a800',u:'#ffd400',U:'#d8a800',k:'#c84a5a'};
+  const seg2=(x0,y0,a,l)=>[x0+Math.sin(a)*l,y0+Math.cos(a)*l];
+  const limb=(p,q,w,col)=>{const dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy)||1,nx=-dy/L*w/2,ny=dx/L*w/2;POLY([[p[0]+nx,p[1]+ny],[q[0]+nx,q[1]+ny],[q[0]-nx,q[1]-ny],[p[0]-nx,p[1]-ny]],col);ELL(q[0],q[1],w/2,w/2,col);};
+  const kidSide=(x,y,P2,ph,k,girl,reach)=>{const bob=Math.abs(Math.cos(ph))*1.6*k,hip=[x,y-10.5*k-bob],sh=[x+2.6*k,y-19*k-bob];
+    ELL(x+1*k,y,8*k,1.8*k,'rgba(20,50,20,.3)');
+    const leg=(phs,col,shoe)=>{const th=Math.sin(phs)*.95,bend=.15+1.1*Math.max(0,Math.sin(phs+1.7)),kn=seg2(hip[0],hip[1],th,5.2*k),ft=seg2(kn[0],kn[1],th-bend,5*k);
+      limb(hip,kn,3*k,col);limb(kn,ft,2.6*k,col);ELL(ft[0]+1.2*k,ft[1],2.2*k,1.2*k,shoe);};
+    const arm=(phs,col,rch)=>{const ua=rch?2.2:-Math.sin(phs)*1.1,el=seg2(sh[0],sh[1],ua,4.2*k),ha=seg2(el[0],el[1],ua+(rch?.2:1.3),3.6*k);limb(sh,el,2.4*k,col);limb(el,ha,2.2*k,P2.s);};
+    leg(ph+Math.PI,P2.S,'#1a1014');arm(ph,P2.T,false);                                                /* the far leg and arm, in shade */
+    if(girl)POLY([[hip[0]-5.5*k,hip[1]+2.5*k],[sh[0]-4*k,sh[1]],[sh[0]+4.5*k,sh[1]+1*k],[hip[0]+6*k,hip[1]+3*k]],P2.t);       /* her dress */
+    else{POLY([[hip[0]-3.6*k,hip[1]-1.5*k],[hip[0]+4*k,hip[1]-1*k],[hip[0]+3.6*k,hip[1]+2.8*k],[hip[0]-3.4*k,hip[1]+2.6*k]],P2.u);}
+    leg(ph,P2.s,P2.k);                                                                                      /* the near leg */
+    if(!girl)POLY([[hip[0]-3.8*k,hip[1]-2*k],[sh[0]-3.4*k,sh[1]],[sh[0]+3.8*k,sh[1]+.6*k],[hip[0]+4*k,hip[1]-1.4*k]],P2.t);  /* his T-shirt */
+    POLY([[sh[0]+.6*k,sh[1]+.3*k],[sh[0]+3.8*k,sh[1]+.6*k],[hip[0]+(girl?6:4)*k,hip[1]+(girl?3:-1.4)*k],[hip[0]+1.5*k,hip[1]]],P2.T);
+    const hx=sh[0]+2.4*k,hy=sh[1]-6.6*k+Math.sin(ph*2)*.3*k;
+    if(girl)for(const d of [0,1]){const sw=Math.sin(ph+d)*1.5*k;ELL(hx-6.5*k-d*1.5*k,hy+1*k+d*3*k+sw*.3,2.2*k,2.8*k,P2.h);ELL(hx-5*k,hy-1*k+d*3*k,.9*k,.9*k,'#ff5a8a');}  /* pigtails flying */
+    ELL(hx,hy,6.6*k,6.8*k,P2.s);                                                                           /* the head, three-quarters toward us */
+    ELL(hx-1.6*k,hy-2*k,6.4*k,5.4*k,P2.h);POLY([[hx-7*k,hy-1*k],[hx-4*k,hy+5*k],[hx-6.8*k,hy+3*k]],P2.h);   /* black hair */
+    POLY([[hx-2*k,hy-6.5*k],[hx+6.6*k,hy-3.4*k],[hx+6*k,hy-.6*k],[hx+4*k,hy-2*k],[hx+2.4*k,hy-.4*k],[hx+.6*k,hy-2.2*k],[hx-1*k,hy-.2*k]],P2.h); /* the fringe, blown back a little */
+    ELL(hx-3*k,hy-5*k,2.6*k,1*k,P2.H);ELL(hx-2.4*k,hy+1.6*k,1.3*k,1.6*k,P2.s);ELL(hx-2.4*k,hy+1.6*k,.7*k,.9*k,P2.S); /* shine, ear */
+    for(const ex of [hx+1.6*k,hx+4.6*k]){PF(ex-.8*k,hy+1.2*k,1.6*k,.5,'#1a1014');PF(ex-1.1*k,hy+1.6*k,.5,.5,'#1a1014');PF(ex+.7*k,hy+1.6*k,.5,.5,'#1a1014');} /* eyes squeezed shut with laughing */
+    ELL(hx+.6*k,hy+3.6*k,1.3*k,.6*k,'rgba(255,110,120,.5)');ELL(hx+5.4*k,hy+3.4*k,.8*k,.5*k,'rgba(255,110,120,.5)');
+    ELL(hx+3.6*k,hy+4.6*k,1.1*k,.9*k,'#a8283a');PF(hx+3*k,hy+4*k,1.2*k,.5,'#fff');                     /* a big open laugh */
+    PF(hx+6.4*k,hy+1.8*k,.5,1*k,P2.S);
+    arm(ph+Math.PI,P2.t,reach);};                                                                           /* the near arm, out for the ball */
+  let fieldBg=null;
+  const kidsShot=e=>{
+    if(!fieldBg){fieldBg=document.createElement('canvas');fieldBg.width=48;fieldBg.height=30;const g=fieldBg.getContext('2d');   /* painted tiny, shown big = out of focus */
+      const sk=g.createLinearGradient(0,0,0,12);sk.addColorStop(0,'#9ac8f0');sk.addColorStop(1,'#d8ecf4');g.fillStyle=sk;g.fillRect(0,0,48,30);
+      g.drawImage(wall,0,40,144,80,-4,0,56,14);
+      for(let i=0;i<26;i++){g.fillStyle=['#2e5a2a','#3c6e30','#4a7e34','#24481f'][i%4];g.beginPath();g.ellipse(hash(i,1)*52-2,10+hash(i,2)*10,3+hash(i,3)*4,3+hash(i,4)*3,0,0,7);g.fill();}
+      g.fillStyle='#86b450';g.fillRect(0,19,48,11);}
+    const pan=e*10;
+    c.imageSmoothingEnabled=true;c.drawImage(fieldBg,0,0,48,30,-((pan*.15)%8)-8,TOP-6,176,110);c.imageSmoothingEnabled=false;
+    {const g=c.createLinearGradient(0,TOP+64,0,BOT);g.addColorStop(0,'#8ab654');g.addColorStop(.4,'#6aa244');g.addColorStop(1,'#4a8a34');c.fillStyle=g;c.fillRect(0,TOP+64,W,BOT-TOP-64);}
+    const HZ=TOP+64;
+    for(let r=0;r<30;r++){const d=r/29,y0=HZ+d*d*(BOT-HZ),sp=(8+d*70),sz=.5+d*1.6;                             /* a meadow of flowers, rushing by faster up close */
+      for(let i=0;i<5+(r>>1);i++){const x=((hash(i,r)*(W+30)-e*sp)%(W+30)+W+30)%(W+30)-15,y=y0+(hash(i+40,r)-.5)*(2+d*14),col=hash(r,i)<.78?'#ffd21a':hash(r,i)<.9?'#ffffff':'#c890e8';
+        PF(x,y-sz*2,.5,sz*2+.5,'#4a8a34');ELL(x,y-sz*2,sz,sz*.8,col);if(sz>1.2)PF(x-.25,y-sz*2-.25,.5,.5,'#a86a10');}}
+    /* the ball, rolling ahead of them, and the two of them after it */
+    const bx=116+Math.sin(e*1.3)*4,bh=Math.abs(Math.sin(e*4.2))*7,by=176-bh,rot=e*6;
+    ELL(bx,178,9*(1-bh/30),2,'rgba(20,50,20,.3)');ELL(bx,by-9,9,9,'#fffaf0');
+    for(let j=0;j<4;j++){const a=rot+j*Math.PI/2,c1=['#ffd21a','#ff4a4a','#3a8aff','#ffffff'][j];POLY([[bx,by-9],[bx+Math.cos(a)*9,by-9+Math.sin(a)*9],[bx+Math.cos(a+.9)*9,by-9+Math.sin(a+.9)*9]],c1);}
+    ELL(bx,by-9,2,2,'#fffaf0');ELL(bx-3,by-13,2.4,1.6,'rgba(255,255,255,.7)');
+    kidSide(30+Math.sin(e*1.1)*3,168,KS2,e*13+1.2,1.6,true,false);                                        /* her, a step behind */
+    kidSide(76+Math.sin(e*1.3+1)*3,184,KS1,e*13,1.9,false,true);                                           /* him, reaching for the ball */
+    for(let i=0;i<6;i++){const x=((hash(i,77)*(W+60)-e*120)%(W+60)+W+60)%(W+60)-30,y=206+hash(i,78)*14;      /* big soft flowers right in front of the lens */
+      c.globalAlpha=.55;ELL(x,y,5,4,'#ffd21a');ELL(x,y,2,1.6,'#e8a010');c.globalAlpha=1;}
   };
   /* ---------- 0: the title card of a hero: his face out of the dark, two lines, a drum under each ---------- */
   const FACE=["...k.kk..kk.k...","..kkkkkkkkkkkk..",".kkkkkkkkkkkkkk.",".rrrrrrrrrrrrrrr",".RRRRRRRRRRRRRRR",".kssssssssssssk.",".sBBssssssssBBS.",".ssBBBssssBBBSS.",".sseWesssseWeSS.",".kssssssssssssk.",".ksssssSSSssssk.",".kKssssssssssKk.","..KsssdmmdsssK..","..KKssssssssKK..","...KKKKKKKKKK...","..gggGssssGggg..",".ggggggGGggggggg"];
