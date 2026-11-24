@@ -497,8 +497,8 @@ body.phone{padding:0;background:#000}body.phone #stage{box-shadow:none}body.appf
 .newsk.coach em{animation:none}
 /* hint bar: the sentence for whatever tip is up, just above the fists (same face and gold rim as the cards) */
 .hintbar{position:absolute;left:0;right:0;top:calc(84 / var(--H,256) * 100%);margin:0 auto;width:max-content;max-width:calc(100% - 16px);box-sizing:border-box;
-  padding:5px 10px 4px;background:rgba(13,10,8,.88);box-shadow:0 2px 0 var(--gold),0 -2px 0 var(--gold);pointer-events:none;z-index:2;
-  font-family:var(--f-display);font-size:clamp(12px,4.4cqw,17px);line-height:1.2;color:var(--gold);text-align:center}
+  padding:6px 12px 5px;background:rgba(13,10,8,.5);border-radius:4px;pointer-events:none;z-index:2; /* v129: bigger words, no gold rules, see-through */
+  font-family:var(--f-display);font-size:clamp(15px,5.6cqw,22px);line-height:1.2;color:var(--gold);text-align:center;text-shadow:0 2px 0 #0d0a08}
 .hintbar[hidden]{display:none}
 .hintbar.hi{top:calc(126 / var(--H,256) * 100%)}
 /* NEW! card when a move opens up mid-run (the game is frozen behind it) */
