@@ -1074,6 +1074,7 @@ function spawnBolt(feet){if(bolts.length>5)return;
   for(let i=0;i<4;i++){bx+=d*(4+Math.random()*6);by+=6+Math.random()*8;br.push([bx,by]);}
   bolts.push({pts,br,life:.12,max:.12});flashO=Math.max(flashO,.14);flashCol='#bff6ff';shake=Math.max(shake,3);
   if(AC&&soundOn){const t=AC.currentTime;noise(t,.09,3200,1.2,.14,'highpass');}}
+const PW_COL=['#ffffff','#7af0ff','#c890ff','#ff8a1a'];
 let ghosts=[],dashCD=0,dashT=0,powerLv=0,echoFX=[0,0],lastAltV=false; /* v88 power-up: powerLv 1 = every punch is followed by a second (the 'echo') */
 const ECHO_MS=70;
 let dashFar=false; /* the try-out has just moved on to the dash: put the next weak point on the far side */
@@ -1306,13 +1307,16 @@ function digItem(s){const it=s.dig&&s.dig.item;if(!it||it.got||s.digX==null)retu
   it.got=true;const wx=it.x,wy=-s.n*FH+10-it.dy;
   for(let i=0;i<22;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.4+Math.random()*.4,col:i%3?'#ffd400':'#ffffff',s:i%4?1:2,g:120});}
   rings.push({x:wx,y:wy,life:.4,max:.4,big:true,col:'#ffd400'});
-  if(it.k==='power'&&powerLv<1){powerLv=1;pop(clamp(wx,WALL+40,W-WALL-40),wy-8,'DOUBLE PUNCH!','#7af0ff',2); /* v88 */
+  if(it.k==='power'&&powerLv<3){powerLv++;pop(clamp(wx,WALL+40,W-WALL-40),wy-8,['','DOUBLE PUNCH!','SHOCK WAVE!','FIRE FIST!'][powerLv],PW_COL[powerLv],2); /* v124: three steps, like a shmup */
     for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,sp=50+Math.random()*80;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.5,col:i%2?'#7af0ff':'#ffffff',s:2,g:60});}
     if(AC){const a=AC.currentTime;[523,784,1047,1568].forEach((f,i)=>tone(a+i*.06,.1,f,f,'square',.07));}}
+  else if(it.k==='power'){addTime(2*tMul());pop(clamp(wx,WALL+40,W-WALL-40),wy-8,'MAX POWER! +TIME','#ff8a1a',2);if(AC){const a=AC.currentTime;[784,1047,1568].forEach((f,i)=>tone(a+i*.06,.1,f,f,'square',.07));}}
   else if(it.k==='king'&&skillOn('king')&&kingLevel<KL_NEED.length){kingLevel++;superReady=true;if(kingLevel>=KL_NEED.length)altStreak=0;sfx.ready();kingLevelUp(kingLevel);pop(clamp(wx,WALL+34,W-WALL-34),wy-8,'KING +1!','#ffd400',2);}
   else{addTime(1.5*tMul());pop(clamp(wx,WALL+34,W-WALL-34),wy-8,'BONUS!','#ffd400',2);if(AC){const a=AC.currentTime;tone(a,.08,880,880,'square',.08);tone(a+.08,.12,1320,1320,'square',.08);}}
   vibe([20,30,40]);}
-function ensureSlabs(upTo){while(slabs.length<=upTo)slabs.push(makeSlab(slabs.length));}
+function ensureSlabs(upTo){while(slabs.length<=upTo){const s=makeSlab(slabs.length);if(kingT>0)unEarth(s);slabs.push(s);}}
+/* v124: no earth during SHOW TIME - any earth ahead turns to plain brick (its buried item goes with it) */
+function unEarth(s){if(!s||s.type!=='thick'||s.broken||s.digX!=null)return;s.type='brick';s.dig=null;const hp=Math.max(6,Math.round((10+Math.floor(s.n*.8))*D.hp));s.hp=s.max=hp;}
 function newGame(){
   preloadDieVoice();
   tiltZero=tiltG==null?0:tiltG; // whatever angle you hold the phone at now counts as level
@@ -1416,7 +1420,8 @@ function hit(side,power,echo){
   // 10th weak hit in a row and 5 from the 20th. Mashing elsewhere needs 3-5x the punches.
   let dmg;
   if(weak){const ws=weakStreak+1;dmg=3+(ws>=10?1:0)+(ws>=20?1:0)+(judge&&judge.at===t&&judge.g===0?1:0);if(charged)dmg=Math.ceil(dmg*(1+2*power));if(kingT>0)dmg=Math.ceil(dmg*(KT_DMG0+KT_DMG*kingPw));} // PERFECT: +1
-  else dmg=s.type==='vibranium'||(s.practice&&s.n<practiceTo&&!onWeak)?0:charged?Math.ceil(1+3*power):1; /* practice floors: only the weak point gives */
+  else dmg=(s.type==='vibranium'&&powerLv<3)||(s.practice&&s.n<practiceTo&&!onWeak)?0:charged?Math.ceil(1+3*power):1;
+  if(powerLv>=3&&(s.type==='stone'||s.type==='vibranium')&&dmg>0)dmg=Math.ceil(dmg*(s.type==='stone'?1.6:2)); /* v124 FIRE FIST: hard walls go down like brick */ /* practice floors: only the weak point gives */
   const crit=false;
   if(fever>0)dmg*=2;
   if(orbs.length&&dmg>0){const v=dmg*(1+PET_ATK*orbs.length);dmg=Math.floor(v)+(Math.random()<v-Math.floor(v)?1:0);} // fire pets: +5% each (rounded by chance, exact on average)
@@ -1431,6 +1436,8 @@ function hit(side,power,echo){
   /* the last blow has to land on the weak point: mashing anywhere else wears a block down to 1, never through it */
   if(!onWeak&&kingT<=0&&s.wT>=1&&s.hp-dmg<=0){dmg=Math.max(0,s.hp-1);
     s.lockAt=t;} /* at 1 HP the miss just 'tings' off (WEAK ONLY), see below */
+  if(powerLv>=2&&!echo&&dmg>0){const up=slabs[s.n+1];if(up&&!up.broken&&up.type!=='thick'&&up.type!=='boss'){up.hp=Math.max(1,up.hp-Math.ceil(dmg*.5));up.flash=Math.max(up.flash,.45);up.bump=1;}} /* v124 SHOCK WAVE: half the blow carries to the wall above (it never breaks it on its own) */
+  if(powerLv>=3&&!echo)for(let i=0;i<5;i++)parts.push({x:fx+(Math.random()-.5)*8,y:fy+4,vx:(Math.random()-.5)*50,vy:-20-Math.random()*50,life:.35,max:.35,s:2,g:-30,fire:true});
   s.hp-=dmg;s.flash=weak||charged?1:.6;s.bump=weak?4:charged?2+2*power:crit?3:1;
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;
   const c=slabCol(s);
@@ -1517,7 +1524,7 @@ function startKingTime(lv,pw,cutinShown){
   for(let i=0;i<40;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*140,l=.5+Math.random()*.4;
     parts.push({x:pl.x,y:pl.feet-12,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:l,max:l,s:2,g:40,col:i%3?'#ff8a1a':'#ffd400'});}
   showFrom=pl.level;}
-function beginShow(){kingT=kingTmax;showFrom=pl.level;showBrk=0;brkFX=[];vibe(30);showFanfare();for(let i=0;i<46;i++)confetti(true);}
+function beginShow(){kingT=kingTmax;{const n0=tgtN();for(let k=0;k<80;k++)unEarth(slabs[n0+k]);}showFrom=pl.level;showBrk=0;brkFX=[];vibe(30);showFanfare();for(let i=0;i<46;i++)confetti(true);}
 // SHOW TIME stage dressing: a row of fans seen from behind at the bottom, cheering with their arms up,
 // a little fanfare, and confetti shooting up from below (same colours as the PUSH button's shards)
 const CONF_COL=['#e8344a','#ff6a7a','#ffd400','#f4efe8','#ff8a1a','#c8c0d0'];
@@ -1696,7 +1703,7 @@ function updateSuper(dt){
 const BURN_LIVES=2,BURN_SAFE=1.3,DIE_CHAR=.55; // 3rd touch: white-hot, burnt black for DIE_CHAR seconds, then he drops into the lava
 function lavaBurn(){
   if(timeUp||burns>=BURN_LIVES){die();return;}
-  burns++;burnT=BURN_SAFE;if(powerLv>0){powerLv=0;pop(W/2,pl.feet-60,'POWER DOWN','#7af0ff',1);} /* v88 */
+  burns++;burnT=BURN_SAFE;if(powerLv>0){powerLv--;pop(W/2,pl.feet-60,'POWER DOWN','#7af0ff',1);} /* v124: one step down, not all the way */ /* v88 */
   {const d=Math.random()<.5?-1:1;cloth.push(burns===1?{rows:PANTS_FLY,x:pl.x,y:pl.feet-4,vx:d*(30+Math.random()*25),vy:-170,life:1.4}:{rows:TOP_FLY,x:pl.x,y:pl.feet-9,vx:d*(30+Math.random()*25),vy:-190,life:1.5});} /* the burning clothes fly off */
   playClip(BURN_VOICES[Math.min(burns,BURN_VOICES.length)-1],1.56);vibe([40,30,80]);shake=8;flashO=.5;flashCol='#ff7a1a';
   if(AC){const t=AC.currentTime;noise(t,.35,1400,.8,.35,'bandpass',300);tone(t,.25,220,880,'square',.08);}
@@ -2815,7 +2822,7 @@ function drawClassicFists(){
     if(hit){ctx.globalAlpha=.8;for(let k=0;k<3;k++)R(x0+6+k*10,y0-6-(k%2)*2,2,4,'#fff3a0');}  // little speed ticks above the fist
     if(echoFX[sd]>0){const e=echoFX[sd];ctx.globalAlpha=e*.65;ctx.drawImage(sprCanvas(SP,null,'#7af0ff'),x0+(sd?-5:5),y0-4-Math.round(10*e)); /* v88: the second punch, a cyan afterimage like the dash */
       ctx.globalAlpha=e*.35;ctx.drawImage(sprCanvas(SP,null,'#ffffff'),x0+(sd?-5:5),y0-4-Math.round(10*e));}
-    if(powerLv>=1&&mode==='play'){ctx.globalAlpha=1;text('x2',sd?x0+2:x0+w*sc-2,y0+2,1,'#7af0ff',sd?'l':'r','#0d0a08');}
+    if(powerLv>=1&&mode==='play'){ctx.globalAlpha=1;text(['','x2','x2+','x2F'][powerLv],sd?x0+2:x0+w*sc-2,y0+2,1,PW_COL[powerLv],sd?'l':'r','#0d0a08');}
     if(mashOpen()){ctx.globalAlpha=1;hudFlames(x0+w*sc/2,y0+14,w*sc*.9,26);hudFlames(x0+w*sc/2,y0+4,w*sc*.6,12);}
     if(maxed){ctx.globalAlpha=.85;blueFlames(x0+w*sc/2,y0+6,w*sc*.7,10,10);ctx.globalAlpha=1;}           // and a few in front
   }
