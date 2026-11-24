@@ -4312,7 +4312,8 @@ function playStory(done){
   const HANDU=[".o.o.o.o", "ohosohoh", "osososos", "osssssso", "ossssSSo", ".osssSo.", ".ossSSo."];
   const FACEF=["..k.kk.kk.kk.k..", "..kkkkkkkkkkkk..", ".kkkkkkkkkkkkkk.", ".rrrrrrrrrrrrrrr", ".RRRRRRRRRRRRRRR", ".kBBsssssssBBsk.", ".ksssssssssssSk.", ".ssWWssssssWWSS.", ".sWeWssssssWeWS.", ".ssWWssssssWWSS.", ".ksssssSSSssssk.", ".kKssssssssssKk.", "..KssssddsssSK..", "..KKsssddssKKK..", "...KKKKKKKKKK...", "..gggGssssGggg..", ".ggggggGGggggggg"];
   const DP={D:'#a86a48',o:'#6a3a24',s:'#f2b68a',S:'#c88a60',h:'#ffd8c0',t:'#f4efe8',T:'#c4bccd',k:'#1e1418',K:'#3a2a2a',r:'#e8344a',R:'#a81c30',d:'#a86a48'};
-  const FISTB=["...oooo.oooo.......", "..ohhsoohhsoo......", ".ohhssoohssooooo...", ".osssSoosssoohhso..", ".osssSoosSSoohsSo..", ".oDDDDoDDDDooSSSo..", "..oooooooooooooo...", ".ohhssssssssssSSo..", "oohsssssssssssSSo..", "ohhssssDsssDssSSo..", "ohsssssDsssDsSSSo..", "osssssssssssssSSo..", ".oSssssssssssSSo...", "..ottttttttttTTo...", "..oTtTtTtTtTtTTo...", "..ottttttttttTTo...", "..ossssssssssSSo...", "..osssssssssSSSo...", "..osssssssssSSSo..."];  /* v121: knuckles and folded fingers, thumb tucked - not a loaf of bread */
+  const FISTB=["..ooo.ooo.ooo.ooo..", ".ohhsohhsohhsohhso.", ".ohssohssohssohsSo.", ".osssosssosssosSSo.", ".oDDDoDDDoDDDoDDDo.", "..ooooooooooooooo..", "oo.ohssssssssssSo..", "ohoohsssssssssSSo..", "ohsosssDsssDssSSo..", "ossossssDsssDsSSo..", ".oSSssssssssssSSo..", "..oosssssssssSSo...", "...ottttttttttTo...", "...oTtTtTtTtTtTo...", "...ottttttttttTo...", "...osssssssssSSo...", "...osssssssssSSo...", "...ossssssssSSSo..."];  /* v122: four fingers and a thumb */
+  const HANDB=[".o.o.o.o..", "ohohohoh..", "ososososo.", "osssssssho", "osssssssso", "ossssssSo.", ".osssSSo..", "..oSSSo..."];  /* v121: knuckles and folded fingers, thumb tucked - not a loaf of bread */
   const FISTS=[".ooo.","ohhso","osdSo","ottTo",".ooo."];
   const SHLD=["..........k.kk.k..........",".........kkkkkkkk.........","........kkkkkkkkkk........","........kKkkkkkkkk........","........rrrrrrrrrr........","........RRRRRrRRRRrrR.....",".......skkkkkRkkkks.rRR...",".......skkkkkkkkkks..RR...","........Kkkkkkkkkk.....R..","........KKkkkkkkKK........",".........KsssssSK.........","..........sssSSS..........","....sssssssssSSSSSSSS.....","..sssssssssssSSSSSSSSSS...",".ssssssssSsssSSsSSSSSSSS..",".sssssssSssssSSSsSSSSSSS..","sssssssSsssssSSSSsSSSSSSS.","ssssssssssssSSSSSSSSSSSSSS","sssssssssssSSdSSSSSSSSSSSS","ssssssssssSSSdSSSSSSSSSSSS","sssssssssSSSSdSSSSSSSSSSSS","ssssssssSSSSSdSSSSSSSSSSSS"];
   let psOut=0;
@@ -4354,7 +4355,7 @@ function playStory(done){
       const fy=e>=DROP+.12?Math.round(170*(e-DROP-.12)**2/3)*3:0;if(e>=DROP+.12)once('fall',()=>snd(t=>tone(t,1.6,1100,170,'sine',.09)));
       const sd=n%2;
       if(shot===0){ /* fist and rock: the back of his fist driving in from below */
-        const fx=sd?ip[0]-40:ip[0]-55,y=punching?ip[1]-6:ip[1]+52;S(FISTB,fx,y,DP,5,!sd);const ax=sd?fx+10:fx+15;P(ax,y+95,70,Math.max(0,BOT-y-95+6),DP.s);P(sd?ax+56:ax,y+95,14,Math.max(0,BOT-y-89),DP.S);P(sd?ax-5:ax+70,y+95,5,Math.max(0,BOT-y-89),DP.o);P(sd?ax+70:ax-5,y+95,5,Math.max(0,BOT-y-89),DP.o);}
+        const fx=sd?ip[0]-50:ip[0]-45,y=punching?ip[1]-4:ip[1]+52;S(FISTB,fx,y,DP,5,!sd);const ax=sd?fx+20:fx+20;P(ax,y+90,55,Math.max(0,BOT-y-84),DP.s);P(sd?ax:ax+45,y+90,10,Math.max(0,BOT-y-84),DP.S);P(ax-5,y+90,5,Math.max(0,BOT-y-84),DP.o);P(ax+55,y+90,5,Math.max(0,BOT-y-84),DP.o);}
       else if(shot===1){ /* over his shoulder */
         const ox=-4,oy=BOT-88;
         if(punching){const sx=sd?ox+86:ox+18,sy=oy+52,tx=ip[0],ty=ip[1]+6;                         /* the arm, out to the rock in steps of dots */
@@ -4511,12 +4512,23 @@ function playStory(done){
         for(let q=0;q<14;q+=2)P(VX+Math.cos(an)*(r0+q),TOP+VY+Math.sin(an)*(r0+q),1,1,'rgba(255,255,255,.45)');}
       shx=0;
       pixelate(3);
-      {const sc=5,fx=72-40+Math.round(Math.sin(e*3.1)*1.4)*sc,fy=TOP+46+Math.round(Math.sin(e*2.3))*sc,fl=((e*9)|0)%2;   /* v121: his face, title-card big, falling */
-        for(const [dx,dy,w] of [[80,-2,10],[86,-8-fl*3,12],[90,-14-fl*5,10]])P(fx+dx,fy+15+dy,w,5,dy%2?FP.R:FP.r);       /* headband tails whipping upward */
-        S(HANDU,fx-30,fy-20+fl*sc,DP,sc,false);S(HANDU,fx+80-10,fy-20+(1-fl)*sc,DP,sc,true);                               /* hands flung up */
-        S(FACEF,fx,fy,FP,sc);
-        c.globalAlpha=.3;P(fx+60,fy,20,85,'#0a0610');c.globalAlpha=1;                                                     /* the shaded side */
-        {const g=c.createLinearGradient(0,fy+40,0,fy+90);g.addColorStop(0,'rgba(255,90,20,0)');g.addColorStop(1,'rgba(255,90,20,.28)');c.fillStyle=g;c.fillRect(fx,fy+40,80,50);}}  /* lit red from below */
+      {const q=4,w=((e*7)|0)%2,ox=Math.round((10+Math.sin(e*2.6)*1.2)*1)*q/q*1,oy=TOP+4;    /* v122: all of him, flailing - big near hand, face from the title card, soles toward us */
+        const X=v=>ox+Math.round(v/q)*q,Y=v=>oy+Math.round(v/q)*q,blk=(x,y,w2,h2,col)=>P(X(x),Y(y),Math.round(w2/q)*q,Math.round(h2/q)*q,col);
+        const line=(x0,y0,x1,y1,th,col,sh)=>{const n=Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))/q);for(let i=0;i<=n;i++){const u=i/n,x=x0+(x1-x0)*u,y=y0+(y1-y0)*u;blk(x-th/2,y-th/2,th,th,col);if(sh)blk(x-th/2,y+th/2-q,th,q,sh);}};
+        /* legs: splayed, the near one coming at us */
+        line(40,124,12,166,20,'#f4efe8','#c4bccd');line(76,124,104,152,18,'#f4efe8','#c4bccd');
+        blk(-8,160,40,24,'#e8a07a');blk(-4,164,32,16,'#f2b68a');for(let i=0;i<5;i++)blk(-6+i*8,152,8,8,'#f2b68a');      /* the near sole, toes */
+        blk(90,146,32,20,'#e8a07a');blk(94,150,24,12,'#f2b68a');for(let i=0;i<5;i++)blk(90+i*6,140,4+((i+1)%2)*4,8,'#f2b68a');
+        /* the jacket, belt */
+        blk(32,76,52,48,'#f4efe8');blk(72,76,12,48,'#c4bccd');blk(52,76,12,20,'#f2b68a');blk(48,92,4,24,'#c4bccd');blk(32,116,52,8,'#1e1a24');blk(52,120,8,12,'#1e1a24');
+        /* far arm, low on the left; near arm flung up at us on the right */
+        line(32,84,6,104+w*q,14,'#f4efe8','#c4bccd');S(HANDB,X(-14),Y(92+w*q),DP,3,true);
+        line(84,84,108,40-w*q,18,'#f4efe8','#c4bccd');line(104,48-w*q,112,28-w*q,14,'#f2b68a','#c88a60');
+        for(const [dx,dy,wd] of [[-2,-4,10],[4,-12,12],[8,-20,10]])P(X(24+dx*4),Y(12+dy+w*4),wd,4,dy%8?FP.R:FP.r);  /* headband tails whipping up */
+        S(FACEF,X(24),Y(8),FP,q);
+        c.globalAlpha=.28;P(X(76),Y(8),12,68,'#0a0610');c.globalAlpha=1;
+        S(HANDB,X(94),Y(-8-w*q),DP,6,false);                                                                     /* the big near hand */
+        {const g=c.createLinearGradient(0,Y(60),0,BOT);g.addColorStop(0,'rgba(255,90,20,0)');g.addColorStop(1,'rgba(255,90,20,.25)');c.fillStyle=g;c.fillRect(0,Y(60),W,BOT-Y(60));}}
       say(tt<1.5?'어… 어어?!':'저 아래… 용암인가?');
       if(tt<.18){c.globalAlpha=1-tt/.18;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
       if(e>T4-.12){c.globalAlpha=Math.min(1,(e-(T4-.12))/.12);c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
