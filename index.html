@@ -4173,6 +4173,13 @@ function playStory(done){
     PF(hx+6.4*k,hy+1.8*k,.5,1*k,P2.S);
     arm(ph+Math.PI,P2.t,reach);};                                                                           /* the near arm, out for the ball */
   let fieldBg=null;
+  const KP5={k:'#16121a',H:'#3a3650',s:'#f6c9a0',S:'#d9a47a',e:'#1a1014',m:'#a8283a',b:'#ff8a9a',t:'#3a8aff',T:'#2a62c8',u:'#5a7aa8',U:'#46628c',w:'#f4efe8',y:'#ffd400',Y:'#d8a800',g:'#5ac85a',G:'#3a9a3a',o:'#e8a040',p:'#ff5a8a'};
+  const BOY_A=["....kkkkk.....", "...kkHkkkkk...", "..kkkkkkkkkk..", "..kkkkkkkskk..", "..kkkksssssk..", "..kksseesees..", "..kssbsssssb..", "...sssssmms...", "....ssssss....", ".....tttt.....", "...ttttttTss..", "..stttttTT.ss.", ".ss.tttTTT....", ".s..ttttTT....", "....uuuuUU....", "...uuu..UUu...", "..ss.....ss...", ".ss.......ss..", "ww.........ww."];
+  const BOY_B=["....kkkkk.....", "...kkHkkkkk...", "..kkkkkkkkkk..", "..kkkkkkkskk..", "..kkkksssssk..", "..kksseesees..", "..kssbsssssb..", "...sssssmms...", "....ssssss....", ".....tttt.....", "....tttttTT...", "...sttttTTTs..", "..ss.tttTTTss.", "....ttttTT....", "....uuuuUU....", ".....uuUU.....", ".....ss.ss....", "....ss...ss...", "...ww...ww...."];
+  const GIRL_A=[".....kkkkk....", "kk..kkHkkkkk..", "kpkkkkkkkkkkk.", ".kk.kkkkkkskk.", "....kkksssssk.", "....kksseesee.", "....kssbsssssb", ".....sssssmms.", "......ssssss..", ".......yyy....", ".....yyyyYss..", "....syyyyYY.ss", "...ssyyyyYY...", "....yyyyyyYY..", "...yyyyyyyYYY.", "....ss....ss..", "...ss......ss.", "..pp.......pp."];
+  const GIRL_B=[".....kkkkk....", "kk..kkHkkkkk..", "kpkkkkkkkkkkk.", ".kk.kkkkkkskk.", "....kkksssssk.", "....kksseesee.", "....kssbsssssb", ".....sssssmms.", "......ssssss..", ".......yyy....", "......yyyyYY..", ".....syyyyYYs.", "....ss.yyyYYss", "....yyyyyyYY..", "...yyyyyyyYYY.", "......ss.ss...", ".....ss...ss..", "....pp...pp..."];
+  const TOT_A=["...kkkk....", "..kkHkkkk..", ".kkkkkkkkk.", ".kkkksssks.", ".kksesseses", ".kssbssssb.", "..ssssmms..", "...ssssss..", "....ggg....", "..sgggGGs..", ".s.gggGG.s.", "...ooooo...", "..ss...ss..", ".ww.....ww."];
+  const TOT_B=["...kkkk....", "..kkHkkkk..", ".kkkkkkkkk.", ".kkkksssks.", ".kksesseses", ".kssbssssb.", "..ssssmms..", "...ssssss..", "....ggg....", "...sgggGs..", "..s.ggGG.s.", "...ooooo...", "....ss.ss..", "...ww..ww.."];
   const kidsShot=e=>{
     if(!fieldBg){fieldBg=document.createElement('canvas');fieldBg.width=48;fieldBg.height=30;const g=fieldBg.getContext('2d');   /* painted tiny, shown big = out of focus */
       const sk=g.createLinearGradient(0,0,0,12);sk.addColorStop(0,'#9ac8f0');sk.addColorStop(1,'#d8ecf4');g.fillStyle=sk;g.fillRect(0,0,48,30);
@@ -4184,18 +4191,18 @@ function playStory(done){
     {const g=c.createLinearGradient(0,TOP+64,0,BOT);g.addColorStop(0,'#8ab654');g.addColorStop(.4,'#6aa244');g.addColorStop(1,'#4a8a34');c.fillStyle=g;c.fillRect(0,TOP+64,W,BOT-TOP-64);}
     const HZ=TOP+64;
     for(let r=0;r<30;r++){const d=r/29,y0=HZ+d*d*(BOT-HZ),sp=(8+d*70),sz=.5+d*1.6;                             /* a meadow of flowers, rushing by faster up close */
-      for(let i=0;i<5+(r>>1);i++){const x=Math.round((((hash(i,r)*(W+30)-e*sp)%(W+30)+W+30)%(W+30)-15)/2)*2,y=y0+(hash(i+40,r)-.5)*(2+d*14),col=hash(r,i)<.78?'#ffd21a':hash(r,i)<.9?'#ffffff':'#c890e8';
+      for(let i=0;i<5+(r>>1);i++){const x=Math.round((((hash(i,r)*(W+30)-e*sp)%(W+30)+W+30)%(W+30)-15)/5)*5,y=y0+(hash(i+40,r)-.5)*(2+d*14),col=hash(r,i)<.78?'#ffd21a':hash(r,i)<.9?'#ffffff':'#c890e8';
         PF(x,y-sz*2,.5,sz*2+.5,'#4a8a34');ELL(x,y-sz*2,sz,sz*.8,col);if(sz>1.2)PF(x-.25,y-sz*2-.25,.5,.5,'#a86a10');}}
-    /* the ball, rolling ahead of them, and the two of them after it */
-    const bx=124+Math.sin(e*1.3)*3,bh=Math.abs(Math.sin(e*4.2))*7,by=176-bh,rot=e*6;
-    ELL(bx,178,9*(1-bh/30),2,'rgba(20,50,20,.3)');ELL(bx,by-9,9,9,'#fffaf0');
-    for(let j=0;j<4;j++){const a=rot+j*Math.PI/2,c1=['#ffd21a','#ff4a4a','#3a8aff','#ffffff'][j];POLY([[bx,by-9],[bx+Math.cos(a)*9,by-9+Math.sin(a)*9],[bx+Math.cos(a+.9)*9,by-9+Math.sin(a+.9)*9]],c1);}
-    ELL(bx,by-9,2,2,'#fffaf0');ELL(bx-3,by-13,2.4,1.6,'rgba(255,255,255,.7)');
-    kidSide(18+Math.sin(e*1.6+2)*3,160,KS3,e*15+2.4,1.25,false,false);                                    /* the little one, trailing */
-    kidSide(48+Math.sin(e*1.1)*3,172,KS2,e*13+1.2,1.6,true,false);                                        /* her, a step behind */
-    kidSide(86+Math.sin(e*1.3+1)*3,186,KS1,e*13,1.9,false,true);                                           /* him, reaching for the ball */
+    /* v121: everything above in big dots, then the children and the ball as hand-made sprites in the same dots (like the title face) */
+    pixelate(5);
+    const g5=v=>Math.round(v/5)*5,fr=((e*8)|0)%2,bob=fr?0:5;
+    {const bx=g5(132),by=TOP+g5(190-Math.abs(Math.sin(e*4.2))*12-TOP),R=3;                                  /* the beach ball, in dots */
+      P(bx-10,TOP+195,30,5,'rgba(20,50,20,.35)');
+      for(let j=-R;j<=R;j++)for(let i=-R;i<=R;i++){if(i*i+j*j>R*R+1)continue;const a=(Math.atan2(j,i)+e*6+20)%(Math.PI*2),q=Math.floor(a/(Math.PI/2));P(bx+i*5,by+j*5,5,5,i===-1&&j===-2?'#ffffff':['#ffd21a','#ff4a4a','#3a8aff','#fffaf0'][q]);}}
+    const spr=(rows,x,feet)=>{P(x+10,feet-5+2,rows[0].length*5-20,5,'rgba(20,50,20,.3)');S(rows,g5(x),TOP+g5(feet-rows.length*5-TOP)-bob,KP5,5);};
+    spr(fr?TOT_B:TOT_A,-4,150);spr(fr?GIRL_A:GIRL_B,26,176);spr(fr?BOY_B:BOY_A,54,218);
     for(let i=0;i<6;i++){const x=((hash(i,77)*(W+60)-e*120)%(W+60)+W+60)%(W+60)-30,y=206+hash(i,78)*14;      /* big soft flowers right in front of the lens */
-      c.globalAlpha=.55;ELL(x,y,5,4,'#ffd21a');ELL(x,y,2,1.6,'#e8a010');c.globalAlpha=1;}
+      c.globalAlpha=.7;P(Math.round(x/5)*5,TOP+Math.round((y-TOP)/5)*5,10,5,'#ffd21a');P(Math.round(x/5)*5+5,TOP+Math.round((y-TOP)/5)*5-5,5,5,'#ffe27a');c.globalAlpha=1;}
   };
   /* v114 the blows, shot like a film: an extreme close-up of fist on rock, the camera pulling back to his back and arm
      as the rock starts to crack, wider as the cracks run up it; then the rumble - the ground splitting in close-up, the
@@ -4302,8 +4309,10 @@ function playStory(done){
     [[-1.57,1.7,150,-1.6],[-2.3,1.4,110,-2],[-.85,1.4,110,-1.1],[-3,1.1,70,-3.1],[-.12,1.1,70,0],[2.3,1,36,2.1],[.8,1,36,1]].forEach(([h,w,m,l],k)=>grow(0,0,h,w*.8,0,0,900+k*61,m,l));
     fcr.sort((a,b)=>a.o-b.o);}
   /* v120 chunky-dot sprites, drawn by hand like the title face */
-  const DP={o:'#6a3a24',s:'#f2b68a',S:'#c88a60',h:'#ffd8c0',t:'#f4efe8',T:'#c4bccd',k:'#1e1418',K:'#3a2a2a',r:'#e8344a',R:'#a81c30',d:'#a86a48'};
-  const FISTB=["...oooooooo...","..ohhshhshhso.",".ohsssssssssSo",".osssssssssSSo",".oSsdsdsdsdSSo",".osssssssssSSo",".osssssssssSSo","..osssssssSSo.","..otttttttTTo.","..otttttttTTo.","..oTtTtTtTTTo.","..osssssssSSo.","..osssssssSSo.","..ossssssSSSo.","..ossssssSSSo.","..ossssssSSSo."];
+  const HANDU=[".o.o.o.o", "ohosohoh", "osososos", "osssssso", "ossssSSo", ".osssSo.", ".ossSSo."];
+  const FACEF=["..k.kk.kk.kk.k..", "..kkkkkkkkkkkk..", ".kkkkkkkkkkkkkk.", ".rrrrrrrrrrrrrrr", ".RRRRRRRRRRRRRRR", ".kBBsssssssBBsk.", ".ksssssssssssSk.", ".ssWWssssssWWSS.", ".sWeWssssssWeWS.", ".ssWWssssssWWSS.", ".ksssssSSSssssk.", ".kKssssssssssKk.", "..KssssddsssSK..", "..KKsssddssKKK..", "...KKKKKKKKKK...", "..gggGssssGggg..", ".ggggggGGggggggg"];
+  const DP={D:'#a86a48',o:'#6a3a24',s:'#f2b68a',S:'#c88a60',h:'#ffd8c0',t:'#f4efe8',T:'#c4bccd',k:'#1e1418',K:'#3a2a2a',r:'#e8344a',R:'#a81c30',d:'#a86a48'};
+  const FISTB=["...oooo.oooo.......", "..ohhsoohhsoo......", ".ohhssoohssooooo...", ".osssSoosssoohhso..", ".osssSoosSSoohsSo..", ".oDDDDoDDDDooSSSo..", "..oooooooooooooo...", ".ohhssssssssssSSo..", "oohsssssssssssSSo..", "ohhssssDsssDssSSo..", "ohsssssDsssDsSSSo..", "osssssssssssssSSo..", ".oSssssssssssSSo...", "..ottttttttttTTo...", "..oTtTtTtTtTtTTo...", "..ottttttttttTTo...", "..ossssssssssSSo...", "..osssssssssSSSo...", "..osssssssssSSSo..."];  /* v121: knuckles and folded fingers, thumb tucked - not a loaf of bread */
   const FISTS=[".ooo.","ohhso","osdSo","ottTo",".ooo."];
   const SHLD=["..........k.kk.k..........",".........kkkkkkkk.........","........kkkkkkkkkk........","........kKkkkkkkkk........","........rrrrrrrrrr........","........RRRRRrRRRRrrR.....",".......skkkkkRkkkks.rRR...",".......skkkkkkkkkks..RR...","........Kkkkkkkkkk.....R..","........KKkkkkkkKK........",".........KsssssSK.........","..........sssSSS..........","....sssssssssSSSSSSSS.....","..sssssssssssSSSSSSSSSS...",".ssssssssSsssSSsSSSSSSSS..",".sssssssSssssSSSsSSSSSSS..","sssssssSsssssSSSSsSSSSSSS.","ssssssssssssSSSSSSSSSSSSSS","sssssssssssSSdSSSSSSSSSSSS","ssssssssssSSSdSSSSSSSSSSSS","sssssssssSSSSdSSSSSSSSSSSS","ssssssssSSSSSdSSSSSSSSSSSS"];
   let psOut=0;
@@ -4329,8 +4338,8 @@ function playStory(done){
     if(calm&&since<.2){const a=(1-since/.2)*(2+n*.5);shx=(Math.random()-.5)*a*2;shy=(Math.random()-.5)*a*2;}
     else if(!calm){const k=Math.min(1,(e-T1)/(T2-T1));shx=(Math.random()-.5)*(2+k*4);shy=(Math.random()-.5)*(1.5+k*3);}
     const DROP=T2+.15;
-    if(calm||e>=DROP){ /* ---- v120 the blows in the title card's chunky dots: three fixed shots, cut not zoomed ---- */
-      const shot=e<PT[2]+.45?0:e<PT[5]+.05?1:2,cs=[6,4,3][shot],ip=[[72,98],[96,84],[72,147]][shot];
+    if(calm){ /* ---- v120 the blows in the title card's chunky dots: three fixed shots, cut not zoomed ---- */
+      const shot=e<PT[2]+.45?0:1,cs=[6,4,3][shot],ip=[[72,98],[96,84],[72,147]][shot];
       shx=Math.round(shx/cs)*cs;shy=Math.round(shy/cs)*cs;                                       /* shake in whole dots: nothing crawls */
       wallCells(cs,shot);
       const R=calm?n*(shot===2?7:5):999,thick=!calm||n>=4;                                                    /* the cracks run a few dots a blow */
@@ -4345,7 +4354,7 @@ function playStory(done){
       const fy=e>=DROP+.12?Math.round(170*(e-DROP-.12)**2/3)*3:0;if(e>=DROP+.12)once('fall',()=>snd(t=>tone(t,1.6,1100,170,'sine',.09)));
       const sd=n%2;
       if(shot===0){ /* fist and rock: the back of his fist driving in from below */
-        const fx=sd?ip[0]-30:ip[0]-54,y=punching?ip[1]-4:ip[1]+50;S(FISTB,fx,y,DP,6,!sd);P(fx+12,y+96,60,BOT-y-96+6,DP.s);P(fx+12+(sd?0:48),y+96,12,BOT-y-90,DP.S);}
+        const fx=sd?ip[0]-40:ip[0]-55,y=punching?ip[1]-6:ip[1]+52;S(FISTB,fx,y,DP,5,!sd);const ax=sd?fx+10:fx+15;P(ax,y+95,70,Math.max(0,BOT-y-95+6),DP.s);P(sd?ax+56:ax,y+95,14,Math.max(0,BOT-y-89),DP.S);P(sd?ax-5:ax+70,y+95,5,Math.max(0,BOT-y-89),DP.o);P(sd?ax+70:ax-5,y+95,5,Math.max(0,BOT-y-89),DP.o);}
       else if(shot===1){ /* over his shoulder */
         const ox=-4,oy=BOT-88;
         if(punching){const sx=sd?ox+86:ox+18,sy=oy+52,tx=ip[0],ty=ip[1]+6;                         /* the arm, out to the rock in steps of dots */
@@ -4361,22 +4370,22 @@ function playStory(done){
     } else if(e<T1+.75){ /* ---- the rumble: the ground from above, in big dots, a crack tearing across ---- */
       shx=Math.round(shx/4)*4;shy=Math.round(shy/4)*4;const k=Math.min(1,(e-T1)/.55);
       for(let j=0;j<50;j++)for(let i=0;i<36;i++){const h=hash(i,j*3+1);P(i*4,TOP+j*4,4,4,h<.08?'#6a5236':h<.16?'#7a6040':h<.5?'#3e7e38':h<.85?'#4a8a3e':'#6ab04a');}
-      const L=Math.round(k*38);let yy=25;
-      for(let i=0;i<L;i++){const cx=35-i;if(hash(i,5)<.35)yy+=hash(i,6)<.5?-1:1;
-        P(cx*4,TOP+yy*4-4,4,4,'#6a4a2a');P(cx*4,TOP+yy*4,4,4,'#0b0811');P(cx*4,TOP+yy*4+4,4,k>.5?4:0,'#0b0811');P(cx*4,TOP+yy*4+(k>.5?8:4),4,4,'#3a2a1a');
-        if(i%7===3)for(let q=1;q<4;q++)P((cx-q)*4,TOP+(yy+(i%2?q:-q))*4,4,4,'#0b0811');}
+      const L=Math.round(k*52);let xx=18;                                                         /* v121: it tears down the frame, from the rock toward us */
+      for(let i=0;i<L;i++){const cy=i;if(hash(i,5)<.35)xx+=hash(i,6)<.5?-1:1;const w=k>.5&&i>6?2:1;
+        P(xx*4-4,TOP+cy*4,4,4,'#6a4a2a');for(let q=0;q<w;q++)P(xx*4+q*4,TOP+cy*4,4,4,'#0b0811');P(xx*4+w*4,TOP+cy*4,4,4,'#3a2a1a');
+        if(i%7===3)for(let q=1;q<4;q++)P((xx+(i%2?q+w:-q))*4,TOP+(cy+q)*4,4,4,'#0b0811');}
       for(let i=0;i<10;i++){const u=((e-T1)*1.4+hash(i,61))%1,x=Math.round(hash(i,62)*36)*4,y=TOP+Math.round((100-u*16)/4)*4;c.globalAlpha=.6*(1-u);P(x,y,8,4,'#b8a888');P(x+4,y-4,4,4,'#b8a888');}c.globalAlpha=1;
       psOut=0;
     } else { /* ---- v119 his own eyes, looking down at his feet (point of view): trouser legs coming in big from the top,
                  bare feet planted on the grass, toes toward the rock - and the crack running up from it, between his feet ---- */
-      const k=Math.min(1,(e-(T1+.75))/(DROP-(T1+.75))),tr=0;shx=Math.round(shx/6)*6;shy=Math.round(shy/6)*6;psOut=3;
+      const k=Math.min(1,(e-(T1+.75))/(T3-(T1+.75))),tr=0;shx=Math.round(shx/6)*6;shy=Math.round(shy/6)*6;psOut=3;
       const RE=(cx,cy,rx,ry,a,col)=>{const pts=[];for(let i=0;i<20;i++){const t2=i/20*Math.PI*2,x=Math.cos(t2)*rx,y=Math.sin(t2)*ry;pts.push([cx+x*Math.cos(a)-y*Math.sin(a),cy+x*Math.sin(a)+y*Math.cos(a)]);}POLY(pts,col);};
       c.fillStyle='#3e7e38';c.fillRect(0,TOP,W,BOT-TOP);
       for(let i=0;i<150;i++){const x=hash(i,9)*W,y=TOP+hash(i,8)*(BOT-TOP),s=.8+hash(i,7)*1.2;PF(x,y,s,s*2,hash(i,10)<.5?'#2c6228':'#6ab04a');}
       for(let i=0;i<8;i++)ELL(hash(i,19)*W,TOP+hash(i,18)*(BOT-TOP),4+hash(i,17)*6,2+hash(i,16)*3,'#6a5236');
       {const g=c.createLinearGradient(0,BOT-22,0,BOT);g.addColorStop(0,'#6a6278');g.addColorStop(1,'#4a4458');c.fillStyle=g;c.fillRect(0,BOT-20+shy,W,24);   /* the foot of the rock, just ahead of his toes */
         PF(0,BOT-22,W,2,'#2a2634');c.fillStyle='rgba(20,30,20,.3)';c.fillRect(0,BOT-32+shy,W,10);}
-      for(let y=BOT-22;y>TOP+30;y-=1){const d=(BOT-22-y)/(BOT-TOP-52),x=80-d*26+Math.sin(y*.23)*3+(hash(y|0,7)-.5)*2.5,w=(2.2-d*1.4)*(.4+k*k*4.5);   /* the crack, from the rock up between his feet */
+      for(let y=BOT-22;y>TOP+30;y-=1){const d=(BOT-22-y)/(BOT-TOP-52),x=79-d*4+Math.sin(y*.23)*3+(hash(y|0,7)-.5)*2.5,w=(2.2-d*1.4)*(.4+k*k*4.5);   /* the crack, from the rock up between his feet */
         PF(x-w-1,y,1,1,'#6a4a2a');PF(x+w,y,1,1,'#4a321e');PF(x-w,y,w*2,1,'#0b0811');
         if((y|0)%19===0)for(let q=1;q<6;q++)PF(x+((y|0)%2?q*2:-q*2),y-q*.7,1,1,'#0b0811');}
       for(let i=0;i<10;i++){const u=((e*2)+hash(i,71))%1;PF(72+(hash(i,72)-.5)*k*16,TOP+60+hash(i,73)*100+u*6,1.5,1.5,'#6a4a2a');}
@@ -4391,8 +4400,11 @@ function playStory(done){
       const leg=(x0,y0,x1,y1,w0,w1,col,shd)=>{POLY([[x0-w0/2,y0],[x0+w0/2,y0],[x1+w1/2,y1],[x1-w1/2,y1]],col);POLY([[x0+w0*.15,y0],[x0+w0/2,y0],[x1+w1/2,y1],[x1+w1*.2,y1]],shd);
         for(let i=1;i<4;i++){const u=i/4;PF(x0+(x1-x0)*u-w0*.2,y0+(y1-y0)*u,w0*.3*(1-u)+w1*.3*u,1,shd);}                  /* creases */
         POLY([[x1-w1/2-1,y1-4],[x1+w1/2+1,y1-4],[x1+w1/2+2,y1+1],[x1-w1/2-2,y1+1]],'#d8d0e0');PF(x1-w1/2-2,y1+1,w1+4,1,'#a8a0b4');};   /* the hem, over the ankle */
-      foot(101,126,1.38,30,18);leg(96+tr,TOP-6,101+tr,130,44,26,'#f4efe8','#c4bccd');
-      foot(58,150,1.5,40,24);leg(26+tr,TOP-6,58+tr,156,74,34,'#f4efe8','#c4bccd');
+      const calf=(x0,y0,x1,y1,w0,w1)=>{POLY([[x0-w0/2,y0],[x0+w0/2,y0],[x1+w1/2,y1],[x1-w1/2,y1]],'#f2b68a');POLY([[x0+w0*.1,y0],[x0+w0/2,y0],[x1+w1/2,y1],[x1+w1*.1,y1]],'#d8946c');};
+      const rag=(x,y,w,seed)=>{for(let i=0;i<7;i++){const a=x-w/2+i*w/7,b=a+w/7,h=4+hash(i,seed)*9;POLY([[a,y],[b,y],[(a+b)/2+(hash(i,seed+1)-.5)*3,y+h]],'#e8e0d0');}  /* a torn, frayed hem */
+        for(let i=0;i<4;i++)PF(x-w/2+hash(i,seed+2)*w,y+2,1,6+hash(i,seed+3)*6,'#cfc6d6');PF(x-w*.2,y-14,4,3,'#c4bccd');PF(x+w*.15,y-26,3,3,'#c4bccd');};
+      foot(101,126,1.38,30,18);calf(99,96,101,130,20,15);leg(96,TOP-6,99,98,44,30,'#f4efe8','#c4bccd');rag(99,98,30,41);
+      foot(58,150,1.5,40,24);calf(50,112,58,156,28,20);leg(26,TOP-6,50,114,74,40,'#f4efe8','#c4bccd');rag(50,114,40,47);
     }
     if(calm)say(e<PT[4]?'해를 가리는 벽이라면\n부수면 된다.':'벽에 금이 간다!\n조금만 더!');
     else if(e<DROP){say('쿠구구구구…\n어? 벽이 아니라 땅이?!');once('rumble',()=>{snd(t=>{noise(t,1.6,70,.6,.6,'lowpass');tone(t,1.6,52,34,'sawtooth',.14);});vibe([80,40,80,40,140]);});}
@@ -4418,7 +4430,7 @@ function playStory(done){
   const lavaRow=(y,amp)=>{for(let x=0;x<W;x++){const w=Math.round(Math.sin(x*.28+E*4)*amp+Math.sin(x*.09-E*2.2)*amp),yy=y+w;P(x,yy,1,2,'#ffe27a');P(x,yy+2,1,4,'#ff8a1a');P(x,yy+6,1,BOT-yy,'#c8341a');}};
   const frame=now=>{if(ended)return;const raw=(now-t0)/1000,e=E=raw-INTRO,dt=1/60;c.clearRect(0,0,W,H);shx=shy=0;
     if(raw<INTRO)intro(raw);
-    else if(e<KS){kidsShot(e);pixelate(2);say('꺄르르— 잡아 봐라!');}  /* v111: the children, up close */
+    else if(e<KS){kidsShot(e);say('꺄르르— 잡아 봐라!');}  /* v111: the children, up close */
     else if(e<TALK){closeup(e-KS);pixelate(2);say('아내: 여보, 저 암벽 때문에\n빨래가 안 말라.');}  /* v110: her line, up close */
     else if(e>=GO&&e<T3){punchShots(e,dt);if(psOut)pixelate(psOut);}  /* v114: the blows and the split, in close-ups */
     else if(e<T3){ /* ---------- 1-3: the wall, the rumble, the split ---------- */
@@ -4448,9 +4460,9 @@ function playStory(done){
         P(108,ly-1,1,GY-ly+1,'#6e4420');P(127,ly-1,1,GY-ly+1,'#6e4420');P(108,ly,20,1,'#e8e0d0');
         P(110+sw,ly+1,4,4,'#f4efe8');P(109+sw,ly+1,6,1,'#f4efe8');P(116+sw,ly+1,3,5,'#3a8aff');P(121+sw,ly+1,4,4,'#ffd400');
         for(const [dx,ph] of [[112,0],[117,.4],[123,.75]]){const u=(e*1.1+ph)%1;if(u<.7)P(dx,ly+6+u*7,1,1,'#9ad8ff');}}
-      /* his wife on her chair, reading (she jumps up when the ground shakes) */
+      if(false){ /* v121: the family is gone from the full shot (storyboard) */      /* his wife on her chair, reading (she jumps up when the ground shakes) */
       {const wx=14,gy=GY;P(wx+2,gy-5,7,1,'#8a5a2a');P(wx+2,gy-4,1,4,'#6e4420');P(wx+7,gy-4,1,4,'#6e4420');P(wx+8,gy-15,1,11,'#6e4420');
-        if(calm){SF(WIFE_HD,wx,gy-14,WP);if(((e/1.3)|0)%2)PF(wx+.5,gy-6.5,1,.5,'#c4bccd');}else{SF(WIFE_UP_HD,wx,gy-13.5,WP);if(((e*6)|0)%2)sbang(wx+4,gy-22);}}
+        if(calm){SF(WIFE_HD,wx,gy-14,WP);if(((e/1.3)|0)%2)PF(wx+.5,gy-6.5,1,.5,'#c4bccd');}else{SF(WIFE_UP_HD,wx,gy-13.5,WP);if(((e*6)|0)%2)sbang(wx+4,gy-22);}}}
       /* the ground gives way under him */
       if(e>=T1){const k=Math.min(1,(e-T1)/(T2-T1)),len=Math.round(k*44);for(let i=0;i<len;i++)for(const d of [-1,1]){const x=CX+d*i,y=GY+1+Math.round(Math.sin(i*.9)+(i%5===0?1:0));P(x,y,1,1+(i<10?1:0),'#1a1020');}
         for(let b2=0;b2<4;b2++){const bl=Math.round(k*6);for(let i=0;i<bl;i++)P(CX+(b2-1.5)*12+i*(b2%2?1:-1),GY+2+i,1,1,'#1a1020');}}
@@ -4462,7 +4474,7 @@ function playStory(done){
         if(e>T2+.2){const tt=e-T2-.2;hy=260*tt*tt;once('fall',()=>snd(t=>tone(t,1.6,1100,170,'sine',.09)));}}
       hero(GY-16+hy,punching?'punch':e>=T2?'up':(e>=TALK&&e<GO)?'punch':'idle',(e>=TALK&&e<GO)?1:side); /* 'leave it to me': one fist goes up */
       if(!calm&&e<T2&&((e*6)|0)%2)sbang(CX,GY-24);
-      /* the children run about in front, and freeze */
+      if(false) /* v121 */      /* the children run about in front, and freeze */
       {const ek=Math.min(e,T1),u=(ek*24)%240,x0=u<120?8+u:8+240-u,dir=u<120?1:-1,u2=((ek-.4)*24+240)%240,x02=u2<120?8+u2:8+240-u2,d2=u2<120?1:-1;
         /* when the ground shakes they run off the middle - one to mum, one to the washing - and freeze there */
         const u3=((ek-.8)*20+240)%240,x03=u3<120?8+u3:8+240-u3,d3=u3<120?1:-1;
@@ -4497,8 +4509,15 @@ function playStory(done){
         c.globalAlpha=.6;P(VX+Math.cos(an)*rr,TOP+VY+Math.sin(an)*rr,1,1,i%3?'#ff8a1a':'#ffe27a');c.globalAlpha=1;}
       for(let i=0;i<12;i++){const an=hash(i,((e*14)|0))*Math.PI*2,r0=62+hash(i,9)*20;           /* air rushing past */
         for(let q=0;q<14;q+=2)P(VX+Math.cos(an)*(r0+q),TOP+VY+Math.sin(an)*(r0+q),1,1,'rgba(255,255,255,.45)');}
-      shx=0;faller(72+Math.round(Math.sin(e*3.1)*1.4)*3,TOP+84+Math.round(Math.sin(e*2.3))*3,k);
-      pixelate(3);say(tt<1.5?'어… 어어?!':'저 아래… 용암인가?');
+      shx=0;
+      pixelate(3);
+      {const sc=5,fx=72-40+Math.round(Math.sin(e*3.1)*1.4)*sc,fy=TOP+46+Math.round(Math.sin(e*2.3))*sc,fl=((e*9)|0)%2;   /* v121: his face, title-card big, falling */
+        for(const [dx,dy,w] of [[80,-2,10],[86,-8-fl*3,12],[90,-14-fl*5,10]])P(fx+dx,fy+15+dy,w,5,dy%2?FP.R:FP.r);       /* headband tails whipping upward */
+        S(HANDU,fx-30,fy-20+fl*sc,DP,sc,false);S(HANDU,fx+80-10,fy-20+(1-fl)*sc,DP,sc,true);                               /* hands flung up */
+        S(FACEF,fx,fy,FP,sc);
+        c.globalAlpha=.3;P(fx+60,fy,20,85,'#0a0610');c.globalAlpha=1;                                                     /* the shaded side */
+        {const g=c.createLinearGradient(0,fy+40,0,fy+90);g.addColorStop(0,'rgba(255,90,20,0)');g.addColorStop(1,'rgba(255,90,20,.28)');c.fillStyle=g;c.fillRect(fx,fy+40,80,50);}}  /* lit red from below */
+      say(tt<1.5?'어… 어어?!':'저 아래… 용암인가?');
       if(tt<.18){c.globalAlpha=1-tt/.18;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
       if(e>T4-.12){c.globalAlpha=Math.min(1,(e-(T4-.12))/.12);c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
     } else { /* ---------- 5: the foot of the tower ---------- */
@@ -4510,9 +4529,9 @@ function playStory(done){
       lavaRow(FY+12,1.2);                                              /* the lava, just under the floor */
       {const gg=c.createLinearGradient(0,FY-70,0,FY);gg.addColorStop(0,'rgba(255,90,20,0)');gg.addColorStop(1,'rgba(255,110,30,.3)');c.fillStyle=gg;c.fillRect(0,FY-70,W,70);}
       if(!landed){P(0,FY,W,9,'#2a2034');P(0,FY,W,2,'#4a3866');for(let x=0;x<W;x+=12)P(x+((x/12|0)%2?3:8),FY+2,1,7,'#1c1426');}
-      else{const gw=Math.min(3,Math.floor(since*24)),GAPS=[-5,5,-17,16,-33,31,-55,52],fl=((e*10)|0)%2;   /* the floor slab breaks into pieces: lava shows through the gaps, the middle sinks */
+      else{const gw=Math.min(3,Math.floor(since*24)),GAPS=[-6,7,-30,27],fl=((e*10)|0)%2;   /* the floor slab breaks into pieces: lava shows through the gaps, the middle sinks */
         for(let x=0;x<W;x++){const dx=x-CX;let g=99;for(const q of GAPS)g=Math.min(g,Math.abs(dx-q));
-          if(g<gw*(Math.abs(dx)<20?1:.6)){P(x,FY,1,12,fl?'#ff8a1a':'#ff7410');P(x,FY+Math.min(4,since*20|0),1,1,'#ffe27a');continue;}
+          if(g<gw*(Math.abs(dx)<20?1:.6)){const core=g<gw*.4;P(x,FY,1,12,core?'#ffe27a':g<gw*.75?'#ff8a1a':'#c8341a');if(((e*6+x)|0)%9===0)P(x,FY-1-((e*20+x)%4|0),1,1,'#ffd04a');continue;}  /* v121: a hot core, cooler edges, the odd bubble */
           const ad=Math.abs(dx),dy=Math.min(Math.round(since*30),ad<5?3:ad<17?Math.round(2.4*(1-(ad-5)/12)):0);
           P(x,FY+dy,1,9,'#2a2034');P(x,FY+dy,1,2,g<gw+1.5?'#c8643a':'#4a3866');if(g<gw+1.5)P(x,FY+dy+2,1,7,'#4a2420');
           if(dy)P(x,FY,1,dy,'#0d0a08');if(x%12===((x/12|0)%2?3:8))P(x,FY+dy+2,1,7,'#1c1426');}}
@@ -4523,7 +4542,7 @@ function playStory(done){
       else if(since<1.5)S(LAND,CX-20,FY-39+(since<.08?3:0),HP,3); /* the superhero landing */
       else{front(x,FY-42,false,false);P(x-4,FY-22,5,10,HP.s);P(x-5,FY-13,7,7,'#ffd0bd');P(x+23,FY-44,5,24,HP.s);P(x+21,FY-54,9,10,'#ffd0bd');P(x+19,FY-58,2,3,'#fff');P(x+31,FY-58,2,3,'#fff');} /* a fist to the sky */
       dust=dust.filter(p=>(p.l-=dt)>0);for(const p of dust){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=60*dt;c.globalAlpha=Math.min(1,p.l*2);P(p.x,p.y,2,2,'#c9c2d6');c.globalAlpha=1;}
-      say(!landed?'':since<1.1?'쿵!!':'빨래 걷기 전에는 돌아간다.\n위로 뚫고 올라간다!');
+      say(!landed?'':since<1.1?'쿵!!':'힘 조절을 못했네.\n빨리 사랑하는 가족 품으로 돌아가자!');
       if(tt<.15){c.globalAlpha=1-tt/.15;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1;}
     }
     c.fillStyle='#000';c.fillRect(0,0,W,TOP);c.fillRect(0,BOT,W,H-BOT); /* the black bars */
