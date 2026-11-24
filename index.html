@@ -1306,7 +1306,7 @@ function digHit(s,side,charged,power,alt){
       if(!h){h={x,hp:s.max};s.holes.push(h);}
       const cur=s.holes.find(o=>o.x===s.digX);if(cur)cur.hp=s.hp;s.digX=h.x;s.hp=h.hp;}
     s.digHits=(s.digHits||0)+1;}
-  let dmg=charged?Math.ceil(2+4*power):alt?2:1;if(fever>0)dmg*=2;
+  const dmg=1; /* v133: earth takes one, always - charge, alternating, fever, power-ups and SHOW TIME change nothing, so it never caves in all at once */
   s.hp=Math.max(0,s.hp-dmg);s.flash=.35;s.bump=1;s.digT=now();if(s.holes){const cur=s.holes.find(o=>o.x===s.digX);if(cur)cur.hp=s.hp;}
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;weakStreak=0;
   const dep=digDepth(s),fy=-s.n*FH+10-dep;
@@ -1422,7 +1422,8 @@ function hit(side,power,echo){
   combo++;maxCombo=Math.max(maxCombo,combo);lastTap=t;
   comboFX={dx:side?13:-13,at:t};
   if(!charged&&!echo)pl.tx=clamp(pl.tx+(side?NUDGE:-NUDGE),XMIN,XMAX);
-  if(s.type==='thick'){digHit(s,side,charged,power,alt);return;} /* v70: digging (v123: in SHOW TIME too - earth always has to be dug, so its item can't be skipped) */
+  if(s.type==='thick'){if(!echo)digHit(s,side,charged,power,alt);return;} /* v133: a double punch's echo doesn't dig */
+  /* v70: digging (v123: in SHOW TIME too - earth always has to be dug, so its item can't be skipped) */
   const fx=fistX(side),fy=-tgtN()*FH+10;
   // weak point = the boxer's body lined up under it, hit with alternating hands
   const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
