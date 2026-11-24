@@ -1276,7 +1276,7 @@ function makeSlab(n){
   else if(!vibRun&&Math.random()<vibP)type='vibranium';
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
   if(type!=='thick')dig=null; /* v80: only earth carries a dig record */
-  if(dig&&dig.h>=36&&Math.random()<DIG_ITEM_P)dig.item={k:Math.random()<.7?'power':'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78 (v80: after the type chain - it used to cut the else-if chain and turn earth into metal): something buried in the earth */
+  if(dig&&dig.h>=36&&Math.random()<DIG_ITEM_P)dig.item={k:Math.random()<.04?'skin':Math.random()<.7?'power':'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78 (v80: after the type chain - it used to cut the else-if chain and turn earth into metal): something buried in the earth */
   const base=10+Math.floor(n*.8);
   const raw=type==='thick'?(dig.h<36?DIG_HP_HALF:dig.run>1?DIG_HP_RUN:DIG_HP)*(.8+.2*D.hp)/D.hp:type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
   const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
@@ -1324,6 +1324,10 @@ function digItem(s){const it=s.dig&&s.dig.item;if(!it||it.got||s.digX==null)retu
     for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,sp=50+Math.random()*80;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.5,col:i%2?'#7af0ff':'#ffffff',s:2,g:60});}
     if(AC){const a=AC.currentTime;[523,784,1047,1568].forEach((f,i)=>tone(a+i*.06,.1,f,f,'square',.07));}}
   else if(it.k==='power'){addTime(2*tMul());pop(clamp(wx,WALL+40,W-WALL-40),wy-8,'MAX POWER! +TIME','#ff8a1a',2);if(AC){const a=AC.currentTime;[784,1047,1568].forEach((f,i)=>tone(a+i*.06,.1,f,f,'square',.07));}}
+  else if(it.k==='skin'){const u=unlockSkin();
+    if(u){pop(clamp(wx,WALL+40,W-WALL-40),wy-16,'NEW SKIN!','#ff8ad8',2);pop(clamp(wx,WALL+40,W-WALL-40),wy+2,SKIN_KO[u.c]+': '+u.s.ko,'#ffffff',1);flashO=.4;flashCol='#ff8ad8';
+      if(AC){const a=AC.currentTime;[523,659,784,1047,1319,1568].forEach((f,i)=>tone(a+i*.07,.14,f,f,'square',.07));}}
+    else{addTime(3*tMul());pop(clamp(wx,WALL+40,W-WALL-40),wy-8,'TREASURE! +TIME','#ff8ad8',2);}}
   else if(it.k==='king'&&skillOn('king')&&kingLevel<KL_NEED.length){kingLevel++;superReady=true;if(kingLevel>=KL_NEED.length)altStreak=0;sfx.ready();kingLevelUp(kingLevel);pop(clamp(wx,WALL+34,W-WALL-34),wy-8,'KING +1!','#ffd400',2);}
   else{addTime(1.5*tMul());pop(clamp(wx,WALL+34,W-WALL-34),wy-8,'BONUS!','#ffd400',2);if(AC){const a=AC.currentTime;tone(a,.08,880,880,'square',.08);tone(a+.08,.12,1320,1320,'square',.08);}}
   vibe([20,30,40]);}
@@ -2260,6 +2264,10 @@ function drawThick(s,sy){
     for(const [dx,c] of [[-3,'#3aa8c8'],[2,'#7af0ff']]){const fx=ox+dx;
       R(fx-3,oy-3,6,6,'#0d0a08');R(fx-2,oy-2,4,5,c);R(fx-2,oy-2,4,1,'#e8fbff');R(fx-2,oy,1,1,'#0d0a08');R(fx,oy,1,1,'#0d0a08');}
     if(((gt*4+s.n)|0)%5===0){R(ox+6,oy-5,1,1,'#ffffff');R(ox-7,oy+3,1,1,'#bff6ff');}}
+  else if(it&&!it.got&&it.k==='skin'){const ox=it.x,oy=bot-it.dy,pu=.5+.5*Math.sin(gt*6+s.n); /* v128 a treasure chest: a skin inside */
+    ctx.globalAlpha=.3+.25*pu;R(ox-8,oy-7,17,14,'#ff8ad8');ctx.globalAlpha=1;
+    R(ox-6,oy-4,13,9,'#0d0a08');R(ox-5,oy-3,11,7,'#8a4a1a');R(ox-5,oy-3,11,2,'#c8742a');R(ox-5,oy,11,1,'#ffd400');R(ox-1,oy-1,3,3,'#ffd400');R(ox,oy,1,1,'#0d0a08');
+    if(((gt*5+s.n)|0)%4===0){R(ox+6,oy-6,1,1,'#ffffff');R(ox-7,oy+3,1,1,'#ffd8f4');}}
   else if(it&&!it.got){const ox=it.x,oy=bot-it.dy,pu=.5+.5*Math.sin(gt*5+s.n); /* the buried KING orb glows through the earth */
     ctx.globalAlpha=.25+.2*pu;R(ox-5,oy-5,11,11,'#ff9a2a');ctx.globalAlpha=1;
     R(ox-2,oy-3,5,7,'#0d0a08');R(ox-3,oy-2,7,5,'#0d0a08');
@@ -2385,7 +2393,7 @@ function drawPlayer(){
   let feet=pl.feet-digLift();if(pl.jt>=0)feet-=Math.sin(Math.PI*pl.jt)*10;
   const px=Math.round(pl.x)-4,top=Math.round(feet-14-hop-camY+pl.sink);
   const fev=fever>0;
-  const pal={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:fev?'#ff9af4':'#f4efe8',G:fev?'#ffffff':'#c4bccd',b:'#1e1a24',d:'#3a2a24',u:'#e8344a'};
+  const pal={k:'#2a1a14',r:'#e8344a',s:'#f2b68a',S:'#c88a60',e:'#1a1020',g:fev?'#ff9af4':'#f4efe8',G:fev?'#ffffff':'#c4bccd',b:'#1e1a24',d:'#3a2a24',u:'#e8344a'};applySkin(pal,fev);
   if(mode==='dead'){const c=endT<.1?'#fff1a0':endT<.25?'#ff6a3a':'#1c1412';for(const k in pal)pal[k]=c;if(endT>=.25){pal.e='#ffffff';pal.k='#0a0606';}} /* white-hot, then burnt black (only the eyes left) */
   if(riseT>0||bolts.length){const mega=megaShow(),rows=bodyRows(); /* v108 SHOW TIME afterimages: a gold smear, or at DOUBLE PUNCH + MAX a long ice-blue one */
     if(mega){for(let i=0;i<12;i++){const x=WALL+2+hash(i,5)*(IN-4),y=((gt*520+i*61)%(H+60))-60,l=16+hash(i,6)*22;   /* the world rushing down past him */
@@ -2428,7 +2436,7 @@ function drawPlayer(){
   const slv=burns>=2?pal.s:pal.g; /* no top left: bare arms */
   const tail=((gt*10)|0)%2;const lean=pl.tx-pl.x>1?-1:pl.tx-pl.x<-1?1:0;
   R(px+7,top+2,1,1,pal.r);R(px+8+lean,top+3-tail,1,1,pal.r);R(px+9+lean,top+3,1,1,pal.r);
-  const bf=kingLevel>=6&&mode==='play',fs=bf?'#8ac8ff':pal.s,fS=bf?'#2a6ad8':pal.S; // MAX: blue burning fists
+  const gl=skinOf('glove').arm,bf=kingLevel>=6&&mode==='play',fs=bf?'#8ac8ff':gl?gl.s:pal.s,fS=bf?'#2a6ad8':gl?gl.L:pal.S; // MAX: blue burning fists
   const flame=(x,y)=>{if(!bf)return;for(let i=0;i<4;i++){const k=Math.random();R(x+((Math.random()*4)|0)-1,y-1-((Math.random()*5)|0),1,1,BLUEPAL(k));}};
   const up=(side)=>{const ax=side?px+7:px-1;R(ax,top+4,2,4,slv);R(ax,top-6,2,10,pal.s);R(side?ax:ax-1,top-9,3,3,fs);R(side?ax+2:ax-1,top-9,1,1,fS);flame(side?ax:ax-1,top-9);};
   const guard=(side)=>{const ax=side?px+7:px-1;R(ax,top+7,2,3,slv);R(ax,top+10,2,2,fs);flame(ax,top+10);};
@@ -2739,6 +2747,20 @@ function drawBigFist(cx,cy,sc,mirror,pal){const w=BIG_FIST[0].length,h=BIG_FIST.
 const FIST_MINI=[[".................", ".....kkk.........", ".....kHHkkkk.....", ".kkk.ksLHHHk.kk..", ".ksskssLsssLkHHk.", ".kssLssLsssLsssk.", ".kDDLDDLDDDLsssk.", ".kLLLLLLLLLLLssk.", ".kHHHHHHHHHnsLDk.", ".kHHHHHHHssnnDDk.", ".ksssDDDDDDssLLk.", ".ksssDDDDLLLLDDk.", ".kssDLLLLssssDDk.", ".kDDDLsssssssDDk.", "..kDLssssssssDDk.", "..kkDDDDDDDDDkk..", "....kLLLLLLLk....", "....ksssssDDk....", "....ksssssDDk....", "....ksssssDDk...."], [".................", ".........kkk.....", ".....kkkkHHk.....", "..kk.kHHHLsk.kkk.", ".kHHkLsssLsskssk.", ".ksssLsssLssLssk.", ".ksssLDDDLDDLDDk.", ".kssLLLLLLLLLLLk.", ".kDLsnHHHHHHHHHk.", ".kDDnnssHHHHHHHk.", ".kLLssDDDDDDsssk.", ".kDDLLLLDDDDsssk.", ".kDDssssLLLLDssk.", ".kDDsssssssLDDDk.", ".kDDssssssssLDk..", "..kkDDDDDDDDDkk..", "....kLLLLLLLk....", "....kDDsssssk....", "....kDDsssssk....", "....kDDsssssk...."]]; /* the same cartoon fists, small, for the NEW!-card demos */
 const FIST_CX=28; /* centre of each fist button from its screen edge (room to breathe) */
 const FIST_SP=[["............................................", "............................................", "............................................", "............................................", "............kkkkkkkkkk..kkkkkk..............", "............kkkkkkkkkk..kkkkkk..............", "............kkHHHHHHLLkkHHHHHHkk............", "............kkHHHHHHLLkkHHHHHHkk............", "....kkkkkkkkssssssssLLsssssssskk..kkkkkk....", "....kkkkkkkkssssssssLLsssssssskk..kkkkkk....", "..kkHHHHHHLLssssssssLLssssssssLLkkHHHHHHkk..", "..kkHHHHHHLLssssssssLLssssssssLLkkHHHHHHkk..", "..kkssssssLLssssssssLLssssssssLLsssssssskk..", "..kkssssssLLssssssssLLssssssssLLsssssssskk..", "..kkssssssLLDDDDDDDDLLDDDDDDDDLLsssssssskk..", "..kkssssssLLDDDDDDDDLLDDDDDDDDLLsssssssskk..", "..kkssssssLLDDDDDDDDLLDDDDDDDDLLsssssssskk..", "..kkssssssLLDDDDDDDDLLDDDDDDDDLLsssssssskk..", "..kkDDLLLLLLLLLLLLLLLLLLLLLLLLLLsssssssskk..", "..kkDDLLLLLLLLLLLLLLLLLLLLLLLLLLsssssssskk..", "..kkLLHHHHHHHHHHHHHHHHHHHHHHssssLLsssssskk..", "..kkLLHHHHHHHHHHHHHHHHHHHHHHssssLLsssssskk..", "..kkHHHHHHHHHHHHHHHHHHHHHHHHnnnnssLLDDDDkk..", "..kkHHHHHHHHHHHHHHHHHHHHHHHHnnnnssLLDDDDkk..", "..kkHHssssssssssssssssssssssnnnnnnDDDDDDkk..", "..kkHHssssssssssssssssssssssnnnnnnDDDDDDkk..", "..kkssssssssssssDDDDDDDDDDDDssssssLLDDLLkk..", "..kkssssssssssssDDDDDDDDDDDDssssssLLDDLLkk..", "..kkssssssssssDDDDDDDDDDDDDDssssLLLLLLDDkk..", "..kkssssssssssDDDDDDDDDDDDDDssssLLLLLLDDkk..", "..kkssssssssDDDDLLLLLLLLLLLLLLLLssDDDDDDkk..", "..kkssssssssDDDDLLLLLLLLLLLLLLLLssDDDDDDkk..", "..kkssssssDDDDLLssssssssssssssssssDDDDDDkk..", "..kkssssssDDDDLLssssssssssssssssssDDDDDDkk..", "..kkDDDDDDDDLLssssssssssssssssssssDDDDDDkk..", "..kkDDDDDDDDLLssssssssssssssssssssDDDDDDkk..", "....kkDDDDLLssssssssssssssssssssssDDDDkk....", "....kkDDDDLLssssssssssssssssssssssDDDDkk....", "......kkLLDDDDDDDDDDDDDDDDDDDDDDDDDDkkkk....", "......kkLLDDDDDDDDDDDDDDDDDDDDDDDDDDkkkk....", "........kkkkDDDDDDDDDDDDDDDDDDDDDDkk........", "........kkkkDDDDDDDDDDDDDDDDDDDDDDkk........", "............kkLLLLLLLLLLLLLLLLLLkk..........", "............kkHHHssssssssssDDDDDkk..........", "............kkHHHssssssssssDDDDDkk..........", "............kkHHHssssssssssDDDDDkk..........", "............kkHHHssssssssssDDDDDkk..........", "............kkHHHssssssssssDDDDDkk..........", "..........kkHHHHssssssssssssDDDDDDkk........", "..........kkHHHHssssssssssssDDDDDDkk........", "..........kkHHHHssssssssssssDDDDDDkk........", "..........kkHHHHssssssssssssDDDDDDkk........", "..........kkHHHHssssssssssssDDDDDDkk........", "..........kkHHHHssssssssssssDDDDDDkk........", "........kkHHHHHsssssssssssssDDDDDDDDkk......", "........kkHHHHHsssssssssssssDDDDDDDDkk......", "........kkHHHHHsssssssssssssDDDDDDDDkk......", "........kkHHHHHsssssssssssssDDDDDDDDkk......", "........kkHHHHHsssssssssssssDDDDDDDDkk......", "........kkHHHHHsssssssssssssDDDDDDDDkk......", "......kkHHHHHHsssssssssssssssDDDDDDDDDkk....", "......kkHHHHHHsssssssssssssssDDDDDDDDDkk....", "......kkHHHHHHsssssssssssssssDDDDDDDDDkk....", "......kkHHHHHHsssssssssssssssDDDDDDDDDkk....", "......kkHHHHHHsssssssssssssssDDDDDDDDDkk....", "......kkHHHHHHsssssssssssssssDDDDDDDDDkk....", "....kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk..", "....kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk..", "....kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk..", "....kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk..", "....kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk..", "....kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk.."], ["............................................", "............................................", "............................................", "............................................", "..............kkkkkk..kkkkkkkkkk............", "..............kkkkkk..kkkkkkkkkk............", "............kkHHHHHHkkLLHHHHHHkk............", "............kkHHHHHHkkLLHHHHHHkk............", "....kkkkkk..kkssssssssLLsssssssskkkkkkkk....", "....kkkkkk..kkssssssssLLsssssssskkkkkkkk....", "..kkHHHHHHkkLLssssssssLLssssssssLLHHHHHHkk..", "..kkHHHHHHkkLLssssssssLLssssssssLLHHHHHHkk..", "..kkssssssssLLssssssssLLssssssssLLsssssskk..", "..kkssssssssLLssssssssLLssssssssLLsssssskk..", "..kkssssssssLLDDDDDDDDLLDDDDDDDDLLsssssskk..", "..kkssssssssLLDDDDDDDDLLDDDDDDDDLLsssssskk..", "..kkssssssssLLDDDDDDDDLLDDDDDDDDLLsssssskk..", "..kkssssssssLLDDDDDDDDLLDDDDDDDDLLsssssskk..", "..kkssssssssLLLLLLLLLLLLLLLLLLLLLLLLLLDDkk..", "..kkssssssssLLLLLLLLLLLLLLLLLLLLLLLLLLDDkk..", "..kkssssssLLssssHHHHHHHHHHHHHHHHHHHHHHLLkk..", "..kkssssssLLssssHHHHHHHHHHHHHHHHHHHHHHLLkk..", "..kkDDDDLLssnnnnHHHHHHHHHHHHHHHHHHHHHHHHkk..", "..kkDDDDLLssnnnnHHHHHHHHHHHHHHHHHHHHHHHHkk..", "..kkDDDDDDnnnnnnssssssssssssssssssssssHHkk..", "..kkDDDDDDnnnnnnssssssssssssssssssssssHHkk..", "..kkLLDDLLssssssDDDDDDDDDDDDsssssssssssskk..", "..kkLLDDLLssssssDDDDDDDDDDDDsssssssssssskk..", "..kkDDLLLLLLssssDDDDDDDDDDDDDDsssssssssskk..", "..kkDDLLLLLLssssDDDDDDDDDDDDDDsssssssssskk..", "..kkDDDDDDssLLLLLLLLLLLLLLLLDDDDsssssssskk..", "..kkDDDDDDssLLLLLLLLLLLLLLLLDDDDsssssssskk..", "..kkDDDDDDssssssssssssssssssLLDDDDsssssskk..", "..kkDDDDDDssssssssssssssssssLLDDDDsssssskk..", "..kkDDDDDDssssssssssssssssssssLLDDDDDDDDkk..", "..kkDDDDDDssssssssssssssssssssLLDDDDDDDDkk..", "....kkDDDDssssssssssssssssssssssLLDDDDkk....", "....kkDDDDssssssssssssssssssssssLLDDDDkk....", "....kkkkDDDDDDDDDDDDDDDDDDDDDDDDDDLLkk......", "....kkkkDDDDDDDDDDDDDDDDDDDDDDDDDDLLkk......", "........kkDDDDDDDDDDDDDDDDDDDDDDkkkk........", "........kkDDDDDDDDDDDDDDDDDDDDDDkkkk........", "..........kkLLLLLLLLLLLLLLLLLLkk............", "..........kkHHHssssssssssDDDDDkk............", "..........kkHHHssssssssssDDDDDkk............", "..........kkHHHssssssssssDDDDDkk............", "..........kkHHHssssssssssDDDDDkk............", "..........kkHHHssssssssssDDDDDkk............", "........kkHHHHssssssssssssDDDDDDkk..........", "........kkHHHHssssssssssssDDDDDDkk..........", "........kkHHHHssssssssssssDDDDDDkk..........", "........kkHHHHssssssssssssDDDDDDkk..........", "........kkHHHHssssssssssssDDDDDDkk..........", "........kkHHHHssssssssssssDDDDDDkk..........", "......kkHHHHHsssssssssssssDDDDDDDDkk........", "......kkHHHHHsssssssssssssDDDDDDDDkk........", "......kkHHHHHsssssssssssssDDDDDDDDkk........", "......kkHHHHHsssssssssssssDDDDDDDDkk........", "......kkHHHHHsssssssssssssDDDDDDDDkk........", "......kkHHHHHsssssssssssssDDDDDDDDkk........", "....kkHHHHHHsssssssssssssssDDDDDDDDDkk......", "....kkHHHHHHsssssssssssssssDDDDDDDDDkk......", "....kkHHHHHHsssssssssssssssDDDDDDDDDkk......", "....kkHHHHHHsssssssssssssssDDDDDDDDDkk......", "....kkHHHHHHsssssssssssssssDDDDDDDDDkk......", "....kkHHHHHHsssssssssssssssDDDDDDDDDkk......", "..kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk....", "..kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk....", "..kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk....", "..kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk....", "..kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk....", "..kkHHHHHHHsssssssssssssssssDDDDDDDDDDkk...."]]; /* drawn at half resolution and doubled: chunky pixels like the hero's */
+/* v128 SKINS: very rare finds buried in the earth - an outfit, a look (hair + headband), gloves. Kept on this device, picked in settings */
+const SKINS={
+ outfit:[{id:'w',ko:'흰 도복'},{id:'k',ko:'검은 도복',g:'#2e2e3a',G:'#1a1a24',b:'#e8344a'},{id:'b',ko:'파란 도복',g:'#3a6ad8',G:'#2a4a9a'},{id:'y',ko:'황금 도복',g:'#ffd400',G:'#d8a800',b:'#8a5a0c'}],
+ char:[{id:'d',ko:'기본 김주먹'},{id:'blond',ko:'금발 펑크',k:'#ffd84a',r:'#3a8aff'},{id:'silver',ko:'은발 고수',k:'#d8d8e8',r:'#1e1a24'},{id:'fire',ko:'불꽃 머리',k:'#c8341a',r:'#ffffff'}],
+ glove:[{id:'n',ko:'맨주먹'},{id:'red',ko:'빨간 글러브',arm:{k:'#5a0a10',n:'#ff8a8a',s:'#e8344a',L:'#8a1020',H:'#ff9a9a',D:'#b02030'}},
+   {id:'gold',ko:'황금 글러브',arm:{k:'#6a4a08',n:'#fff3a0',s:'#ffd400',L:'#a87a10',H:'#fff6c8',D:'#d8a800'}},{id:'cyber',ko:'사이버 글러브',arm:{k:'#0a2a4a',n:'#bff6ff',s:'#3ac8ff',L:'#1a6aa8',H:'#e8fbff',D:'#2a98d8'}}]};
+const SKIN_KO={outfit:'옷',char:'캐릭터',glove:'글러브'};
+let skins={got:{outfit:['w'],char:['d'],glove:['n']},on:{outfit:'w',char:'d',glove:'n'}};
+try{const v=JSON.parse(localStorage.getItem('punchtower.skins')||'null');if(v&&v.got&&v.on)skins=v;}catch(e){}
+const saveSkins=()=>{try{localStorage.setItem('punchtower.skins',JSON.stringify(skins));}catch(e){}};
+const skinOf=c=>SKINS[c].find(s=>s.id===skins.on[c])||SKINS[c][0];
+function applySkin(pal,fev){const o=skinOf('outfit'),ch=skinOf('char');if(o.g&&!fev){pal.g=o.g;pal.G=o.G;}if(o.b)pal.b=o.b;if(ch.k)pal.k=ch.k;if(ch.r){pal.r=ch.r;pal.u=ch.r;}return pal;}
+function unlockSkin(){const locked=[];for(const c in SKINS)for(const s of SKINS[c])if(!skins.got[c].includes(s.id))locked.push([c,s]);
+  if(!locked.length)return null;const [c,s]=locked[(Math.random()*locked.length)|0];skins.got[c].push(s.id);skins.on[c]=s.id;saveSkins();return {c,s};}
 const ARM_PAL={k:'#5a1e14',n:'#e8a8a0',s:'#f2a08c',L:'#9e4a3a',H:'#ffc4b2',D:'#c87864',w:'#f4efe8',G:'#c4bccd'};
 const ARM_HOT={k:'#6a2216',n:'#ffd0c8',s:'#ffb8a2',L:'#b4584a',H:'#ffe2d8',D:'#dc8c76',w:'#ffffff',G:'#d6cfe0'};
 // MAX: the fists burn blue
@@ -2838,7 +2860,8 @@ function drawClassicFists(){
     const x0=Math.round((sd?W-FIST_CX:FIST_CX)-w*sc/2), y0=H-46-GAUGE_ROW-up;   // raised one layer: the big KING gauge runs along the bottom
     const showing=kingT>0&&mode==='play',fireLv=showing?kingShowLv:kingLevel; /* SHOW TIME: keep the fire (or the ice-blue MAX) it was fired with until it ends */
     const maxed=fireLv>=6&&mode==='play';
-    const pal=maxed?(hit||held?ARM_BLUE_HOT:ARM_BLUE):hit||held||((superReady||showing)&&fireLv>=1&&mode==='play')?ARM_HOT:ARM_PAL;
+    let pal=maxed?(hit||held?ARM_BLUE_HOT:ARM_BLUE):hit||held||((superReady||showing)&&fireLv>=1&&mode==='play')?ARM_HOT:ARM_PAL;
+    {const gs=skinOf('glove').arm;if(gs&&!maxed)pal={...pal,...gs};} /* v128 glove skin */
     if(maxed){ctx.globalAlpha=1;blueFlames(x0+w*sc/2,y0+10,w*sc*.95,22,18);} // flames licking up behind the fist
     const lit=mode==='play'&&fireLv>=1&&fireLv<6&&(showing||(superReady&&kingT<=0));
     if(lit){ctx.globalAlpha=1;fistFire(SP,x0,y0,fireLv,false);} // KING ready: the whole fist burns, bigger every level
@@ -4855,11 +4878,14 @@ function showSettings(){menuMusic();showOverlay(`
     <div class="setgrid" style="--d:2">${togHTML('bgmbtn','music','음악',bgmOn)}${togHTML('sndlink','sound','소리',soundOn)}${togHTML('tiltbtn','tilt','기울기',tiltOn)}${togHTML('hintbtn','hints','힌트',hintsOn)}</div>
     <button class="tog setstory" id="shakebtn" type="button" data-act="shakelv" style="--d:2"><span>화면 흔들림</span><b>${SHAKE_KO[shakeLv]}</b></button>
     <button class="tog setstory" id="instbtn" type="button" data-act="install" style="--d:2"${canInstall()?'':' hidden'}><span>앱으로 설치</span><b>설치</b></button>
+    <span class="lbl" style="--d:3">스킨 (흙 속 보물상자에서 아주 가끔)</span>
+    ${['outfit','char','glove'].map(c=>`<button class="tog setstory" type="button" data-act="skin_${c}" style="--d:3"><span>${SKIN_KO[c]} ${skins.got[c].length}/${SKINS[c].length}</span><b id="skin_${c}">${skinOf(c).ko}</b></button>`).join('')}
     <span class="lbl" style="--d:3">스토리</span>
     <button class="tog setstory" type="button" data-act="story" style="--d:3"><span>스토리 다시 보기</span><b>PLAY</b></button>
   </div>
   <div class="ezbtns one"><button class="ezb go" type="button" data-act="back">돌아가기</button></div>
   ${CREDIT}`,{back:showTitle,install:()=>doInstall(ov.querySelector('#instbtn')),
+    ...Object.fromEntries(['outfit','char','glove'].map(c=>['skin_'+c,()=>{const g=skins.got[c],i=g.indexOf(skins.on[c]);skins.on[c]=g[(i+1)%g.length];saveSkins();const b=ov.querySelector('#skin_'+c);if(b)b.textContent=skinOf(c).ko;sfx.select();}])),
     story:()=>{sfx.select();playStory(()=>{if(story2Seen())playStory2(()=>{});});}, /* chapter 2 too, once it has been earned */
     sound:()=>{setSound(!soundOn);setTog('sndlink',soundOn);if(soundOn){sfx.select();menuMusic();}},
     music:()=>{toggleBgm();setTog('bgmbtn',bgmOn);},
