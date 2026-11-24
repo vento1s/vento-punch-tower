@@ -1291,12 +1291,13 @@ const digColX=s=>{if(s.digX!=null)return s.digX;const b=slabs[s.n-1];return same
 const DIG_TOP_H=26;
 const digH=s=>{const h=s.dig?s.dig.h:36;return sameDig(s,slabs[s.n+1])?h:Math.min(h,DIG_TOP_H);};
 const digDepth=s=>s&&s.type==='thick'&&!s.broken?(1-s.hp/s.max)*(digH(s)-2):0;
-const digLift=()=>{const s=tgt();return s&&s.type==='thick'&&!s.broken&&mode==='play'?Math.max(0,digDepth(s)-6)*.9:0;};
+const digFirst=s=>!!(s&&s.type==='thick'&&!s.broken&&!(sameDig(s,slabs[s.n-1])&&slabs[s.n-1].broken)); /* v126: the bottom storey of an earth wall, dug from below */
+const digLift=()=>{const s=tgt();return s&&s.type==='thick'&&!s.broken&&mode==='play'&&!digFirst(s)?Math.max(0,digDepth(s)-6)*.9:0;};
 function digHit(s,side,charged,power,alt){
   {const inh=sameDig(s,slabs[s.n-1])?digColX(slabs[s.n-1]):null; /* v78: the first couple of punches only scratch - walk and the hole follows; then it locks */
     if(s.digX==null&&inh==null)pop(popX(40),pl.feet-34,s.dig&&s.dig.run>1?'DEEP DIG x'+s.dig.run+'!':'DIG DIG DIG!','#ffb060',1);
-    if(inh!=null){s.digX=inh;s.digLock=true;}else if(!s.digLock)s.digX=clamp(Math.round(pl.x),WALL+9,W-WALL-9);
-    s.digHits=(s.digHits||0)+1;if(s.digHits>=DIG_LOCK)s.digLock=true;}
+    if(inh!=null){s.digX=inh;s.digLock=true;}else s.digX=clamp(Math.round(pl.x),WALL+9,W-WALL-9); /* v126: the first storey never locks - he stays below and his arm reaches up, wherever he walks */
+    s.digHits=(s.digHits||0)+1;}
   let dmg=charged?Math.ceil(2+4*power):alt?2:1;if(fever>0)dmg*=2;
   s.hp=Math.max(0,s.hp-dmg);s.flash=.35;s.bump=1;s.digT=now();
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;weakStreak=0;
@@ -1881,7 +1882,8 @@ function update(dt){
   if(tiltOn&&tiltG!=null&&mode==='play'&&!(superReady&&together)){const d=tiltG-tiltZero,a=Math.abs(d);
     if(a>TILT_DEAD)pl.tx+=Math.sign(d)*Math.min(1,(a-TILT_DEAD)/TILT_FULL)*MOVE_SPD*1.4*mdt;}
   pl.tx=clamp(pl.tx,XMIN,XMAX);
-  {const s=tgt();if(s&&s.type==='thick'&&!s.broken&&mode==='play'){const cx=digColX(s);if(cx!=null&&(s.digLock&&digDepth(s)>4||sameDig(s,slabs[s.n-1])&&slabs[s.n-1].broken&&digColX(slabs[s.n-1])!=null))pl.tx=clamp(pl.tx,cx-3,cx+3);}} /* v71: inside the shaft he can't walk off into the earth */
+  {const s=tgt();if(s&&s.type==='thick'&&!s.broken&&mode==='play'){const cx=digColX(s);if(cx!=null&&sameDig(s,slabs[s.n-1])&&slabs[s.n-1].broken&&digColX(slabs[s.n-1])!=null)pl.tx=clamp(pl.tx,cx-3,cx+3);
+    if(digFirst(s)&&s.digX!=null)s.digX=clamp(Math.round(pl.x),WALL+9,W-WALL-9);}} /* v126: the hole follows his fist */ /* v71: inside the shaft he can't walk off into the earth */
   if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,mdt*(dashT>0?36:16));
   // the hop up to the next floor never waits for hit-stop: chained weak hits would otherwise freeze the boxer
   // on the floor below while the floors above him get smashed
@@ -2433,7 +2435,10 @@ function drawPlayer(){
     ctx.globalAlpha=.5;for(let i=0;i<3;i++)R(ax+(side?3:-2),fy+6+i*9+((gt*40)|0)%9,1,4,'#ffffff');ctx.globalAlpha=1;};
   if(mode==='dead'){up(0);up(1);return;}
   if(pl.jt>=0||mode==='clear'){up(0);up(1);}
-  else if(pl.punchT>0){if(pl.reach>0)upLong(pl.side);else up(pl.side);guard(pl.side^1);
+  else if(pl.punchT>0){const ds=tgt(),dig1=mode==='play'&&digFirst(ds)&&ds.digX!=null&&digDepth(ds)>2;
+    if(dig1){const fy=Math.round(-ds.n*FH-camY+10-digDepth(ds)),ax=pl.side?px+7:px-1;              /* v126: a rubbery arm up into the hole he's digging */
+      R(ax,top+4,2,4,slv);for(let y=fy+3;y<top-2;y+=2)R(ax,y,2,1,((y>>1)&1)?pal.s:pal.S);R(pl.side?ax:ax-1,fy,3,3,pal.s);R(pl.side?ax+2:ax-1,fy,1,1,pal.S);}
+    else if(pl.reach>0)upLong(pl.side);else up(pl.side);guard(pl.side^1);
     if(pl.weakT>0){ // impact-frame big fist planted on the weak point
       const fx=Math.round(pl.weakX)-4,fy=pl.reach>0?reachTop-4:top-16;
       for(let y=0;y<BIGFIST.length;y++)for(let x=0;x<9;x++){const ch=BIGFIST[y][x];if(ch!=='.')R(fx+x,fy+y,1,1,ch==='s'?fs:ch==='S'?fS:pal[ch]);}
