@@ -1013,6 +1013,14 @@ const ZONES=[
  {name:'SKY',bg:'#2e5cbe',back:'#c8cede',backL:'#eef2fa',wall:'#b8c0d4',wallL:'#eef2fa',wallD:'#7a849c'},
  {name:'SPACE',bg:'#06050f',back:'#1e2333',backL:'#2a3046',wall:'#3a4258',wallL:'#7a8aaa',wallD:'#1e2333'},
 ];
+/* v125 what you dig through changes with the zone: earth underground and at the surface, a mat of forest on the mountain,
+   ice in the sky, a black hole in space. a/b/c = fill / layer line / crust; t1/t2 = tunnel rim / inside; ld = the ledge; ch = chips */
+const DIG_TH={
+ earth:{a:'#5a3a26',b:'#2e1c12',c:'#8a6040',t1:'#2e1c12',t2:'#140a06',ld:'#8a6040',ch:'#c09060',tx:'#ffcf8a',ts:'#2e1c12'},
+ forest:{a:'#2e5a26',b:'#1a3a16',c:'#5a9a3a',t1:'#1a3a16',t2:'#0c1a0a',ld:'#6a4a2a',ch:'#8ad86a',tx:'#c8ff9a',ts:'#1a3a16'},
+ ice:{a:'#8ac8e8',b:'#5a9ac8',c:'#e8f8ff',t1:'#3a7aa8',t2:'#1a3a5a',ld:'#d8f4ff',ch:'#ffffff',tx:'#e8f8ff',ts:'#2a5a88'},
+ hole:{a:'#1a0c2e',b:'#0a0418',c:'#8a5af0',t1:'#3a1a6a',t2:'#000000',ld:'#b88aff',ch:'#c8a8ff',tx:'#d8c0ff',ts:'#0a0418'}};
+const digTheme=n=>{const z=zoneOfLevel(n).name;return DIG_TH[z==='MOUNTAIN'?'forest':z==='SKY'?'ice':z==='SPACE'?'hole':'earth'];};
 const SLABC={thick:['#5a3a26','#2e1c12','#8a6040'],brick:['#b5523b','#6e2a20','#d97456'],stone:['#7d7f8c','#4b4d58','#a6a9b6'],gold:['#e0a82a','#8a5a0c','#ffe27a'],
  tnt:['#c42a2a','#6a1010','#ff6a50'],vibranium:['#3a2f5c','#17122b','#b7a8ff'],boss:['#5e6b78','#2c333c','#a4b5c6'],final:['#6a4a8a','#2c1c40','#e8c050']};
 /* plain floors change material as you climb: dirt -> gravel -> brick -> paving -> asphalt -> rock -> ice -> cloud -> marble -> metal.
@@ -1293,7 +1301,7 @@ function digHit(s,side,charged,power,alt){
   s.hp=Math.max(0,s.hp-dmg);s.flash=.35;s.bump=1;s.digT=now();
   pl.punchT=PUNCH;pl.side=side;tapFX[side]=1;weakStreak=0;
   const dep=digDepth(s),fy=-s.n*FH+10-dep;
-  for(let i=0;i<7;i++){const c=SLABC.thick[i%3];parts.push({x:s.digX+(Math.random()-.5)*12,y:fy+2,vx:(Math.random()-.5)*70,vy:-10+Math.random()*50,life:.45+Math.random()*.3,col:i%4?c:'#c09060',s:Math.random()<.4?2:1,g:420});}
+  const th=digTheme(s.n);for(let i=0;i<7;i++){const c=[th.a,th.b,th.c][i%3];parts.push({x:s.digX+(Math.random()-.5)*12,y:fy+2,vx:(Math.random()-.5)*70,vy:-10+Math.random()*50,life:.45+Math.random()*.3,col:i%4?c:th.ch,s:Math.random()<.4?2:1,g:420});}
   sfx.dig(1-s.hp/s.max,alt);
   shake=Math.max(shake,alt?2:1.3);hitstop=Math.max(hitstop,.018);vibe(alt?9:6);
   if(Math.random()<.3&&s.hp>0)pop(s.digX+(side?11:-11),fy-2,['BO!','BOBO!','DIG!'][(Math.random()*3)|0],'#ffcf8a',1);
@@ -2219,14 +2227,28 @@ function drawWeak(s,sy){
     R(ix,uy,1,1,'#ff3a5a');R(ix-1,uy+1,3,1,'#ff3a5a');R(ix-2,uy+2,5,1,'#ff3a5a');}  // below, pointing up
 }
 function drawThick(s,sy){
-  const g=s.dig||{run:1,idx:0,h:36,n0:s.n},x0=WALL,bot=sy+10,Hh=digH(s),top=bot-Hh,[a,b,c]=SLABC.thick;
+  const g=s.dig||{run:1,idx:0,h:36,n0:s.n},x0=WALL,bot=sy+10,Hh=digH(s),top=bot-Hh,th=digTheme(s.n),a=th.a,b=th.b,c=th.c,kind=th===DIG_TH.forest?1:th===DIG_TH.ice?2:th===DIG_TH.hole?3:0;
   const below=sameDig(s,slabs[s.n-1]),above=sameDig(s,slabs[s.n+1]);
   R(x0,top,IN,Hh,a);
-  for(let y=top;y<bot;y+=6){R(x0,y,IN,1,b);for(let i=0;i<10;i++)R(x0+((hash(s.n*7+y,i)*IN)|0),y+2+((hash(i,y)*3)|0),2,1,i%3?b:c);} // packed earth in layers
-  for(let i=0;i<(Hh<30?5:9);i++){const px=x0+((hash(s.n,i+40)*(IN-6))|0),py=top+3+((hash(i+40,s.n)*(Hh-8))|0);R(px,py,4,3,'#6e6a66');R(px,py,4,1,'#a8a29a');R(px,py+2,4,1,'#3e3a38');} // stones in it
+  if(kind===0){for(let y=top;y<bot;y+=6){R(x0,y,IN,1,b);for(let i=0;i<10;i++)R(x0+((hash(s.n*7+y,i)*IN)|0),y+2+((hash(i,y)*3)|0),2,1,i%3?b:c);} // packed earth in layers
+    for(let i=0;i<(Hh<30?5:9);i++){const px=x0+((hash(s.n,i+40)*(IN-6))|0),py=top+3+((hash(i+40,s.n)*(Hh-8))|0);R(px,py,4,3,'#6e6a66');R(px,py,4,1,'#a8a29a');R(px,py+2,4,1,'#3e3a38');}} // stones in it
+  else if(kind===1){ /* forest: a tangle of leaves, roots and the odd flower */
+    for(let i=0;i<70;i++){const px=x0+((hash(s.n,i)*(IN-3))|0),py=top+((hash(i,s.n+3)*(Hh-2))|0);R(px,py,3,2,i%3?b:c);R(px+1,py,1,1,i%5?'#4a8a3a':'#7ac85a');}
+    for(let i=0;i<4;i++){let rx=x0+((hash(s.n,i+90)*IN)|0);for(let y=top;y<bot;y+=2){rx+=((hash(y,i)*3)|0)-1;R(rx,y,1,2,'#5a3a1e');}}       // roots
+    for(let i=0;i<4;i++){const px=x0+4+((hash(s.n,i+60)*(IN-8))|0),py=top+3+((hash(i+60,s.n)*(Hh-8))|0);R(px-1,py,3,1,i%2?'#ff8ab0':'#ffe27a');R(px,py-1,1,3,i%2?'#ff8ab0':'#ffe27a');R(px,py,1,1,'#ffffff');}}
+  else if(kind===2){ /* ice: banded, cracked, with bubbles frozen in */
+    for(let y=top;y<bot;y+=5)R(x0,y,IN,1,y%10?'#a8dcf4':b);
+    for(let i=0;i<5;i++){let px=x0+((hash(s.n,i+20)*IN)|0),py=top+((hash(i+20,s.n)*Hh*.5)|0);for(let k=0;k<8;k++){px+=((hash(k,i+s.n)*3)|0)-1;py+=1;if(py<bot)R(px,py,1,1,'#e8f8ff');}}
+    for(let i=0;i<10;i++){const px=x0+((hash(s.n,i+70)*(IN-3))|0),py=top+2+((hash(i+70,s.n)*(Hh-5))|0);R(px,py,2,2,'#e8f8ff');R(px,py,1,1,'#ffffff');}
+    if(((gt*2+s.n)|0)%4===0)R(x0+((hash(s.n,(gt*2)|0)*IN)|0),top+((hash((gt*2)|0,s.n)*Hh)|0),1,1,'#ffffff');}
+  else{ /* a black hole: stars pulled round in rings toward a dark heart */
+    const ccx=x0+IN/2,ccy=top+Hh/2;
+    for(let i=0;i<46;i++){const r0=3+hash(s.n,i)*(IN*.6),an=hash(i,s.n)*6.283+gt*(1.6-r0/IN),px=ccx+Math.cos(an)*r0,py=ccy+Math.sin(an)*r0*.35;
+      if(px>x0&&px<x0+IN-1&&py>top&&py<bot-1)R(px|0,py|0,1,1,r0<14?'#ffd8ff':i%3?'#8a5af0':'#ffffff');}
+    R(ccx-6,ccy-2,12,4,'#000000');R(ccx-4,ccy-3,8,6,'#000000');R(ccx-8,ccy-1,16,1,'#c8a8ff');}
   if(!above)R(x0,top,IN,2,c);if(!below)R(x0,bot-1,IN,1,'#1a100a');                // crust only at the very top and bottom of the whole wall
-  if(g.run>1&&!below&&!s.digT&&s.n===tgtN()&&mode==='play')text('x'+g.run,W-WALL-3,top-8+Hh,1,'#ffcf8a','r','#2e1c12'); // how many storeys deep
-  if(!s.broken&&!s.digT&&s.n===tgtN()&&mode==='play'&&((gt*3)|0)%2&&!below)text('DIG!',W/2,sy-6,2,'#ffcf8a','c','#2e1c12'); // what to do: just dig
+  if(g.run>1&&!below&&!s.digT&&s.n===tgtN()&&mode==='play')text('x'+g.run,W-WALL-3,top-8+Hh,1,th.tx,'r',th.ts); // how many storeys deep
+  if(!s.broken&&!s.digT&&s.n===tgtN()&&mode==='play'&&((gt*3)|0)%2&&!below)text('DIG!',W/2,sy-6,2,th.tx,'c',th.ts); // what to do: just dig
   const it=g.item;
   if(it&&!it.got&&it.k==='power'){const ox=it.x,oy=bot-it.dy,pu=.5+.5*Math.sin(gt*5+s.n); /* v88 DOUBLE PUNCH: two cyan fists, dash-afterimage style */
     ctx.globalAlpha=.25+.2*pu;R(ox-7,oy-5,15,11,'#7af0ff');ctx.globalAlpha=1;
@@ -2240,10 +2262,10 @@ function drawThick(s,sy){
     if(((gt*4+s.n)|0)%5===0){R(ox+3,oy-4,1,1,'#ffffff');R(ox-4,oy+3,1,1,'#fff3a0');}}
   const d=s.broken?Hh:Math.round(digDepth(s)),cx=digColX(s);
   if(d>0&&cx!=null){const x=cx,w=14,ty=bot-d;
-    R(x-w/2-1,ty,w+2,d,'#2e1c12');R(x-w/2,ty+(s.broken?0:1),w,d,'#140a06');     // the tunnel
+    R(x-w/2-1,ty,w+2,d,th.t1);R(x-w/2,ty+(s.broken?0:1),w,d,th.t2);     // the tunnel
     for(let y=ty;y<bot;y+=3){R(x-w/2-2+((hash(y,s.n)*2)|0),y,1,2,c);R(x+w/2+1-((hash(s.n,y)*2)|0),y,1,2,c);} // crumbly walls
-    if(s.broken){R(x-w/2,sy-1,w,2,'#8a6040');R(x-w/2,sy+1,w,1,'#2e1c12');}       // the ledge he stands on inside the shaft
-    else R(x-w/2,ty,w,1,'#8a6040');
+    if(s.broken){R(x-w/2,sy-1,w,2,th.ld);R(x-w/2,sy+1,w,1,th.t1);}       // the ledge he stands on inside the shaft
+    else R(x-w/2,ty,w,1,th.ld);
     const fresh=s.digT?now()-s.digT:9;if(!s.broken&&fresh<.12){ctx.globalAlpha=1-fresh/.12;R(x-w/2,ty,w,3,'#ffcf8a');ctx.globalAlpha=1;}}
   if(s.broken)return;
   if(s.flash>0){ctx.globalAlpha=s.flash*.35;R(x0,top,IN,Hh,'#fff');ctx.globalAlpha=1;}
