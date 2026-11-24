@@ -3283,7 +3283,8 @@ function render(){
 }
 
 let last=performance.now();
-function loop(ts){const dt=Math.min(.05,(ts-last)/1000);last=ts;try{update(dt);render();}catch(e){console.error(e);}requestAnimationFrame(loop);} /* v99: a bug in one frame must never stop the game */
+let diagFps=0,diagWorst=0,diagN=0,diagT0=0; /* v130: frame rate on the test address's DIAG panel */
+function loop(ts){const dt=Math.min(.05,(ts-last)/1000);{const ms=ts-last;if(ms>diagWorst&&ms<2000)diagWorst=Math.round(ms);diagN++;if(ts-diagT0>=1000){diagFps=diagN;diagN=0;diagT0=ts;}}last=ts;try{update(dt);render();}catch(e){console.error(e);}requestAnimationFrame(loop);} /* v99: a bug in one frame must never stop the game */
 requestAnimationFrame(loop);
 
 /* ===================== v104 TUTORIAL: the first run teaches by doing, with no lava and nothing to lose =====================
@@ -4758,7 +4759,7 @@ if(location.hash==='#diag'||/git-preview/.test(location.hostname)){ /* always on
   const upd=()=>{const vv=window.visualViewport,cs=getComputedStyle(sp),sr=stage.getBoundingClientRect();
     d.textContent=['mode '+dm+'  dpr '+devicePixelRatio,'inner '+innerWidth+'x'+innerHeight,'client '+document.documentElement.clientWidth+'x'+document.documentElement.clientHeight,
       'vv '+(vv?Math.round(vv.width)+'x'+Math.round(vv.height)+' top '+Math.round(vv.offsetTop):'-'),'screen '+screen.width+'x'+screen.height+' avail '+screen.availWidth+'x'+screen.availHeight,
-      'safe t'+cs.paddingTop+' b'+cs.paddingBottom,'stage '+Math.round(sr.top)+'..'+Math.round(sr.bottom)+' h'+Math.round(sr.height),'H '+H+' lock '+fitLock].join('\n');};
+      'safe t'+cs.paddingTop+' b'+cs.paddingBottom,'stage '+Math.round(sr.top)+'..'+Math.round(sr.bottom)+' h'+Math.round(sr.height),'H '+H+' lock '+fitLock,'fps '+diagFps+'  worst '+diagWorst+'ms  ua '+(/Safari/.test(navigator.userAgent)&&!/Chrome/.test(navigator.userAgent)?'safari':/Chrome/.test(navigator.userAgent)?'chrome':'?')].join('\n');diagWorst=0;};
   setOpen(open);upd();addEventListener('resize',upd);if(window.visualViewport)visualViewport.addEventListener('resize',upd);setInterval(upd,500);}
 function showSplash(){launchCard();
   ov.classList.add('black');ov.hidden=false;
