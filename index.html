@@ -1393,7 +1393,7 @@ function hit(side,power,echo){
   combo++;maxCombo=Math.max(maxCombo,combo);lastTap=t;
   comboFX={dx:side?13:-13,at:t};
   if(!charged&&!echo)pl.tx=clamp(pl.tx+(side?NUDGE:-NUDGE),XMIN,XMAX);
-  if(s.type==='thick'&&kingT<=0){digHit(s,side,charged,power,alt);return;} /* v70: digging */
+  if(s.type==='thick'){digHit(s,side,charged,power,alt);return;} /* v70: digging (v123: in SHOW TIME too - earth always has to be dug, so its item can't be skipped) */
   const fx=fistX(side),fy=-tgtN()*FH+10;
   // weak point = the boxer's body lined up under it, hit with alternating hands
   const onWeak=s.wT>=1&&Math.abs(pl.x-s.wx)<=wkW(s)/2+1;
@@ -1470,7 +1470,7 @@ function breakSlab(s){
     if(AC){const t=AC.currentTime;tone(t,.09,1400+Math.min(showBrk,12)*90,500,'square',.07);}}
   let dest=s.n;
   if(s.type==='tnt'){sfx.boom();shake=8;pop(popX(38),pl.feet-30,'BOOM!','#ff6a50',2);
-    for(let k=1;k<=2;k++){const n2=slabs[s.n+k];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='vibranium'){n2.broken=true;debris(n2);dest=n2.n;}else break;}}
+    for(let k=1;k<=2;k++){const n2=slabs[s.n+k];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='vibranium'&&n2.type!=='thick'){ /* v123: a blast stops at earth */n2.broken=true;debris(n2);dest=n2.n;}else break;}}
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();pop(popX(36),pl.feet-30,'LAVA DOWN','#ffe27a',1);}
   if(s.type==='boss'||s.type==='vibranium')pop(popX(44),pl.feet-30,s.type==='boss'?'GATE BROKEN':'SMASHED!',s.type==='boss'?'#a4b5c6':'#b7a8ff',1);
   const nx=slabs[dest+1];ensureSlabs(dest+31);
@@ -1866,7 +1866,7 @@ function update(dt){
   if(tiltOn&&tiltG!=null&&mode==='play'&&!(superReady&&together)){const d=tiltG-tiltZero,a=Math.abs(d);
     if(a>TILT_DEAD)pl.tx+=Math.sign(d)*Math.min(1,(a-TILT_DEAD)/TILT_FULL)*MOVE_SPD*1.4*mdt;}
   pl.tx=clamp(pl.tx,XMIN,XMAX);
-  {const s=tgt();if(s&&s.type==='thick'&&!s.broken&&mode==='play'&&kingT<=0){const cx=digColX(s);if(cx!=null&&(s.digLock&&digDepth(s)>4||sameDig(s,slabs[s.n-1])&&slabs[s.n-1].broken&&digColX(slabs[s.n-1])!=null))pl.tx=clamp(pl.tx,cx-3,cx+3);}} /* v71: inside the shaft he can't walk off into the earth */
+  {const s=tgt();if(s&&s.type==='thick'&&!s.broken&&mode==='play'){const cx=digColX(s);if(cx!=null&&(s.digLock&&digDepth(s)>4||sameDig(s,slabs[s.n-1])&&slabs[s.n-1].broken&&digColX(slabs[s.n-1])!=null))pl.tx=clamp(pl.tx,cx-3,cx+3);}} /* v71: inside the shaft he can't walk off into the earth */
   if(mode!=='dead')pl.x+=(pl.tx-pl.x)*Math.min(1,mdt*(dashT>0?36:16));
   // the hop up to the next floor never waits for hit-stop: chained weak hits would otherwise freeze the boxer
   // on the floor below while the floors above him get smashed
