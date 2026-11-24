@@ -1083,6 +1083,7 @@ function spawnBolt(feet){if(bolts.length>5)return;
   bolts.push({pts,br,life:.12,max:.12});flashO=Math.max(flashO,.14);flashCol='#bff6ff';shake=Math.max(shake,3);
   if(AC&&soundOn){const t=AC.currentTime;noise(t,.09,3200,1.2,.14,'highpass');}}
 const PW_COL=['#ffffff','#7af0ff','#c890ff','#ff8a1a'];
+const POW_AMMO=150;let powAmmo=0; /* v132: power punches are counted, like a heavy machine gun - 150 a pick-up, then it's gone */
 let ghosts=[],dashCD=0,dashT=0,powerLv=0,echoFX=[0,0],lastAltV=false; /* v88 power-up: powerLv 1 = every punch is followed by a second (the 'echo') */
 const ECHO_MS=70;
 let dashFar=false; /* the try-out has just moved on to the dash: put the next weak point on the far side */
@@ -1268,15 +1269,16 @@ function makeSlab(n){
   const vibP=n<vibFrom?0:Math.min(.4,.12+n*.004)*D.vib;
   const prev=slabs[n-1],prev2=slabs[n-2];
   const vibRun=prev&&prev.type==='vibranium'&&prev2&&prev2.type==='vibranium';
-  const thickNear=[1,2,3,4,5,6,7].some(k=>slabs[n-k]&&slabs[n-k].type==='thick');let dig=null;
+  const thickNear=[1,2,3,4,5].some(k=>slabs[n-k]&&slabs[n-k].type==='thick');let dig=null;
   if(n%10===0)type='boss';
   else if(prev&&prev.dig&&prev.dig.idx<prev.dig.run-1){type='thick';dig={run:prev.dig.run,idx:prev.dig.idx+1,h:36,n0:prev.dig.n0};} /* v71: the same wall goes on up */
-  else if(n>=DIG_FROM&&n%10!==9&&!thickNear&&Math.random()<(n<20?DIG_P*2:DIG_P)){type='thick'; /* v70: a thick wall now and then, to dig through */
-    const q=Math.random();dig=q<.25?{run:1,idx:0,h:20,n0:n}:{run:q<.6?1:q<.85?2:3,idx:0,h:36,n0:n};} /* v71: half a storey, or 1 / 2 / 3 storeys of earth */
+  else if(n>=DIG_FROM&&n%10!==9&&!thickNear&&(Math.random()<(n<20?DIG_P*2:DIG_P)||n-lastPowN>=powGap())){type='thick'; /* v70: a thick wall now and then, to dig through (v132: and always one before power runs too dry) */
+    const q=Math.random();dig=q<.25&&n-lastPowN<powGap()?{run:1,idx:0,h:20,n0:n}:{run:q<.6?1:q<.85?2:3,idx:0,h:36,n0:n};} /* v71: half a storey, or 1 / 2 / 3 storeys of earth */
   else if(!vibRun&&Math.random()<vibP)type='vibranium';
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
   if(type!=='thick')dig=null; /* v80: only earth carries a dig record */
-  if(dig&&dig.h>=36&&Math.random()<DIG_ITEM_P)dig.item={k:Math.random()<.04?'skin':Math.random()<.7?'power':'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78 (v80: after the type chain - it used to cut the else-if chain and turn earth into metal): something buried in the earth */
+  if(dig&&dig.h>=36&&(Math.random()<DIG_ITEM_P||n-lastPowN>=powGap()))dig.item={k:n-lastPowN>=powGap()?'power':Math.random()<.04?'skin':Math.random()<.6?'power':'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78 (v80: after the type chain - it used to cut the else-if chain and turn earth into metal): something buried in the earth */
+  if(dig&&dig.item&&dig.item.k==='power')lastPowN=n; /* v132 */
   const base=10+Math.floor(n*.8);
   const raw=type==='thick'?(dig.h<36?DIG_HP_HALF:dig.run>1?DIG_HP_RUN:DIG_HP)*(.8+.2*D.hp)/D.hp:type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
   const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
@@ -1284,7 +1286,9 @@ function makeSlab(n){
 }
 /* v70 THICK WALL (DIG): a whole storey of packed earth. Any punch anywhere digs; alternating hands dig twice as fast.
    A tunnel bores up into it and the boxer climbs in after it, until he breaks through the top. No weak point, no misses. */
-const DIG_FROM=8,DIG_P=.13,DIG_ITEM_P=.9,DIG_LOCK=3,DIG_HP=30,DIG_HP_RUN=22,DIG_HP_HALF=16,T_DIG=.1;
+/* v132: power-ups come steadily - an earth wall with one is forced if none came for a while (sooner with no power at all) */
+let lastPowN=0;const powGap=()=>powerLv===0?12:powerLv<3?20:36;
+const DIG_FROM=8,DIG_P=.16,DIG_ITEM_P=.9,DIG_LOCK=3,DIG_HP=30,DIG_HP_RUN=22,DIG_HP_HALF=16,T_DIG=.1;
 const sameDig=(a,b)=>!!(a&&b&&a.type==='thick'&&b.type==='thick'&&a.dig&&b.dig&&a.dig.n0===b.dig.n0);
 const digColX=s=>{if(s.digX!=null)return s.digX;const b=slabs[s.n-1];return sameDig(s,b)?digColX(b):null;}; /* one shaft runs straight up the whole wall */
 /* v79: earth is earth, bricks are bricks - the top storey of a wall stops 10px short of the brick above, so they never touch */
@@ -1320,6 +1324,7 @@ function digItem(s){const it=s.dig&&s.dig.item;if(!it||it.got||s.digX==null)retu
   it.got=true;const wx=it.x,wy=-s.n*FH+10-it.dy;
   for(let i=0;i<22;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*90;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.4+Math.random()*.4,col:i%3?'#ffd400':'#ffffff',s:i%4?1:2,g:120});}
   rings.push({x:wx,y:wy,life:.4,max:.4,big:true,col:'#ffd400'});
+  if(it.k==='power')powAmmo=POW_AMMO; /* v132: a fresh belt of punches */
   if(it.k==='power'&&powerLv<3){powerLv++;pop(clamp(wx,WALL+40,W-WALL-40),wy-8,['','DOUBLE PUNCH!','SHOCK WAVE!','FIRE FIST!'][powerLv],PW_COL[powerLv],2); /* v124: three steps, like a shmup */
     for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,sp=50+Math.random()*80;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.5,col:i%2?'#7af0ff':'#ffffff',s:2,g:60});}
     if(AC){const a=AC.currentTime;[523,784,1047,1568].forEach((f,i)=>tone(a+i*.06,.1,f,f,'square',.07));}}
@@ -1345,7 +1350,7 @@ function newGame(){
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;endShown=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190-HX;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;impactK=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];riseT=0;bolts=[];megaLv=-1;dashCD=0;dashT=0;powerLv=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];riseT=0;bolts=[];megaLv=-1;dashCD=0;dashT=0;powerLv=0;powAmmo=0;lastPowN=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -1403,6 +1408,7 @@ function weakFX(x,y,dmg){
 function hit(side,power,echo){
   if(mode!=='play'||kingSlowT>0)return;
   power=power||0;const charged=power>0;
+  if(!echo&&powerLv>=1&&kingT<=0){powAmmo--;if(powAmmo<=0){powAmmo=0;powerLv=0;pop(W/2,pl.feet-60,'OUT OF POWER','#a597b8',1);if(AC){const a=AC.currentTime;tone(a,.18,420,140,'square',.07);}}}  /* v132: each power punch spends one */
   if(!echo&&!charged&&powerLv>=1&&kingT<=0)setTimeout(()=>hit(side,0,true),ECHO_MS); /* v131: not in SHOW TIME - double + MAX climbed 100 floors */ /* v88 DOUBLE PUNCH: a second blow right behind it */
   if(echo){echoFX[side]=1;ghosts.push({x:pl.x+(side?3:-3),life:.16});}
   const t=now();
@@ -2879,7 +2885,7 @@ function drawClassicFists(){
     if(hit){ctx.globalAlpha=.8;for(let k=0;k<3;k++)R(x0+6+k*10,y0-6-(k%2)*2,2,4,'#fff3a0');}  // little speed ticks above the fist
     if(echoFX[sd]>0){const e=echoFX[sd];ctx.globalAlpha=e*.65;ctx.drawImage(sprCanvas(SP,null,'#7af0ff'),x0+(sd?-5:5),y0-4-Math.round(10*e)); /* v88: the second punch, a cyan afterimage like the dash */
       ctx.globalAlpha=e*.35;ctx.drawImage(sprCanvas(SP,null,'#ffffff'),x0+(sd?-5:5),y0-4-Math.round(10*e));}
-    if(powerLv>=1&&mode==='play'){ctx.globalAlpha=1;text(['','x2','x2+','x2F'][powerLv],sd?x0+2:x0+w*sc-2,y0+2,1,PW_COL[powerLv],sd?'l':'r','#0d0a08');}
+    if(powerLv>=1&&mode==='play'){ctx.globalAlpha=1;text(['','x2','x2+','x2F'][powerLv],sd?x0+2:x0+w*sc-2,y0+2,1,PW_COL[powerLv],sd?'l':'r','#0d0a08');text(String(powAmmo),sd?x0+2:x0+w*sc-2,y0+10,1,powAmmo<30&&((gt*6)|0)%2?'#ff5a3a':'#f4efe8',sd?'l':'r','#0d0a08');}  /* v132: punches left */
     if(mashOpen()){ctx.globalAlpha=1;hudFlames(x0+w*sc/2,y0+14,w*sc*.9,26);hudFlames(x0+w*sc/2,y0+4,w*sc*.6,12);}
     if(maxed){ctx.globalAlpha=.85;blueFlames(x0+w*sc/2,y0+6,w*sc*.7,10,10);ctx.globalAlpha=1;}           // and a few in front
   }
