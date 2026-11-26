@@ -1,5 +1,7 @@
--- v137: GOD MODE (갓 모드) on the ranking board, score x8.
--- Run once in the Supabase SQL editor (project imqnhqsofpvssefcrbkq). Additive: old clients keep working.
+-- v138: ALREADY APPLIED to project imqnhqsofpvssefcrbkq on 2026-11-26 (kept as a record).
+-- GOD MODE (갓 모드, x8) + gem bonus points: score = (floor*1000 + bonus) * difficulty.
+-- punch_tower_submit gained p_bonus (default 0, capped at 3000 + floor*300); punch_tower_board returns bonus.
+-- The applied migration also adds: alter table punch_tower_scores add column bonus integer not null default 0 check (bonus between 0 and 9999999);
 begin;
 alter table public.punch_tower_scores drop constraint punch_tower_scores_diff_check;
 alter table public.punch_tower_scores add constraint punch_tower_scores_diff_check check (diff in ('easy','normal','hard','master','god'));

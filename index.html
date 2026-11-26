@@ -1095,7 +1095,13 @@ function spawnBolt(feet){if(bolts.length>5)return;
   if(AC&&soundOn){const t=AC.currentTime;noise(t,.09,3200,1.2,.14,'highpass');}}
 const PW_COL=['#ffffff','#7af0ff','#c890ff','#ff8a1a'];
 const POW_AMMO=150;let powAmmo=0;
-let gemUp=0,magT=0,shieldN=0; /* v137 earth items: floors a gem will blast after the next break, MAGNET seconds left, SHIELD charms held */
+let magT=0,shieldN=0; /* v137 earth items: MAGNET seconds left, SHIELD charms held */
+/* v138: gems are points (+ a 5-slot collection kept on this phone), gold is saved for the shop, hourglasses are kept and used with a swipe down */
+let gemPts=0,runGold=0,glassN=0;const GEM_PTS=[0,300,1000,3000],GEM_SLOTS=5,GLASS_MAX=3,GLASS_T=3,GLASS_HOLD=2.5,GLASS_PUSH=40;
+let gemSlots=[],goldBank=0;try{gemSlots=(JSON.parse(localStorage.getItem('punchtower.gems')||'[]')||[]).slice(0,GEM_SLOTS);goldBank=Math.max(0,+localStorage.getItem('punchtower.gold')||0);}catch(e){}
+const saveGems=()=>{try{localStorage.setItem('punchtower.gems',JSON.stringify(gemSlots));}catch(e){}};
+const saveGold=()=>{try{localStorage.setItem('punchtower.gold',String(goldBank));}catch(e){}};
+const bonusCap=f=>3000+f*300; /* the server takes at most this many gem points for a run of f floors */
 const MAG_T=10,MAG_W=1.6,MAG_PULL=90; /* v132: power punches are counted, like a heavy machine gun - 150 a pick-up, then it's gone */
 let ghosts=[],dashCD=0,dashT=0,powerLv=0,echoFX=[0,0],lastAltV=false; /* v88 power-up: powerLv 1 = every punch is followed by a second (the 'echo') */
 const ECHO_MS=70;
@@ -1301,7 +1307,7 @@ function makeSlab(n){
 /* v70 THICK WALL (DIG): a whole storey of packed earth. Any punch anywhere digs; alternating hands dig twice as fast.
    A tunnel bores up into it and the boxer climbs in after it, until he breaks through the top. No weak point, no misses. */
 /* v137: what an earth wall holds (skin 4%, then by weight): power-ups and KING still lead; the six new finds share the rest */
-const DIG_ITEMS=[['power',34],['king',14],['gem',12],['glass',10],['coins',9],['magnet',6],['fire',6],['shield',5]];
+const DIG_ITEMS=[['power',30],['king',14],['gem',16],['glass',10],['coins',9],['magnet',6],['fire',6],['shield',5]];
 function pickDigItem(){if(Math.random()<.04)return 'skin';let r=Math.random()*96;for(const [k,w] of DIG_ITEMS){if((r-=w)<0)return k;}return 'power';}
 /* v132: power-ups come steadily - an earth wall with one is forced if none came for a while (sooner with no power at all) */
 let lastPowN=0;const powGap=()=>powerLv===0?9:powerLv<3?16:30;
@@ -1350,16 +1356,21 @@ function digItem(s){const it=s.dig&&s.dig.item;if(!it||it.got||s.digX==null)retu
     if(u){pop(clamp(wx,WALL+40,W-WALL-40),wy-16,'NEW SKIN!','#ff8ad8',2);pop(clamp(wx,WALL+40,W-WALL-40),wy+2,SKIN_KO[u.c]+': '+u.s.ko,'#ffffff',1);flashO=.4;flashCol='#ff8ad8';
       if(AC){const a=AC.currentTime;[523,659,784,1047,1319,1568].forEach((f,i)=>tone(a+i*.07,.14,f,f,'square',.07));}}
     else{addTime(3*tMul());pop(clamp(wx,WALL+40,W-WALL-40),wy-8,'TREASURE! +TIME','#ff8ad8',2);}}
-  else if(it.k==='gem'){const g=it.g||1,px=clamp(wx,WALL+44,W-WALL-44);gemUp+=g; /* v137 GEM: when this wall breaks, he blasts on up g more floors (= g floors of score) */
-    pop(px,wy-16,['','RUBY!','SAPPHIRE!','DIAMOND!'][g],GEM_COL[g][0],2);pop(px,wy+2,'+'+g+'F JUMP','#ffffff',1);flashO=.3;flashCol=GEM_COL[g][0];
+  else if(it.k==='gem'){const g=it.g||1,px=clamp(wx,WALL+44,W-WALL-44);gemPts+=GEM_PTS[g]; /* v138 GEM: points, and a slot in the 5-gem collection */
+    pop(px,wy-16,['','RUBY!','SAPPHIRE!','DIAMOND!'][g],GEM_COL[g][0],2);pop(px,wy+2,'+'+num(GEM_PTS[g]*(DIFF_MUL[D.key]||1)),'#ffffff',1);flashO=.3;flashCol=GEM_COL[g][0];
     for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*80;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.6,col:i%2?GEM_COL[g][0]:'#ffffff',s:2,g:80});}
-    if(AC){const a=AC.currentTime;[1047,1319,1568,2093].slice(0,g+1).forEach((f,i)=>tone(a+i*.06,.14,f,f,'triangle',.08));}}
-  else if(it.k==='coins'){fever=6;sfx.coin();sfx.fever(); /* v137 GOLD POUCH: coins everywhere and a FEVER (double damage) */
-    pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'GOLD RUSH!','#ffd400',2);pop(popX(56),pl.feet-30,'FEVER!!','#ff7af0',2);
+    if(AC){const a=AC.currentTime;[1047,1319,1568,2093].slice(0,g+1).forEach((f,i)=>tone(a+i*.06,.14,f,f,'triangle',.08));}
+    if(gemSlots.length<GEM_SLOTS){gemSlots.push(g);saveGems();gemSlotT=1;
+      if(gemSlots.length===GEM_SLOTS){pop(W/2,pl.feet-60,'GEM SET COMPLETE!','#ffd400',2);flashO=.5;flashCol='#ffffff';vibe([40,30,40,30,120]); /* the reward for a full set: still to be decided */
+        if(AC){const a=AC.currentTime;[1047,1319,1568,2093,2637].forEach((f,i)=>tone(a+.3+i*.09,.2,f,f,'square',.07));}}}}
+  else if(it.k==='coins'){const c=30+Math.floor(Math.random()*31);runGold+=c;goldBank+=c;saveGold();sfx.coin(); /* v138 GOLD POUCH: gold kept on this phone for the shop */
+    pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'GOLD +'+c,'#ffd400',2);
+    if(AC){const a=AC.currentTime;for(let i=0;i<6;i++)tone(a+i*.05,.08,1760+i*90,1760+i*90,'square',.05);}
     for(let i=0;i<26;i++){const a=-Math.PI*(.1+.8*Math.random()),sp=60+Math.random()*120;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.9,col:i%3?'#ffd400':'#fff3a0',s:2,g:380});}}
-  else if(it.k==='glass'){addTime(3);lavaHold=Math.max(lavaHold,2.5); /* v137 HOURGLASS: three seconds and the lava stands still a moment */
-    pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'LAVA STOP!','#7af0ff',2);pop(popX(30),pl.feet-44,'+3.0s','#7af0ff',1);flashO=.3;flashCol='#7af0ff';
-    if(AC){const a=AC.currentTime;[1568,1175,880,1568].forEach((f,i)=>tone(a+i*.08,.12,f,f,'triangle',.08));}}
+  else if(it.k==='glass'){const px=clamp(wx,WALL+44,W-WALL-44); /* v138 HOURGLASS: kept for later - swipe down to use it */
+    if(glassN<GLASS_MAX){glassN++;pop(px,wy-12,'HOURGLASS x'+glassN,'#7af0ff',2);pop(px,wy+4,'SWIPE DOWN TO USE','#ffffff',1);if(!glassTold){glassTold=true;glassHintT=4;}}
+    else{addTime(1.5);pop(px,wy-12,'HOURGLASS FULL +TIME','#7af0ff',1);}
+    if(AC){const a=AC.currentTime;[1568,1175,1568].forEach((f,i)=>tone(a+i*.08,.12,f,f,'triangle',.08));}}
   else if(it.k==='magnet'){magT=MAG_T; /* v137 MAGNET: wide weak points that come to him */
     pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'MAGNET!','#ff5a6a',2);pop(clamp(wx,WALL+44,W-WALL-44),wy+4,'WEAK POINT COMES','#ffffff',1);
     if(AC){const a=AC.currentTime;tone(a,.3,200,900,'sawtooth',.05);tone(a+.1,.2,900,1200,'square',.05);}}
@@ -1379,6 +1390,13 @@ function fireworks(s,wx,wy){ensureSlabs(s.n+16);let n2=s.n+1;while(slabs[n2]&&sa
   for(let i=0;i<10;i++)parts.push({x:wx+(Math.random()-.5)*10,y:wy,vx:(Math.random()-.5)*30,vy:-220-Math.random()*120,life:.5,col:i%2?'#ffd400':'#ffffff',s:1,g:-40});
   pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'FIREWORKS!','#ff7af0',2);if(c)pop(popX(40),pl.feet-30,c+' FLOORS CRACKED','#ffd400',1);
   shake=Math.max(shake,4);if(AC){const a=AC.currentTime;noise(a,.25,2400,1,.25,'bandpass',600);[0,.12,.24].forEach(d=>noise(a+.2+d,.12,3000,.8,.2,'highpass'));}}
+let glassTold=false,glassHintT=0,gemSlotT=0;
+function useGlass(){if(glassN<=0||mode!=='play'||timeUp)return false;glassN--; /* v138: time, and the lava stops and drops back a little */
+  lavaY+=GLASS_PUSH;addTime(GLASS_T);lavaHold=Math.max(lavaHold,GLASS_HOLD);glassHintT=0;
+  pop(W/2,pl.feet-50,'TIME STOP!','#7af0ff',2);pop(W/2,pl.feet-36,'+'+GLASS_T.toFixed(1)+'s','#7af0ff',1);flashO=.4;flashCol='#7af0ff';vibe(40);
+  for(let i=0;i<24;i++)parts.push({x:WALL+Math.random()*IN,y:lavaY-camY>0?lavaY:pl.feet+40,vx:(Math.random()-.5)*40,vy:-40-Math.random()*60,life:.7,col:i%2?'#7af0ff':'#ffffff',s:2,g:-20});
+  if(AC){const a=AC.currentTime;tone(a,.4,1568,392,'triangle',.08);tone(a+.05,.35,2093,523,'sine',.05);}
+  return true;}
 function ensureSlabs(upTo){while(slabs.length<=upTo){const s=makeSlab(slabs.length);if(kingT>0&&s.n<=showCapN+2)unEarth(s);slabs.push(s);}} /* v134: no earth made for the floors a SHOW TIME can still reach */
 /* v124: no earth during SHOW TIME - any earth ahead turns to plain brick (its buried item goes with it) */
 const SHOW_CAP=[12,16,20,26,32,40]; /* v131: most floors one SHOW TIME can climb, by level */
@@ -1393,7 +1411,7 @@ function newGame(){
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;endShown=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190-HX;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;impactK=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];riseT=0;bolts=[];megaLv=-1;dashCD=0;dashT=0;powerLv=0;powAmmo=0;lastPowN=0;gemUp=0;magT=0;shieldN=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];riseT=0;bolts=[];megaLv=-1;dashCD=0;dashT=0;powerLv=0;powAmmo=0;lastPowN=0;magT=0;shieldN=0;gemPts=0;runGold=0;glassN=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -1547,9 +1565,6 @@ function breakSlab(s){
   let dest=s.n;
   if(s.type==='tnt'){sfx.boom();shake=8;pop(popX(38),pl.feet-30,'BOOM!','#ff6a50',2);
     for(let k=1;k<=2;k++){const n2=slabs[s.n+k];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='vibranium'&&n2.type!=='thick'){ /* v123: a blast stops at earth */n2.broken=true;debris(n2);dest=n2.n;}else break;}}
-  if(gemUp>0&&kingT<=0&&(s.type!=='thick'||!sameDig(s,slabs[s.n+1]))){const g=gemUp;gemUp=0;ensureSlabs(dest+g+2);let got=0; /* v137: the gem's jump - straight on up, stopping only at earth or a gate */
-    for(let k=1;k<=g;k++){const n2=slabs[dest+1];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='thick'){n2.broken=true;n2.hp=0;debris(n2);dest=n2.n;got++;}else break;}
-    if(got){pop(popX(44),pl.feet-40,'GEM JUMP +'+got+'F!',GEM_COL[Math.min(3,g)][0],2);flashO=.35;flashCol='#ffffff';}}
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();pop(popX(36),pl.feet-30,'LAVA DOWN','#ffe27a',1);}
   if(s.type==='boss'||s.type==='vibranium')pop(popX(44),pl.feet-30,s.type==='boss'?'GATE BROKEN':'SMASHED!',s.type==='boss'?'#a4b5c6':'#b7a8ff',1);
   const nx=slabs[dest+1];ensureSlabs(dest+31);
@@ -1849,8 +1864,11 @@ stage.addEventListener('pointerdown',e=>{if(!ov.hidden)return;e.preventDefault()
 // slide a punching thumb left/right = positioning in steps: each swipe step moves 3x a punch nudge
 // a resting/pressing thumb wobbles: only a clear slide counts as a drag, and once walking it takes a big slide
 const DRAG_START=9,DRAG_START_WALK=18,DRAG_STEP=8,DRAG_MOVE=NUDGE*3;
-function markDrag(id,x,y){const h=holds.get(id);if(h){h.x0=x;h.lx=x;h.drag=false;h.ly=y;}}
+function markDrag(id,x,y){const h=holds.get(id);if(h){h.x0=x;h.lx=x;h.drag=false;h.ly=y;h.y0=y;}}
+const SWIPE_DY=26; /* v138: a thumb pulled straight down from the middle of the screen uses an hourglass (and is not a punch) */
 stage.addEventListener('pointermove',e=>{const h=holds.get(e.pointerId);if(!h||h.x0===undefined)return;
+  if(mode==='play'&&glassN>0&&!h.swiped){if(h.y0===undefined)h.y0=h.ly;const [sx,sy]=toCanvas(e);
+    if(h.y0>H*.2&&h.y0<H*.75&&sy-h.y0>=SWIPE_DY&&Math.abs(sx-h.x0)<(sy-h.y0)*.7){h.swiped=true;h.drag=true;h.used=true;useGlass();return;}}
   if(mode==='super'){const [,y]=toCanvas(e);if(h.ly===undefined)h.ly=y;
     if(Math.abs(y-h.ly)>=2){superRub(y-h.ly,h.side,y);h.ly=y;}return;} // ignore thumb tremble under 2px
   if(mode!=='play'||!skillOn('walk'))return;
@@ -1872,6 +1890,7 @@ addEventListener('keydown',e=>{
   // KING climb on a computer: alternate UP and DOWN; each press counts as one full-size sweep (same key twice = nothing)
   if(mode==='super'&&sup&&['arrowup','arrowdown','w','s'].includes(k)){e.preventDefault();
     if(!e.repeat){const up=k==='arrowup'||k==='w';superRub(up?-STROKE_FULL:STROKE_FULL,up?1:0);}return;}
+  if((k==='arrowdown'||k==='s')&&!e.repeat&&mode==='play'){e.preventDefault();useGlass();return;} /* v138: hourglass on the keyboard */
   if(LKEYS.includes(k)||RKEYS.includes(k)){e.preventDefault();if(!e.repeat)press('k'+k,RKEYS.includes(k)?1:0);return;}
   if(k===' '){e.preventDefault(); /* SPACE is the dash key only (never SHOW TIME): with a fist key held, even one pressed a moment ago, it dashes that way */
     if(mode==='play'&&skillOn('dash')&&!e.repeat){let ws=-1,born=-1;for(const h of holds.values())if(!h.used&&!h.drag&&(h.born||0)>=born){born=h.born||0;ws=h.side;}
@@ -2378,6 +2397,14 @@ function drawDigItem(it,ox,oy,sn){const pu=.5+.5*Math.sin(gt*5+sn),K='#0d0a08';
   else if(it.k==='shield'){R(ox-5,oy-5,11,10,K);R(ox-4,oy-4,9,7,'#3a7ad8');R(ox-3,oy+3,7,1,'#3a7ad8');R(ox-2,oy+4,5,1,'#3a7ad8');R(ox-1,oy+5,3,1,K);
     R(ox-4,oy-4,9,1,'#9ad8ff');R(ox,oy-3,1,6,'#ffffff');R(ox-2,oy-1,5,1,'#ffffff');}
   if(((gt*4+sn)|0)%5===0){R(ox+6,oy-6,1,1,'#ffffff');R(ox-7,oy+4,1,1,'#ffffff');}}
+/* v138: under the top bar - the 5 gem slots (kept between runs) and the hourglasses in hand */
+function drawInv(){const y=21,K='#0d0a08';gemSlotT=Math.max(0,gemSlotT-1/60);
+  for(let i=0;i<GEM_SLOTS;i++){const x=4+i*8,g=gemSlots[i];R(x,y,7,7,K);
+    if(g){const [c,d]=GEM_COL[g],pop1=i===gemSlots.length-1&&gemSlotT>0&&((gt*10)|0)%2;R(x+1,y+1,5,2,pop1?'#ffffff':c);R(x+1,y+3,5,1,d);R(x+2,y+4,3,1,d);R(x+3,y+5,1,1,d);R(x+2,y+1,1,1,'#ffffff');}
+    else{R(x+1,y+1,5,5,'#2a1d38');R(x+3,y+3,1,1,'#4a3a62');}}
+  if(glassN>0){const x=4+GEM_SLOTS*8+4;R(x,y,7,7,K);R(x+1,y+1,5,1,'#ffd400');R(x+1,y+5,5,1,'#ffd400');R(x+2,y+2,3,1,'#bff6ff');R(x+3,y+3,1,1,'#ffe27a');R(x+2,y+4,3,1,'#ffe27a');
+    text('x'+glassN,x+9,y+1,1,'#7af0ff','l',K);
+    if(glassHintT>0){glassHintT=Math.max(0,glassHintT-1/60);if(((gt*3)|0)%2)text('SWIPE DOWN',x-2,y+10,1,'#ffffff','l',K);}}}
 /* v137: what he is carrying - a shield bubble, a magnet with its time left */
 function drawBuffs(){if(mode!=='play'&&mode!=='count')return;const fx=Math.round(pl.x),fy=Math.round(pl.feet-camY);
   if(shieldN>0){const a=.35+.15*Math.sin(gt*6);ctx.globalAlpha=a;ctx.strokeStyle='#9ad8ff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(fx+.5,fy-9.5,12,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
@@ -2762,12 +2789,13 @@ function drawHUD(){
   R(0,0,W,18,'rgba(10,6,16,.78)');R(0,18,W,1,'#3b2a52'); // slim bar: the brick's own HP bar is enough, so the top one is gone
   const hdt=Math.min(.1,Math.max(0,t-hudT));hudT=t;
   const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');
-  if(vsOn())text(vsBeat?'VS BEAT!':'VS '+vs.floor+'F',9,fever>0&&kingT<=0?43:22,1,vsBeat?'#ffd400':'#c9c2d6','l','#0d0a08'); /* steps down out of the way of the wide FEVER x2 label */ /* challenge target under the floor count */
+  if(vsOn())text(vsBeat?'VS BEAT!':'VS '+vs.floor+'F',9,fever>0&&kingT<=0?43:31,1,vsBeat?'#ffd400':'#c9c2d6','l','#0d0a08'); /* steps down out of the way of the wide FEVER x2 label */ /* challenge target under the floor count */
+  drawInv();
   text(D.tag,4+tw(fl,2)+4,8,1,D.key==='god'?'#d07aff':D.key==='master'?'#ff3a5a':'#a597b8',false);
   { /* SCORE, top centre: each floor is worth SC_FLOOR x difficulty and every punch banks its share (the damage it did), so the
        number ticks up with each hit and lands exactly on the ranking score when the floor breaks. Off play it shows the ranking score */
     const mul=DIFF_MUL[D.key]||1,tg=tgt(),live=mode==='play'||mode==='super'?tgtN()-1+(tg&&!tg.broken&&tg.max?clamp(1-Math.max(0,tg.hp)/tg.max,0,1):0):pl.level;
-    const goal=Math.round(live*SC_FLOOR*mul/10)*10;
+    const goal=Math.round((live*SC_FLOOR+gemPts)*mul/10)*10; /* v138: gem points count too */
     if(goal<hudSc)hudSc=goal;else if(goal>hudSc){hudSc=Math.min(goal,hudSc+Math.max(400*mul,(goal-hudSc)*10)*hdt);hudScT=.12;}
     hudScT=Math.max(0,hudScT-hdt);
     /* v88: the score sits in the gap between the difficulty tag and the pause button; a number too long for it shortens (1.25M) */
@@ -3585,7 +3613,7 @@ let playerName='';try{playerName=localStorage.getItem('punchtower.name')||'';}ca
 const DIFF_MUL={easy:1,normal:2,hard:3,master:5,god:8};
 const DIFF_KO={easy:'초급',normal:'중급',hard:'고급',master:'초고수',god:'갓 모드'};
 const SC_FLOOR=1000; /* points per floor before the difficulty multiplier */
-const scoreOf=x=>Math.round(x.floor*SC_FLOOR*(DIFF_MUL[x.diff]||1));
+const scoreOf=x=>Math.round((x.floor*SC_FLOOR+(+x.bonus||0))*(DIFF_MUL[x.diff]||1)); /* v138: + gem points */
 const byRank=(a,b)=>scoreOf(b)-scoreOf(a)||a.time-b.time;
 const num=n=>n.toLocaleString('en-US');
 let netErr='';
@@ -3607,13 +3635,13 @@ if(!/^[A-Za-z0-9_-]{8,40}$/.test(PID)){PID='p'+Date.now().toString(36)+Math.rand
 const rpc=(fn,body)=>fetchT(`${SUPA_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:supaH({'Content-Type':'application/json'}),body:JSON.stringify(body)}).then(r=>r.json());
 let runTokP=null;
 function startRunToken(diff){runTokP=ONLINE?rpc('punch_tower_start',{p_player:PID,p_diff:diff}).catch(()=>null):Promise.resolve(null);}
-const rowOf=x=>({id:x.run_key,pid:x.player_id,rk:+x.rk,name:x.name,diff:x.diff,floor:+x.floor,time:+x.secs});
+const rowOf=x=>({id:x.run_key,pid:x.player_id,rk:+x.rk,name:x.name,diff:x.diff,floor:+x.floor,bonus:+x.bonus||0,time:+x.secs});
 async function supaBoard(){const j=await rpc('punch_tower_board',{p_player:PID,p_limit:LIMIT});
   return {list:(j&&j.top||[]).map(rowOf),me:j&&j.me?rowOf(j.me):null};}
 async function supaSubmit(en,tokP){
   const tok=await Promise.race([tokP||Promise.resolve(null),new Promise(r=>setTimeout(()=>r(null),5000))]);
   if(!tok)throw new Error('run token');
-  return +(await rpc('punch_tower_submit',{p_run:tok,p_player:PID,p_key:en.id,p_name:en.name,p_floor:en.floor,p_secs:en.time}));}
+  return +(await rpc('punch_tower_submit',{p_run:tok,p_player:PID,p_key:en.id,p_name:en.name,p_floor:en.floor,p_secs:en.time,p_bonus:en.bonus||0}));}
 const localAll=()=>localBoard().sort(byRank);
 async function getTop(){
   if(ONLINE){try{const b=await supaBoard();netErr='';return {online:true,list:b.list,me:b.me};}catch(e){netErr=errCode(e);}}
@@ -5043,7 +5071,7 @@ function resultScreen(cleared){
   const floor=pl.level,time=Math.round((cleared?clearTime:tNow)*10)/10;
   if(vsOn()&&floor>vs.floor)vsWon=true; /* challenge passed: the title banner says so from now on */
   try{shareSnap=document.createElement('canvas');shareSnap.width=W;shareSnap.height=H;shareSnap.getContext('2d').drawImage(cv,0,0);}catch(e){shareSnap=null;}
-  const en={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),name:playerName||'???',diff:D.key,floor,time};
+  const en={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),name:playerName||'???',diff:D.key,floor,time,bonus:Math.min(gemPts,bonusCap(floor))};
   const head=cleared
     ?`<div class="eyebrow">TOWER CLEAR · ${D.tag}</div><h2 class="big">정상 정복!</h2>`
     :`<h2 class="big over">GAME OVER</h2>`;
@@ -5058,7 +5086,7 @@ function resultScreen(cleared){
     if(floor>=1){if(askName&&!sub){playerName='GUEST'+String(100+Math.floor(Math.random()*900));isGuest=true;}post();}startGame();};
   const next=()=>{if(performance.now()-t1<500)return; /* ignore the leftover mashing */
     removeEventListener('keydown',nextKey);scorePage(cleared,floor,en,askName&&!sub?post:post());}; /* still nameless: page 2 asks, then posts */
-  showOverlay(`${head}${ezResult(floor,scoreOf(en),time)}
+  showOverlay(`${head}${ezResult(floor,scoreOf(en),time)}${runExtra(en)}
     <div class="ezbtns"><button class="ezb" type="button" data-act="retry">다시 하기</button><button class="ezb go" type="button" id="go" data-act="next">랭킹 보기 ▶</button></div>${CREDIT}`,
     {retry,next});
   const g1=ovGen,t1=performance.now();ezCount(g1);
@@ -5102,6 +5130,12 @@ function scorePage(cleared,floor,en,sub){
 function accOf(){const tot=jCount.reduce((a,b)=>a+b,0);return tot?(jCount[0]*100+jCount[1]*75+jCount[2]*40)/tot:0;}
 /* result page 1 (EZ2DJ-style): every number counts up from 0000 while its bar slides in, then the grade is stamped */
 function ezGrade(acc,tot){return !tot?'D':acc>=95?'S':acc>=85?'A':acc>=70?'B':acc>=50?'C':'D';}
+/* v138: what the earth gave this run - gem points (already in the score), gold for the shop, the gem collection */
+function runExtra(en){const mul=DIFF_MUL[en.diff]||1,parts=[];
+  if(en.bonus)parts.push(`<span style="color:#ff7a8a">💎 보석 +${num(en.bonus*mul)}점</span>`);
+  if(runGold)parts.push(`<span style="color:#ffd400">💰 금화 +${runGold}</span>`);
+  parts.push(`<span style="color:#a597b8">보석 칸 ${gemSlots.length}/${GEM_SLOTS} · 보유 금화 ${num(goldBank)}</span>`);
+  return `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;font-size:12px;margin:6px 0 2px">${parts.join('')}</div>`;}
 function ezResult(floor,score,time){const acc=accOf(),tot=jCount.reduce((a,b)=>a+b,0),g=ezGrade(acc,tot),allP=tot>0&&jCount[0]===tot;let d=0;
   const n=(v,pad,suf)=>`<b data-to="${v}" data-pad="${pad}"${suf?` data-suf="${suf}"`:''}>${String(v).padStart(pad,'0')}${suf||''}</b>`;
   const bar=(cls,v,label)=>`<div class="ezbar ${cls}" style="--d:${d++}">${n(v,4)}<i>${label}</i></div>`;
