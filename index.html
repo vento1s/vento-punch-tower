@@ -566,7 +566,7 @@ body.phone{padding:0;background:#000}body.phone #stage{box-shadow:none}body.appf
 'use strict';
 const W=144,FH=36,TOP=1e9 /* endless: no roof */,WALL=14,IN=W-2*WALL,PUNCH=0.085;
 const XMIN=WALL+6,XMAX=W-WALL-6;
-const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const cv=document.getElementById('c');let ctx=cv.getContext('2d'); /* v135: let - the wall and text caches draw through it into their own canvases */
 const stage=document.getElementById('stage'),wrap=document.getElementById('wrap'),ov=document.getElementById('ov');
 /* v89 TALL SCREENS: the game is always 144 wide; its height follows the phone (256 = 9:16 ... 320 = 9:20), so an installed app
    fills a long screen instead of sitting between black bars. Fixed once at start-up. Everything that was laid out for 256
@@ -642,9 +642,18 @@ const F={'0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'
 A:'111101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',Y:'101101010010010',Z:'111001010100111',
 '!':'010010010000010','s':'000011010001110','%':'100001010100001',"'":'010010000000000','/':'001001010100100','+':'000010111010000',':':'000010000010000','.':'000000000000010','-':'000000111000000',' ':'000000000000000','x':'000101010101000'};
 function tw(s,sc){return s.length*4*sc-sc;}
+/* v135: pixel text is drawn once per string/size/colour into a little canvas and stamped after that - thousands of fillRects
+   a frame were too many for Safari on iPhone */
+const _txtC=new Map();
 function text(s,x,y,sc,col,align,sh){
-  s=String(s);if(align==='c')x-=tw(s,sc)/2;else if(align==='r')x-=tw(s,sc);
+  s=String(s);const w=tw(s,sc);if(align==='c')x-=w/2;else if(align==='r')x-=w;
   x=Math.round(x);y=Math.round(y);
+  if(typeof col==='string'&&(sh===undefined||sh===false||typeof sh==='string')){
+    const k=s+'\u0001'+sc+'\u0001'+col+'\u0001'+sh;let c=_txtC.get(k);
+    if(!c){if(_txtC.size>700)_txtC.clear();const pad=sh!==false?(sc>1?sc:1):0;c=document.createElement('canvas');c.width=Math.max(1,w+pad+sc*2);c.height=5*sc+pad+1;const g=c.getContext('2d');
+      const ps=(ox,oy,cl)=>{g.fillStyle=cl;for(let i=0;i<s.length;i++){const gl=F[s[i]]||F[' '];for(let p=0;p<15;p++)if(gl[p]==='1')g.fillRect(ox+(i*4+p%3)*sc,oy+((p/3)|0)*sc,sc,sc);}};
+      if(sh!==false)ps(pad,pad,sh||'#120a18');ps(0,0,col);_txtC.set(k,c);}
+    ctx.drawImage(c,x,y);return;}
   const pass=(ox,oy,c)=>{ctx.fillStyle=c;for(let i=0;i<s.length;i++){const g=F[s[i]]||F[' '];
     for(let p=0;p<15;p++)if(g[p]==='1')ctx.fillRect(x+ox+(i*4+p%3)*sc,y+oy+((p/3)|0)*sc,sc,sc);}};
   if(sh!==false)pass(sc>1?sc:1,sc>1?sc:1,sh||'#120a18');
@@ -1287,8 +1296,8 @@ function makeSlab(n){
 /* v70 THICK WALL (DIG): a whole storey of packed earth. Any punch anywhere digs; alternating hands dig twice as fast.
    A tunnel bores up into it and the boxer climbs in after it, until he breaks through the top. No weak point, no misses. */
 /* v132: power-ups come steadily - an earth wall with one is forced if none came for a while (sooner with no power at all) */
-let lastPowN=0;const powGap=()=>powerLv===0?12:powerLv<3?20:36;
-const DIG_FROM=8,DIG_P=.16,DIG_ITEM_P=.9,DIG_LOCK=3,DIG_HP=30,DIG_HP_RUN=22,DIG_HP_HALF=16,T_DIG=.1;
+let lastPowN=0;const powGap=()=>powerLv===0?9:powerLv<3?16:30;
+const DIG_FROM=8,DIG_P=.16,DIG_ITEM_P=.9,DIG_LOCK=3,DIG_HP=14,DIG_HP_RUN=10,DIG_HP_HALF=8, /* v135: half as many punches - dig, grab, go */T_DIG=.1;
 const sameDig=(a,b)=>!!(a&&b&&a.type==='thick'&&b.type==='thick'&&a.dig&&b.dig&&a.dig.n0===b.dig.n0);
 const digColX=s=>{if(s.digX!=null)return s.digX;const b=slabs[s.n-1];return sameDig(s,b)?digColX(b):null;}; /* one shaft runs straight up the whole wall */
 /* v79: earth is earth, bricks are bricks - the top storey of a wall stops 10px short of the brick above, so they never touch */
@@ -1340,7 +1349,7 @@ function ensureSlabs(upTo){while(slabs.length<=upTo){const s=makeSlab(slabs.leng
 /* v124: no earth during SHOW TIME - any earth ahead turns to plain brick (its buried item goes with it) */
 const SHOW_CAP=[12,16,20,26,32,40]; /* v131: most floors one SHOW TIME can climb, by level */
 let showCapN=1e9;
-function unEarth(s){if(!s||s.type!=='thick'||s.broken)return;s.digX=null;s.holes=null;s.type='brick';s.dig=null;const hp=Math.max(6,Math.round((10+Math.floor(s.n*.8))*D.hp));s.hp=s.max=hp;}
+function unEarth(s){if(!s||s.type!=='thick'||s.broken)return;if(s.dig&&s.dig.item&&s.dig.item.k==='power')lastPowN=Math.min(lastPowN,s.n-40); /* v135: a power-up swept away by SHOW TIME is owed: the next earth brings one */s.digX=null;s.holes=null;s.type='brick';s.dig=null;const hp=Math.max(6,Math.round((10+Math.floor(s.n*.8))*D.hp));s.hp=s.max=hp;}
 function newGame(){
   preloadDieVoice();
   tiltZero=tiltG==null?0:tiltG; // whatever angle you hold the phone at now counts as level
@@ -2132,6 +2141,12 @@ function drawSpace(fc){
    tiles in world space (they scroll with the tower), chunky shapes so they read big; a dark inner edge keeps the play
    area clear. */
 const WT=24;
+/* v135: wall tiles are painted once and stamped (space keeps its twinkling stars live) */
+const _wallC=new Map();
+function wallTileC(z,x0,sy,tile,side){if(z.name==='SPACE'){wallTile(z,x0,sy,tile,side);return;}
+  const k=z.name+'|'+tile+'|'+side;let c=_wallC.get(k);
+  if(!c){if(_wallC.size>400)_wallC.clear();c=document.createElement('canvas');c.width=WALL;c.height=WT;const sv=ctx;ctx=c.getContext('2d');try{wallTile(z,0,0,tile,side);}finally{ctx=sv;}_wallC.set(k,c);}
+  ctx.drawImage(c,x0,Math.floor(sy));}
 function wallTile(z,x0,sy,tile,side){
   const X=x0,Y=sy,Wd=WALL,h=(i)=>hash(tile*7+side*131,i),P=(x,y,w,hh,c)=>{const l=Math.max(X,x),r=Math.min(X+Wd,x+w);if(r>l)R(l,y,r-l,hh,c);};
   const blob=(cx,cy,rad,c,cHi,cLo)=>{for(let dy=-rad;dy<=rad;dy++){const w=Math.round(Math.sqrt(rad*rad-dy*dy));P(cx-w,cy+dy,w*2+1,1,dy>rad*.35?cLo:dy<-rad*.45?cHi:c);}};
@@ -2167,7 +2182,7 @@ function drawWalls(){
   for(let tl=t0;tl<=t1;tl++){
     const wy=tl*WT,sy=wy-camY;if(wy<ROOF-WT)continue;
     const z=zoneAtY(wy+WT/2);
-    wallTile(z,0,sy,tl,0);wallTile(z,W-WALL,sy,tl,1);
+    wallTileC(z,0,sy,tl,0);wallTileC(z,W-WALL,sy,tl,1);
   }
   R(WALL-1,0,1,H,'rgba(0,0,0,.45)');R(W-WALL,0,1,H,'rgba(0,0,0,.45)'); // dark inner edge: the play area stays clear
 }
@@ -2622,9 +2637,11 @@ function drawLava(){
   ctx.fillStyle=g;ctx.fillRect(0,sy-gh,W,gh);
   const amp=1+k*.35,spd=4; /* v86: the surface no longer speeds up and buzzes as it nears - bubbles do the talking */
   const surf=x=>Math.round(sy+(Math.sin(x*.28+gt*spd)*1.3+Math.sin(x*.09-gt*2.2)*1.2)*amp);
-  for(let x=0;x<W;x++){const y=surf(x);
-    R(x,y,1,2,cTop);R(x,y+2,1,4,cMid);R(x,y+6,1,H-y,cDeep);
-    if(hash(x>>2,((gt*3)|0)+((y-camY)>>3))>.93)R(x,y+9+((hash(x,3)*30)|0),2,1,cSpot);}
+  { /* v135: columns at the same height are drawn as one run (was 3 rects a column, every frame) */
+    const ys=new Array(W);let ymax=-1e9;for(let x=0;x<W;x++){ys[x]=surf(x);if(ys[x]>ymax)ymax=ys[x];}
+    R(0,ymax+6,W,H-ymax,cDeep);
+    for(let x=0;x<W;){const y=ys[x];let e=x+1;while(e<W&&ys[e]===y)e++;const w=e-x;R(x,y,w,2,cTop);R(x,y+2,w,4,cMid);if(ymax>y)R(x,y+6,w,ymax-y,cDeep);x=e;}
+    for(let x=0;x<W;x+=4){const y=ys[x];if(hash(x>>2,((gt*3)|0)+((y-camY)>>3))>.93)R(x,y+9+((hash(x,3)*30)|0),2,1,cSpot);}}
   if(Math.random()<.1+.15*k){parts.push({x:Math.random()*W,y:sy+camY-1,vx:0,vy:-20-Math.random()*25,life:.4,col:'#ffd04a',s:1,g:60});}
   /* v86 BUBBLES: blobs of air swell on the surface and POP - more and bigger the closer the lava gets */
   const dt_=1/60;lavaBubT-=dt_;
