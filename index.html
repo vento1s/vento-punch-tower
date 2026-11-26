@@ -93,7 +93,7 @@ body.phone{padding:0;background:#000}body.phone #stage{box-shadow:none}body.appf
 .stat{font-family:var(--f-pixel);font-size:11px;line-height:1.9;color:var(--gi)}
 .stat span{color:var(--lava-hi)}
 /* 8-bit controls: square pixels, notched corners (4 offset shadows), no rounding */
-.diff{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:calc(100% - 8px);max-width:296px}
+.diff{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:calc(100% - 8px);max-width:296px}
 .diff button{font-family:var(--f-display);font-size:12px;padding:8px 0 6px;border:0;cursor:pointer;border-radius:0;
   background:var(--ink);color:var(--muted);
   box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
@@ -139,7 +139,7 @@ body.phone{padding:0;background:#000}body.phone #stage{box-shadow:none}body.appf
 /* title: one-line difficulty switch, then three icon buttons (ranking / how to / settings) */
 .dsel{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:10px}
 .dsel b{font-family:var(--f-display);font-weight:400;font-size:22px;line-height:1;text-align:center;text-shadow:2px 2px 0 #000}
-.dsel b.t-normal{color:var(--gold)}.dsel b.t-easy{color:#8fd18a}.dsel b.t-hard{color:#ff9a2a}.dsel b.t-master{color:#ff5a6a}
+.dsel b.t-normal{color:var(--gold)}.dsel b.t-easy{color:#8fd18a}.dsel b.t-hard{color:#ff9a2a}.dsel b.t-master{color:#ff5a6a}.dsel b.t-god{color:#d07aff;text-shadow:2px 2px 0 #000,0 0 8px #8a2be2}
 .darr{height:40px;border:0;border-radius:0;padding:0;cursor:pointer;background:var(--ink);color:var(--gold);font-family:var(--f-pixel);font-size:20px;line-height:1;
   box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
 .darr:hover,.darr:focus-visible{outline:none;box-shadow:0 -3px 0 0 var(--gold),0 3px 0 0 var(--gold),-3px 0 0 0 var(--gold),3px 0 0 0 var(--gold)}
@@ -267,14 +267,14 @@ body.phone{padding:0;background:#000}body.phone #stage{box-shadow:none}body.appf
 .rkgap{text-align:center;color:var(--muted);font-family:var(--f-pixel);font-size:9px;letter-spacing:.3em}
 /* difficulty as coloured dot text under the name */
 .dt{font-family:var(--f-body);font-size:11px;line-height:1;text-shadow:1px 1px 0 #000}
-.t-easy{color:#8fd18a}.t-normal{color:#c9c2d6}.t-hard{color:#ff9a2a}.t-master{color:#ff5a6a}
+.t-easy{color:#8fd18a}.t-normal{color:#c9c2d6}.t-hard{color:#ff9a2a}.t-master{color:#ff5a6a}.t-god{color:#d07aff}
 .rkp>*,.rkp .rkrow{animation:ezin .3s steps(4) both;animation-delay:calc(min(var(--d,0),12)*60ms)}
 .rkme .logo,.rkt .logo{animation:ezstamp .36s steps(6) both;animation-delay:.3s}
 @media (prefers-reduced-motion:reduce){.rkp>*,.rkp .rkrow,.rkme .logo,.rkt .logo,.rkrow.me>b{animation:none}}
 @keyframes meblink{50%{background:#fff}}
 /* difficulty tag: solid pixel block */
 .dchip{display:inline-block;font-family:var(--f-body);font-size:10px;line-height:1;padding:3px 3px 2px;color:var(--ink)}
-.d-easy{background:#8fd18a}.d-normal{background:#c9c2d6}.d-hard{background:#ff9a2a}.d-master{background:var(--weak);color:#fff}
+.d-easy{background:#8fd18a}.d-normal{background:#c9c2d6}.d-hard{background:#ff9a2a}.d-master{background:var(--weak);color:#fff}.d-god{background:#8a2be2;color:#fff}
 .bnote{font-size:11px;color:var(--muted);margin:0}
 .bnote.rule{font-size:10px;line-height:1.6}
 /* result summary panel */
@@ -623,9 +623,11 @@ const DIFFS=[
   lava:13,grow:.78,hp:1.5,win:.38,weakW:9.9,weakMul:3.5,relocate:4,gold:50,vib:1.25,tMax:7},
  {key:'master',ko:'초고수',tag:'MASTER',desc:'약점을 못 맞추면 용암을 못 이겨요. 각오하세요.',
   lava:16.9,grow:1.01,hp:2.25,win:.32,weakW:8.9,weakMul:4,  relocate:3,gold:40,vib:1.5,tHalf:17.5,tMax:5}, /* tHalf: TIME bonuses halve by 17.5F (others 25F) */
+ {key:'god',   ko:'갓 모드',tag:'GOD',  desc:'인간의 영역이 아니에요. 한 대도 헛치지 마세요.', /* v137: one more step past MASTER */
+  lava:22,grow:1.3,hp:3.4,win:.27,weakW:8,weakMul:4.5,relocate:2,gold:30,vib:1.8,tHalf:13,tMax:4},
 ];
 let diffIdx=1;
-try{const d=parseInt(localStorage.getItem('punchtower.diff'),10);if(d>=0&&d<4)diffIdx=d;}catch(e){}
+try{const d=parseInt(localStorage.getItem('punchtower.diff'),10);if(d>=0&&d<DIFFS.length)diffIdx=d;}catch(e){}
 let D=DIFFS[diffIdx];
 
 /* ---------- helpers ---------- */
@@ -1092,7 +1094,9 @@ function spawnBolt(feet){if(bolts.length>5)return;
   bolts.push({pts,br,life:.12,max:.12});flashO=Math.max(flashO,.14);flashCol='#bff6ff';shake=Math.max(shake,3);
   if(AC&&soundOn){const t=AC.currentTime;noise(t,.09,3200,1.2,.14,'highpass');}}
 const PW_COL=['#ffffff','#7af0ff','#c890ff','#ff8a1a'];
-const POW_AMMO=150;let powAmmo=0; /* v132: power punches are counted, like a heavy machine gun - 150 a pick-up, then it's gone */
+const POW_AMMO=150;let powAmmo=0;
+let gemUp=0,magT=0,shieldN=0; /* v137 earth items: floors a gem will blast after the next break, MAGNET seconds left, SHIELD charms held */
+const MAG_T=10,MAG_W=1.6,MAG_PULL=90; /* v132: power punches are counted, like a heavy machine gun - 150 a pick-up, then it's gone */
 let ghosts=[],dashCD=0,dashT=0,powerLv=0,echoFX=[0,0],lastAltV=false; /* v88 power-up: powerLv 1 = every punch is followed by a second (the 'echo') */
 const ECHO_MS=70;
 let dashFar=false; /* the try-out has just moved on to the dash: put the next weak point on the far side */
@@ -1266,7 +1270,7 @@ function addTime(v,label){if(timeUp)return;const was=lavaY;lavaY=Math.max(lavaY,
   if(label)pop(popX(30),pl.feet-44,label,'#7af0ff',1);}
 const WEAK_WIDEN=1.3;
 // every KING level you're carrying widens ALL weak points by 8% (Lv6 = +48%): a clear payoff for saving up
-const WEAK_PER_LV=.08;const wkW=s=>(typeof kingT==='number'&&kingT>0)?IN*2.4:s.ww*(1+WEAK_PER_LV*(typeof kingLevel==='number'?kingLevel:0)); // weak points are 30% wider than each difficulty's base width
+const WEAK_PER_LV=.08;const wkW=s=>(typeof kingT==='number'&&kingT>0)?IN*2.4:s.ww*(1+WEAK_PER_LV*(typeof kingLevel==='number'?kingLevel:0))*(magT>0?MAG_W:1); /* v137 MAGNET widens it */ // weak points are 30% wider than each difficulty's base width
 // a new weak point keeps clear of the ones right below it, so stacked floors never line up in one column
 function newWeakX(prev,prev2){const mw=D.weakW*WEAK_WIDEN*(1+WEAK_PER_LV*6),lo=WALL+4+mw/2,hi=W-WALL-4-mw/2;let x;
   for(let i=0;i<40;i++){x=lo+Math.random()*(hi-lo);
@@ -1286,8 +1290,9 @@ function makeSlab(n){
   else if(!vibRun&&Math.random()<vibP)type='vibranium';
   else if(n>3&&r<.08&&n%10<8)type='tnt';else if(r<.17)type='gold';else if(n>4&&r<.45)type='stone';
   if(type!=='thick')dig=null; /* v80: only earth carries a dig record */
-  if(dig&&dig.h>=36&&(Math.random()<DIG_ITEM_P||n-lastPowN>=powGap()))dig.item={k:n-lastPowN>=powGap()?'power':Math.random()<.04?'skin':Math.random()<.6?'power':'king',x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78 (v80: after the type chain - it used to cut the else-if chain and turn earth into metal): something buried in the earth */
+  if(dig&&dig.h>=36&&(Math.random()<DIG_ITEM_P||n-lastPowN>=powGap()))dig.item={k:n-lastPowN>=powGap()?'power':pickDigItem(),x:Math.round(WALL+14+Math.random()*(IN-28)),dy:Math.round(10+Math.random()*10),got:false}; /* v78 (v80: after the type chain - it used to cut the else-if chain and turn earth into metal): something buried in the earth */
   if(dig&&dig.item&&dig.item.k==='power')lastPowN=n; /* v132 */
+  if(dig&&dig.item&&dig.item.k==='gem')dig.item.g=dig.item.dy<14?1:dig.item.dy<18?2:3; /* v137: the deeper, the finer: ruby / sapphire / diamond */
   const base=10+Math.floor(n*.8);
   const raw=type==='thick'?(dig.h<36?DIG_HP_HALF:dig.run>1?DIG_HP_RUN:DIG_HP)*(.8+.2*D.hp)/D.hp:type==='stone'?base*1.6:type==='vibranium'?base*2:type==='tnt'?6:type==='boss'?40+n*2:base;
   const hp=Math.max(6,Math.round(raw*(type==='tnt'?1:D.hp))); // at least 6 plain punches for any block
@@ -1295,6 +1300,9 @@ function makeSlab(n){
 }
 /* v70 THICK WALL (DIG): a whole storey of packed earth. Any punch anywhere digs; alternating hands dig twice as fast.
    A tunnel bores up into it and the boxer climbs in after it, until he breaks through the top. No weak point, no misses. */
+/* v137: what an earth wall holds (skin 4%, then by weight): power-ups and KING still lead; the six new finds share the rest */
+const DIG_ITEMS=[['power',34],['king',14],['gem',12],['glass',10],['coins',9],['magnet',6],['fire',6],['shield',5]];
+function pickDigItem(){if(Math.random()<.04)return 'skin';let r=Math.random()*96;for(const [k,w] of DIG_ITEMS){if((r-=w)<0)return k;}return 'power';}
 /* v132: power-ups come steadily - an earth wall with one is forced if none came for a while (sooner with no power at all) */
 let lastPowN=0;const powGap=()=>powerLv===0?9:powerLv<3?16:30;
 const DIG_FROM=8,DIG_P=.16,DIG_ITEM_P=.9,DIG_LOCK=3,DIG_HP=14,DIG_HP_RUN=10,DIG_HP_HALF=8, /* v135: half as many punches - dig, grab, go */T_DIG=.1;
@@ -1342,9 +1350,35 @@ function digItem(s){const it=s.dig&&s.dig.item;if(!it||it.got||s.digX==null)retu
     if(u){pop(clamp(wx,WALL+40,W-WALL-40),wy-16,'NEW SKIN!','#ff8ad8',2);pop(clamp(wx,WALL+40,W-WALL-40),wy+2,SKIN_KO[u.c]+': '+u.s.ko,'#ffffff',1);flashO=.4;flashCol='#ff8ad8';
       if(AC){const a=AC.currentTime;[523,659,784,1047,1319,1568].forEach((f,i)=>tone(a+i*.07,.14,f,f,'square',.07));}}
     else{addTime(3*tMul());pop(clamp(wx,WALL+40,W-WALL-40),wy-8,'TREASURE! +TIME','#ff8ad8',2);}}
+  else if(it.k==='gem'){const g=it.g||1,px=clamp(wx,WALL+44,W-WALL-44);gemUp+=g; /* v137 GEM: when this wall breaks, he blasts on up g more floors (= g floors of score) */
+    pop(px,wy-16,['','RUBY!','SAPPHIRE!','DIAMOND!'][g],GEM_COL[g][0],2);pop(px,wy+2,'+'+g+'F JUMP','#ffffff',1);flashO=.3;flashCol=GEM_COL[g][0];
+    for(let i=0;i<18;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*80;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.6,col:i%2?GEM_COL[g][0]:'#ffffff',s:2,g:80});}
+    if(AC){const a=AC.currentTime;[1047,1319,1568,2093].slice(0,g+1).forEach((f,i)=>tone(a+i*.06,.14,f,f,'triangle',.08));}}
+  else if(it.k==='coins'){fever=6;sfx.coin();sfx.fever(); /* v137 GOLD POUCH: coins everywhere and a FEVER (double damage) */
+    pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'GOLD RUSH!','#ffd400',2);pop(popX(56),pl.feet-30,'FEVER!!','#ff7af0',2);
+    for(let i=0;i<26;i++){const a=-Math.PI*(.1+.8*Math.random()),sp=60+Math.random()*120;parts.push({x:wx,y:wy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.9,col:i%3?'#ffd400':'#fff3a0',s:2,g:380});}}
+  else if(it.k==='glass'){addTime(3);lavaHold=Math.max(lavaHold,2.5); /* v137 HOURGLASS: three seconds and the lava stands still a moment */
+    pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'LAVA STOP!','#7af0ff',2);pop(popX(30),pl.feet-44,'+3.0s','#7af0ff',1);flashO=.3;flashCol='#7af0ff';
+    if(AC){const a=AC.currentTime;[1568,1175,880,1568].forEach((f,i)=>tone(a+i*.08,.12,f,f,'triangle',.08));}}
+  else if(it.k==='magnet'){magT=MAG_T; /* v137 MAGNET: wide weak points that come to him */
+    pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'MAGNET!','#ff5a6a',2);pop(clamp(wx,WALL+44,W-WALL-44),wy+4,'WEAK POINT COMES','#ffffff',1);
+    if(AC){const a=AC.currentTime;tone(a,.3,200,900,'sawtooth',.05);tone(a+.1,.2,900,1200,'square',.05);}}
+  else if(it.k==='fire'){fireworks(s,wx,wy); /* v137 FIREWORKS: the next three floors crack */}
+  else if(it.k==='shield'){if(shieldN>=1){addTime(1.5);pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'SHIELD FULL +TIME','#9ad8ff',1);} /* v137 SHIELD CHARM: one lava touch for free */
+    else{shieldN=1;pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'SHIELD!','#9ad8ff',2);flashO=.3;flashCol='#9ad8ff';
+      if(AC){const a=AC.currentTime;[659,988,1319].forEach((f,i)=>tone(a+i*.07,.14,f,f,'square',.07));}}}
   else if(it.k==='king'&&skillOn('king')&&kingLevel<KL_NEED.length){kingLevel++;superReady=true;if(kingLevel>=KL_NEED.length)altStreak=0;sfx.ready();kingLevelUp(kingLevel);pop(clamp(wx,WALL+34,W-WALL-34),wy-8,'KING +1!','#ffd400',2);}
   else{addTime(1.5*tMul());pop(clamp(wx,WALL+34,W-WALL-34),wy-8,'BONUS!','#ffd400',2);if(AC){const a=AC.currentTime;tone(a,.08,880,880,'square',.08);tone(a+.08,.12,1320,1320,'square',.08);}}
   vibe([20,30,40]);}
+const GEM_COL=[null,['#ff3a5a','#a01030'],['#3a8aff','#1a3a9a'],['#dffaff','#7ac8e8']];
+/* v137 FIREWORKS: rockets fly up and crack the next three floors above the earth (a few punches each; a gate only to half) */
+function fireworks(s,wx,wy){ensureSlabs(s.n+16);let n2=s.n+1;while(slabs[n2]&&sameDig(s,slabs[n2]))n2++;
+  let c=0;for(;c<3&&slabs[n2];n2++){const b=slabs[n2];if(b.broken)continue;if(b.type==='thick')break;
+    b.hp=Math.max(1,Math.min(b.hp,Math.ceil(b.max*(b.type==='boss'?.5:.2))));b.flash=.6;b.fw=1;c++;
+    const y=-b.n*FH+5;for(let i=0;i<14;i++){const a=Math.random()*Math.PI*2,sp=40+Math.random()*70;parts.push({x:WALL+10+Math.random()*(IN-20),y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.7,col:['#ff5a6a','#ffd400','#7af0ff','#ff7af0'][i%4],s:2,g:60});}}
+  for(let i=0;i<10;i++)parts.push({x:wx+(Math.random()-.5)*10,y:wy,vx:(Math.random()-.5)*30,vy:-220-Math.random()*120,life:.5,col:i%2?'#ffd400':'#ffffff',s:1,g:-40});
+  pop(clamp(wx,WALL+44,W-WALL-44),wy-12,'FIREWORKS!','#ff7af0',2);if(c)pop(popX(40),pl.feet-30,c+' FLOORS CRACKED','#ffd400',1);
+  shake=Math.max(shake,4);if(AC){const a=AC.currentTime;noise(a,.25,2400,1,.25,'bandpass',600);[0,.12,.24].forEach(d=>noise(a+.2+d,.12,3000,.8,.2,'highpass'));}}
 function ensureSlabs(upTo){while(slabs.length<=upTo){const s=makeSlab(slabs.length);if(kingT>0&&s.n<=showCapN+2)unEarth(s);slabs.push(s);}} /* v134: no earth made for the floors a SHOW TIME can still reach */
 /* v124: no earth during SHOW TIME - any earth ahead turns to plain brick (its buried item goes with it) */
 const SHOW_CAP=[12,16,20,26,32,40]; /* v131: most floors one SHOW TIME can climb, by level */
@@ -1359,7 +1393,7 @@ function newGame(){
   pl={level:0,reach:0,feet:0,from:0,to:0,jt:-1,jd:.15,punchT:0,side:0,sink:0,x:W/2,tx:W/2,weakT:0};
   started=false;endShown=false;lavaY=70;lavaOff=null;lavaSurged=false;combo=0;maxCombo=0;lastTap=-9;lastSide=-1;fever=0;camY=-190-HX;shake=0;hitstop=0;hsLag=0;
   parts=[];pops=[];rings=[];tStart=0;tNow=0;warnT=0;endT=0;tapFX=[0,0];impact=0;impactK=0;zoom=0;weakCount=0;weakStreak=0;
-  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];riseT=0;bolts=[];megaLv=-1;dashCD=0;dashT=0;powerLv=0;powAmmo=0;lastPowN=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
+  altStreak=0;superReady=false;kingLevel=0;maxHits=0;orbs=[];sup=null;hint=null;sameSide=0;offHits=0;superCount=0;flashO=0;holds.clear();bothT=0;comboFX={dx:12,at:-9};hum(-1);ghosts=[];riseT=0;bolts=[];megaLv=-1;dashCD=0;dashT=0;powerLv=0;powAmmo=0;lastPowN=0;gemUp=0;magT=0;shieldN=0;echoFX=[0,0];kingSlowT=0;timeScale=1;timeLeft=TIME_START;hudSc=0;vsBeat=false;hudScT=0;judge=null;jCount=[0,0,0,0];kingT=0;showIntro=0;confs=[];crowdK=0;tGains=[];gainSum=0;gainT=0;chill=0;timeUp=false;lavaHold=0;burns=0;burnT=0;cloth=[];timeFlash=0;timeBeep=0;lastZone=null;
 }
 newGame();
 
@@ -1513,6 +1547,9 @@ function breakSlab(s){
   let dest=s.n;
   if(s.type==='tnt'){sfx.boom();shake=8;pop(popX(38),pl.feet-30,'BOOM!','#ff6a50',2);
     for(let k=1;k<=2;k++){const n2=slabs[s.n+k];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='vibranium'&&n2.type!=='thick'){ /* v123: a blast stops at earth */n2.broken=true;debris(n2);dest=n2.n;}else break;}}
+  if(gemUp>0&&kingT<=0&&(s.type!=='thick'||!sameDig(s,slabs[s.n+1]))){const g=gemUp;gemUp=0;ensureSlabs(dest+g+2);let got=0; /* v137: the gem's jump - straight on up, stopping only at earth or a gate */
+    for(let k=1;k<=g;k++){const n2=slabs[dest+1];if(n2&&!n2.broken&&n2.type!=='boss'&&n2.type!=='thick'){n2.broken=true;n2.hp=0;debris(n2);dest=n2.n;got++;}else break;}
+    if(got){pop(popX(44),pl.feet-40,'GEM JUMP +'+got+'F!',GEM_COL[Math.min(3,g)][0],2);flashO=.35;flashCol='#ffffff';}}
   if(s.type==='gold'){lavaY+=D.gold;sfx.coin();pop(popX(36),pl.feet-30,'LAVA DOWN','#ffe27a',1);}
   if(s.type==='boss'||s.type==='vibranium')pop(popX(44),pl.feet-30,s.type==='boss'?'GATE BROKEN':'SMASHED!',s.type==='boss'?'#a4b5c6':'#b7a8ff',1);
   const nx=slabs[dest+1];ensureSlabs(dest+31);
@@ -1737,6 +1774,12 @@ function updateSuper(dt){
 // shorter; the third one is the end. A short spell of immunity follows each bounce.
 const BURN_LIVES=2,BURN_SAFE=1.3,DIE_CHAR=.55; // 3rd touch: white-hot, burnt black for DIE_CHAR seconds, then he drops into the lava
 function lavaBurn(){
+  if(shieldN>0&&!timeUp){shieldN--;burnT=BURN_SAFE; /* v137 SHIELD CHARM: it shatters instead - no burn, no lost clothes, no POWER DOWN */
+    pop(W/2,pl.feet-46,'SHIELD BREAK!','#9ad8ff',2);vibe([30,20,30]);shake=6;flashO=.45;flashCol='#9ad8ff';
+    if(AC){const t=AC.currentTime;noise(t,.3,3200,1,.3,'highpass');tone(t,.2,1319,330,'square',.07);}
+    for(let i=0;i<20;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*100;parts.push({x:pl.x,y:pl.feet-8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.5,col:i%2?'#9ad8ff':'#ffffff',s:2,g:120});}
+    const n=tgtN(),s0=slabs[n];if(s0&&!s0.broken){s0.broken=true;s0.hp=0;debris(s0);sfx.brk(s0.type,plain(s0)?matOf(s0.n):null);}
+    hopTo(n);pl.jd=.22;lavaY=Math.max(lavaY,pl.to+70);lavaHold=Math.max(lavaHold,.6);return;}
   if(timeUp||burns>=BURN_LIVES){die();return;}
   burns++;burnT=BURN_SAFE;if(powerLv>0){powerLv--;pop(W/2,pl.feet-60,'POWER DOWN','#7af0ff',1);} /* v124: one step down, not all the way */ /* v88 */
   {const d=Math.random()<.5?-1:1;cloth.push(burns===1?{rows:PANTS_FLY,x:pl.x,y:pl.feet-4,vx:d*(30+Math.random()*25),vy:-170,life:1.4}:{rows:TOP_FLY,x:pl.x,y:pl.feet-9,vx:d*(30+Math.random()*25),vy:-190,life:1.5});} /* the burning clothes fly off */
@@ -1930,6 +1973,8 @@ function update(dt){
     if(s.wT<1)s.wT=Math.min(1,s.wT+dt*5);}
   pl.punchT=Math.max(0,pl.punchT-dt);
   if(fever>0)fever=Math.max(0,fever-ldt);
+  if(magT>0){magT=Math.max(0,magT-ldt); /* v137 MAGNET: the weak point drifts toward him */
+    const tg=mode==='play'&&kingT<=0?tgt():null;if(tg&&!tg.broken&&tg.type!=='thick'){const hw=wkW(tg)/2,lo=WALL+4+hw,hi=W-WALL-4-hw;tg.wx=clamp(tg.wx+clamp(pl.x-tg.wx,-MAG_PULL*ldt,MAG_PULL*ldt),Math.min(lo,hi),Math.max(lo,hi));}}
   const t=now();
   if(mode==='count')updateCountdown(dt);
   if(mode==='super'){tNow=t-tStart;updateSuper(dt);}
@@ -2293,6 +2338,7 @@ function drawThick(s,sy){
     ctx.globalAlpha=.3+.25*pu;R(ox-8,oy-7,17,14,'#ff8ad8');ctx.globalAlpha=1;
     R(ox-6,oy-4,13,9,'#0d0a08');R(ox-5,oy-3,11,7,'#8a4a1a');R(ox-5,oy-3,11,2,'#c8742a');R(ox-5,oy,11,1,'#ffd400');R(ox-1,oy-1,3,3,'#ffd400');R(ox,oy,1,1,'#0d0a08');
     if(((gt*5+s.n)|0)%4===0){R(ox+6,oy-6,1,1,'#ffffff');R(ox-7,oy+3,1,1,'#ffd8f4');}}
+  else if(it&&!it.got&&it.k!=='king'){drawDigItem(it,it.x,bot-it.dy,s.n);} /* v137 */
   else if(it&&!it.got){const ox=it.x,oy=bot-it.dy,pu=.5+.5*Math.sin(gt*5+s.n); /* the buried KING orb glows through the earth */
     ctx.globalAlpha=.25+.2*pu;R(ox-5,oy-5,11,11,'#ff9a2a');ctx.globalAlpha=1;
     R(ox-2,oy-3,5,7,'#0d0a08');R(ox-3,oy-2,7,5,'#0d0a08');
@@ -2311,6 +2357,33 @@ function drawThick(s,sy){
   if(s.n===tgtN()&&(mode==='play'||mode==='count')){const r=clamp(s.hp/s.max,0,1),cut=Math.round(IN*r);
     R(x0,bot,IN,3,'#0d0a08');R(x0,bot+1,cut,1,r>.5?'#ffb060':r>.25?'#ffd400':'#ff3a5a');} /* HP: a thin strip under the wall */
   if(typeof kingT==='number'&&kingT>0)weakMarquee(s,sy);}
+/* v137: the six new finds, as small pixel icons glowing through the earth */
+const ITEM_GLOW={gem:null,coins:'#ffd400',glass:'#7af0ff',magnet:'#ff5a6a',fire:'#ff7af0',shield:'#9ad8ff'};
+function drawDigItem(it,ox,oy,sn){const pu=.5+.5*Math.sin(gt*5+sn),K='#0d0a08';
+  const glow=it.k==='gem'?GEM_COL[it.g||1][0]:ITEM_GLOW[it.k]||'#ffffff';
+  ctx.globalAlpha=.25+.2*pu;R(ox-7,oy-7,15,15,glow);ctx.globalAlpha=1;
+  if(it.k==='gem'){const [c,d]=GEM_COL[it.g||1],Wd=[3,7,9,7,5,3,1];
+    Wd.forEach((w,k)=>R(ox-(w>>1)-1,oy-4+k,w+2,3,K));
+    Wd.forEach((w,k)=>R(ox-(w>>1),oy-3+k,w,1,k<2?c:d));
+    R(ox-1,oy-3,1,1,'#ffffff');R(ox-3,oy-2,2,1,'#ffffff');R(ox+2,oy,1,1,'#ffffff');}
+  else if(it.k==='coins'){R(ox-5,oy-3,11,9,K);R(ox-4,oy-2,9,7,'#8a5a2a');R(ox-4,oy-2,9,1,'#b07a3a');R(ox-2,oy-5,5,3,K);R(ox-1,oy-4,3,2,'#8a5a2a');
+    R(ox-1,oy,3,3,'#ffd400');R(ox,oy+1,1,1,'#8a5a2a');R(ox+3,oy-6,3,3,K);R(ox+4,oy-5,1,1,'#ffd400');}
+  else if(it.k==='glass'){R(ox-4,oy-6,9,13,K);R(ox-3,oy-5,7,1,'#ffd400');R(ox-3,oy+5,7,1,'#ffd400');
+    for(let y=-4;y<=4;y++){const w=Math.max(1,5-2*Math.floor((4-Math.abs(y))/2));R(ox-(w>>1),oy+y,w,1,'#bff6ff');}
+    R(ox-1,oy-3,3,1,'#ffe27a');R(ox,oy-1,1,2,'#ffe27a');R(ox-1,oy+3,3,1,'#ffe27a');R(ox-2,oy+4,5,1,'#ffe27a');}
+  else if(it.k==='magnet'){R(ox-5,oy-5,11,11,K);R(ox-4,oy-4,3,8,'#e8344a');R(ox+2,oy-4,3,8,'#e8344a');R(ox-4,oy+1,9,3,'#e8344a');R(ox-1,oy-4,3,5,K);
+    R(ox-4,oy-4,3,2,'#e8e8f0');R(ox+2,oy-4,3,2,'#e8e8f0');if(((gt*6)|0)%2){R(ox-3,oy-7,1,1,'#ffffff');R(ox+3,oy-7,1,1,'#ffffff');}}
+  else if(it.k==='fire'){R(ox-5,oy-3,11,9,K);for(const [dx,c] of [[-4,'#e8344a'],[-1,'#3a8aff'],[2,'#ffd400']]){R(ox+dx,oy-2,2,7,c);R(ox+dx,oy-2,2,1,'#ffffff');}
+    R(ox-4,oy+2,9,1,'#c8a060');R(ox,oy-5,1,3,'#c8a060');if(((gt*10)|0)%2)R(ox+1,oy-6,1,1,'#ffd400');}
+  else if(it.k==='shield'){R(ox-5,oy-5,11,10,K);R(ox-4,oy-4,9,7,'#3a7ad8');R(ox-3,oy+3,7,1,'#3a7ad8');R(ox-2,oy+4,5,1,'#3a7ad8');R(ox-1,oy+5,3,1,K);
+    R(ox-4,oy-4,9,1,'#9ad8ff');R(ox,oy-3,1,6,'#ffffff');R(ox-2,oy-1,5,1,'#ffffff');}
+  if(((gt*4+sn)|0)%5===0){R(ox+6,oy-6,1,1,'#ffffff');R(ox-7,oy+4,1,1,'#ffffff');}}
+/* v137: what he is carrying - a shield bubble, a magnet with its time left */
+function drawBuffs(){if(mode!=='play'&&mode!=='count')return;const fx=Math.round(pl.x),fy=Math.round(pl.feet-camY);
+  if(shieldN>0){const a=.35+.15*Math.sin(gt*6);ctx.globalAlpha=a;ctx.strokeStyle='#9ad8ff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(fx+.5,fy-9.5,12,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    const sx=fx-16,sy=fy-24;R(sx-1,sy-1,7,7,'#0d0a08');R(sx,sy,5,4,'#3a7ad8');R(sx+1,sy+4,3,1,'#3a7ad8');R(sx+2,sy+1,1,3,'#ffffff');R(sx+1,sy+2,3,1,'#ffffff');}
+  if(magT>0){const mx=fx+12,my=fy-24,blink=magT<2&&((gt*8)|0)%2;if(!blink){R(mx-1,my-1,7,7,'#0d0a08');R(mx,my,2,5,'#e8344a');R(mx+3,my,2,5,'#e8344a');R(mx,my+3,5,2,'#e8344a');R(mx,my,2,1,'#e8e8f0');R(mx+3,my,2,1,'#e8e8f0');}
+    R(mx-1,my+7,7,2,'#0d0a08');R(mx,my+7,Math.ceil(5*magT/MAG_T),1,'#ff5a6a');}}
 function drawSlab(s){
   const sy=Math.round(-s.n*FH-camY-s.bump);if(sy>H+26||sy<-14)return;
   const x0=WALL,z=zoneOfLevel(s.n);
@@ -2690,7 +2763,7 @@ function drawHUD(){
   const hdt=Math.min(.1,Math.max(0,t-hudT));hudT=t;
   const fl=String(pl.level).padStart(2,'0')+'F';text(fl,4,4,2,'#f4efe8');
   if(vsOn())text(vsBeat?'VS BEAT!':'VS '+vs.floor+'F',9,fever>0&&kingT<=0?43:22,1,vsBeat?'#ffd400':'#c9c2d6','l','#0d0a08'); /* steps down out of the way of the wide FEVER x2 label */ /* challenge target under the floor count */
-  text(D.tag,4+tw(fl,2)+4,8,1,diffIdx===3?'#ff3a5a':'#a597b8',false);
+  text(D.tag,4+tw(fl,2)+4,8,1,D.key==='god'?'#d07aff':D.key==='master'?'#ff3a5a':'#a597b8',false);
   { /* SCORE, top centre: each floor is worth SC_FLOOR x difficulty and every punch banks its share (the damage it did), so the
        number ticks up with each hit and lands exactly on the ranking score when the floor breaks. Off play it shows the ranking score */
     const mul=DIFF_MUL[D.key]||1,tg=tgt(),live=mode==='play'||mode==='super'?tgtN()-1+(tg&&!tg.broken&&tg.max?clamp(1-Math.max(0,tg.hp)/tg.max,0,1):0):pl.level;
@@ -3286,7 +3359,7 @@ function render(){
   drawLv6Blaze();
   drawKingAura(); // the KING level as an aura: in front of the floors, behind the boxer
   drawOrbs();
-  drawPlayer();
+  drawPlayer();drawBuffs();
   for(const c of cloth){ctx.globalAlpha=Math.min(1,c.life*2);sprite(c.rows,Math.round(c.x)-4,Math.round(c.y-camY),CLOTH_PAL,((c.life*12)|0)%2===1);}ctx.globalAlpha=1; /* tumbling clothes */
   drawShield();
   for(const p of parts){
@@ -3509,8 +3582,8 @@ const SUPA_KEY='sb_publishable_YqVBeioSZphI-sKX4h1lEA_zk5SZm_H';   // Project Se
 const NAME_MAX=8;
 let playerName='';try{playerName=localStorage.getItem('punchtower.name')||'';}catch(e){}
 // one board for everyone: score = height + clear-time bonus, multiplied by difficulty
-const DIFF_MUL={easy:1,normal:2,hard:3,master:5};
-const DIFF_KO={easy:'초급',normal:'중급',hard:'고급',master:'초고수'};
+const DIFF_MUL={easy:1,normal:2,hard:3,master:5,god:8};
+const DIFF_KO={easy:'초급',normal:'중급',hard:'고급',master:'초고수',god:'갓 모드'};
 const SC_FLOOR=1000; /* points per floor before the difficulty multiplier */
 const scoreOf=x=>Math.round(x.floor*SC_FLOOR*(DIFF_MUL[x.diff]||1));
 const byRank=(a,b)=>scoreOf(b)-scoreOf(a)||a.time-b.time;
@@ -3592,7 +3665,7 @@ function boardHTML(res,hiId,mine){
   if(mi>=LIMIT)h+=`<div class="rkgap">· · ·</div>`+rowHTML(list[mi],mi,true,LIMIT);
   return `<div class="ezr rkp"><div class="ezhead" style="--d:0">RANKING</div>${box}<div class="rkscroll">${top}${h}</div></div><p class="bnote">${note}</p>`;
 }
-const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 × 1,000 × 난이도 배율 · 같은 점수면 더 빨리 오른 사람이 위<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5</p>`;
+const SCORE_RULE=`<p class="bnote rule">점수 = 오른 층 × 1,000 × 난이도 배율 · 같은 점수면 더 빨리 오른 사람이 위<br>초급 ×1 · 중급 ×2 · 고급 ×3 · 초고수 ×5 · 갓 모드 ×8</p>`;
 async function fillBoard(sel,_unused,hiId,preset,mine){
   const gen=ovGen;const el=ov.querySelector(sel);if(!el)return;
   el.innerHTML='<p class="bnote blinky">LOADING…</p>';
@@ -5092,7 +5165,7 @@ function readVs(){try{const q=new URLSearchParams(location.search),f=parseInt(q.
 const vsOn=()=>!!vs&&D.key===vs.diff;
 function vsBanHTML(){if(!vs)return '';const nm=`<b>${esc(vs.name)}</b>`,dk=`<span class="t-${vs.diff}">${DIFF_KO[vs.diff]}</span>`,fl=`<b class="fl">${vs.floor}F</b>`;
   if(vsWon)return `<i>CHALLENGE CLEAR!</i><p>${nm}의 ${fl} 돌파! 이제 내 기록으로 도전장을 보내 봐요</p>`;
-  if(!vsOn())return `<i>CHALLENGE</i><p>${nm}의 기록은 ${dk} ${fl} · 난이도를 ${dk}${vs.diff==='master'?'로':'으로'} 맞추면 도전 시작</p>`;
+  if(!vsOn())return `<i>CHALLENGE</i><p>${nm}의 기록은 ${dk} ${fl} · 난이도를 ${dk}${(vs.diff==='master'||vs.diff==='god')?'로':'으로'} 맞추면 도전 시작</p>`;
   return `<i>도전장 도착!</i><p>${nm}의 ${dk} ${fl}를 넘어라</p>`;}
 function vsResHTML(floor){if(!vsOn())return '';const nm=esc(vs.name),f=vs.floor;
   if(floor>f)return `<span class="vsres ok">★ ${nm} ${f}F 돌파!</span>`; /* sits under FLOOR in the score box, so the page doesn't grow */
@@ -5134,7 +5207,7 @@ function drawShareCard(cleared,en,acc,rank,online){
   say(cleared?'TOWER CLEAR!':'MY RECORD',CW/2,cy+42,32,PX,'#ffd04a','center',null,false);
   const nm=String(en.name).slice(0,NAME_MAX),dk=DIFF_KO[en.diff],dkw=pw(dk,KR,33)+24,nw=pw(nm,KR,44),rowW=nw+24+dkw,nx=CW/2-rowW/2;
   say(nm,nx,cy+104,44,KR,'#f4efe8','left',null,false);
-  const chip={easy:['#8fd18a','#0d0a08'],normal:['#c9c2d6','#0d0a08'],hard:['#ff9a2a','#0d0a08'],master:['#ff3a5a','#fff']}[en.diff]||['#c9c2d6','#0d0a08'];
+  const chip={easy:['#8fd18a','#0d0a08'],normal:['#c9c2d6','#0d0a08'],hard:['#ff9a2a','#0d0a08'],master:['#ff3a5a','#fff'],god:['#8a2be2','#fff']}[en.diff]||['#c9c2d6','#0d0a08'];
   g.fillStyle=chip[0];g.fillRect(nx+nw+24,cy+100,dkw,52);say(dk,nx+nw+24+dkw/2,cy+110,33,KR,chip[1],'center',null,false);
   say(`${en.floor}층`,CW/2,cy+196,154,KR,'#ffd400');
   // score line
