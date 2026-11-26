@@ -3611,7 +3611,8 @@ addEventListener('resize',()=>{if(!ov.hidden)fitBoard();});
 const CREDIT=`<footer class="credit">© 2026 VENTO AI STUDIO</footer>`;
 function lockPortrait(){try{const o=screen.orientation;if(o&&o.lock)o.lock('portrait').catch(()=>{});}catch(e){}}
 /* no rotate warning: the game just stays in portrait (lockPortrait asks the phone to hold it there where it can) */
-function startGame(){if(!tutSeen()){startTutorial(()=>{lockPortrait();ov.hidden=true;beginCountdown();});return;}lockPortrait();ov.hidden=true;beginCountdown();} /* v104: the very first start goes through the tutorial */ /* no nickname gate: it is asked on the result page */
+const TUT_SEALED=true; /* v136: tutorial sealed - no auto tutorial on first start, no replay button (code kept; set false to bring it back) */
+function startGame(){if(!TUT_SEALED&&!tutSeen()){startTutorial(()=>{lockPortrait();ov.hidden=true;beginCountdown();});return;}lockPortrait();ov.hidden=true;beginCountdown();} /* v104: the very first start goes through the tutorial */ /* no nickname gate: it is asked on the result page */
 // ---- pause / restart / back to menu ----
 const pauseBtn=document.getElementById('pausebtn');
 let pausedFrom=null,pausedAt=0;
@@ -4946,7 +4947,7 @@ function showHowto(){menuMusic();showOverlay(`
   <div class="hcard" id="hcard"><em></em><b></b><i></i><canvas class="demo" width="120" height="64" aria-hidden="true"></canvas><div class="htips"></div></div>
   <div class="hint">PC: ← → 펀치 · 꾹 = 걷기 · 걷다가 SPACE = 대시 · ↑ / 양쪽 같이 꾹 = SHOW TIME</div>
   <div class="ezbtns one"><button class="ezb go" type="button" data-act="back">돌아가기</button></div>
-  <div class="ezbtns one"><button class="ezb" type="button" data-act="tut">튜토리얼 다시 하기</button></div>
+  ${TUT_SEALED?'':'<div class="ezbtns one"><button class="ezb" type="button" data-act="tut">튜토리얼 다시 하기</button></div>'}
   <button class="ghost" type="button" data-act="rehint">게임 중 힌트 처음부터 다시 받기</button>
   ${CREDIT}`,{back:()=>{cancelAnimationFrame(howRAF);showTitle();},tut:()=>{cancelAnimationFrame(howRAF);startTutorial(()=>showTitle());},
     rehint:()=>{learned={alt:0,walk:0,dash:0,king:0,ki:0,tap:0,vib:0,aim:0,got:{}};runOpen={};saveLearned();hintsOn=true;try{localStorage.setItem('punchtower.hints','on');}catch(e){}
