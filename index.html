@@ -1095,6 +1095,7 @@ function spawnBolt(feet){if(bolts.length>5)return;
   if(AC&&soundOn){const t=AC.currentTime;noise(t,.09,3200,1.2,.14,'highpass');}}
 const PW_COL=['#ffffff','#7af0ff','#c890ff','#ff8a1a'];
 const POW_AMMO=150;let powAmmo=0;
+let bt=null; /* BATTLE room state (see the BATTLE block near the result screen) */
 let magT=0,shieldN=0; /* v137 earth items: MAGNET seconds left, SHIELD charms held */
 /* v138: gems are points (+ a 5-slot collection kept on this phone), gold is saved for the shop, hourglasses are kept and used with a swipe down */
 let gemPts=0,runGold=0,glassN=0;const GEM_SLOTS=5,GLASS_MAX=3,GLASS_T=3,GLASS_HOLD=2.5,GLASS_PUSH=40;
@@ -1168,7 +1169,7 @@ const coaching=()=>mode==='count'&&!knows('tap')&&ov.hidden; /* first run, durin
 function syncCoach(){const show=coaching();if(coachEl.hidden===show)coachEl.hidden=!show;}
 /* first VIBRANIUM block in the way: only alternating hands on its weak point really hurt it */
 const VIB_CARD=['비브라늄','엄청 단단한 블록!\n약점 아래서 양손을 번갈아 때려야\n데미지가 훨씬 세져요'];let vibCardShown=false;
-function showCard(k,tag,nm,sub,dur){newCard={k,t:0,dur};hint=null;startDemo(k);
+function showCard(k,tag,nm,sub,dur){if(bt&&bt.state==='run')return; /* BATTLE: no teaching cards that stop one player while the other keeps climbing */newCard={k,t:0,dur};hint=null;startDemo(k);
   cardHolds.clear();for(const [id,h] of holds)if(!h.used&&!h.rub)cardHolds.set(id,h.side);holds.clear();bothT=0;hum(-1);kingGrowl(false);
   newEl.querySelector('em').textContent=tag;newEl.querySelector('b').textContent=nm;newEl.querySelector('i').textContent=sub;
   newEl.hidden=true;void newEl.offsetWidth;newEl.hidden=false;
@@ -1821,7 +1822,7 @@ function lavaBurn(){
   const n=tgtN(),s0=slabs[n];if(s0&&!s0.broken){s0.broken=true;s0.hp=0;debris(s0);sfx.brk(s0.type,plain(s0)?matOf(s0.n):null);}
   hopTo(n);pl.jd=.22;
   lavaY=Math.max(lavaY,pl.to+70);lavaHold=Math.max(lavaHold,.6);}
-function die(){mode='dead';endT=0;pl.vs=0;pl.fall=0;pl.spl=0;bgmStop();sfx.die();playDieVoice();vibe([60,40,120]);shake=6;
+function die(){btOnDie();mode='dead';endT=0;pl.vs=0;pl.fall=0;pl.spl=0;bgmStop();sfx.die();playDieVoice();vibe([60,40,120]);shake=6;
   const b=bestOf();if(pl.level>b.floor)saveBest({floor:pl.level,time:b.time});}
 
 /* ---------- input ---------- */
@@ -3405,7 +3406,7 @@ function render(){
   drawLv6Blaze();
   drawKingAura(); // the KING level as an aura: in front of the floors, behind the boxer
   drawOrbs();
-  drawPlayer();drawBuffs();
+  drawPlayer();drawBuffs();drawBattle();
   for(const c of cloth){ctx.globalAlpha=Math.min(1,c.life*2);sprite(c.rows,Math.round(c.x)-4,Math.round(c.y-camY),CLOTH_PAL,((c.life*12)|0)%2===1);}ctx.globalAlpha=1; /* tumbling clothes */
   drawShield();
   for(const p of parts){
@@ -5027,9 +5028,10 @@ function showTitle(){menuMusic();showOverlay(`
     <div class="dsel" role="group" aria-label="난이도"><button class="darr" type="button" data-act="dprev" aria-label="쉬운 난이도">◀</button><b id="dname" aria-live="polite"></b><button class="darr" type="button" data-act="dnext" aria-label="어려운 난이도">▶</button></div>
     <div class="stat best" id="bestline"></div>
     <div class="icons"><button class="ico" type="button" data-act="rank">${pxIcon('rank')}<span>랭킹</span></button><button class="ico" type="button" data-act="howto">${pxIcon('howto')}<span>힌트</span></button><button class="ico" type="button" data-act="settings">${pxIcon('set')}<span>설정</span></button></div>
+    <button class="instchip" type="button" data-act="battle">⚔ 친구와 배틀</button>
     <button class="instchip" type="button" data-act="install"${canInstall()?'':' hidden'}>앱으로 설치하기</button>
   </div>
-  ${CREDIT}`,{install:()=>doInstall(ov.querySelector('.instchip')),go:startGame,rank:()=>showRanking(),howto:showHowto,settings:showSettings,dprev:()=>stepDiff(-1),dnext:()=>stepDiff(1)});
+  ${CREDIT}`,{battle:()=>{initAudio();sfx.select();btLobby();},install:()=>doInstall(ov.querySelector('.instchip')),go:startGame,rank:()=>showRanking(),howto:showHowto,settings:showSettings,dprev:()=>stepDiff(-1),dnext:()=>stepDiff(1)});
   syncDiff();
   const g=ovGen,onKey=e=>{if(ovGen!==g){removeEventListener('keydown',onKey);return;}
     if(ov.hidden||mode==='play'||mode==='super'||mode==='count')return; /* the title is gone (game running): arrows are punches, not the difficulty */
@@ -5110,6 +5112,96 @@ function showRanking(){menuMusic();showOverlay(`
   <div class="ezbtns one"><button class="ezb go" type="button" data-act="back">돌아가기</button></div>
   ${CREDIT}`,{back:showTitle});
   fillBoard('#board',0,'',null,true);}
+/* ---------- BATTLE (gem test, v143): a friend live, by a 4-digit room code. Same tower for both; the first to fall loses. ----------
+   Runs on Supabase Realtime broadcast (no tables): channel ptb-<code>. Messages: hi / full / start / st (floor, x, ~5 a second) / dead / bye. */
+const BT_WS=SUPA_URL.replace(/^http/,'ws')+'/realtime/v1/websocket?apikey='+encodeURIComponent(SUPA_KEY)+'&vsn=1.0.0';
+const BT_LOST=8; /* seconds without a word from the other side = gone */
+const btName=()=>(playerName&&!isGuest?playerName:'김주먹');
+function btSend(ev,pl0){if(!bt||!bt.ws||bt.ws.readyState!==1)return;try{bt.ws.send(JSON.stringify({topic:bt.topic,event:'broadcast',payload:{type:'broadcast',event:ev,payload:Object.assign({id:bt.id},pl0||{})},ref:String(bt.ref++)}));}catch(e){}}
+function btClose(silent){if(!bt)return;const b=bt;bt=null;if(!silent)try{b.ws&&b.ws.readyState===1&&b.ws.send(JSON.stringify({topic:b.topic,event:'broadcast',payload:{type:'broadcast',event:'bye',payload:{id:b.id}},ref:'0'}));}catch(e){}
+  clearInterval(b.hb);clearInterval(b.tick);clearTimeout(b.findT);try{b.ws&&b.ws.close();}catch(e){}}
+function btOpen(code,host){btClose(true);
+  bt={code,host,id:Math.random().toString(36).slice(2,10),topic:'realtime:ptb-'+code,ref:1,ws:null,opp:null,state:'lobby',seed:0,res:null,meDead:false,oppDead:false,err:null};
+  const b=bt;let ws;try{ws=new WebSocket(BT_WS);}catch(e){b.err='연결 실패';btLobby();return;}b.ws=ws;
+  ws.onopen=()=>{ws.send(JSON.stringify({topic:b.topic,event:'phx_join',payload:{config:{broadcast:{self:false},presence:{key:''}}},ref:String(b.ref++)}));
+    b.hb=setInterval(()=>{try{ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(b.ref++)}));}catch(e){}},25000);};
+  ws.onmessage=m=>{if(bt!==b)return;let d;try{d=JSON.parse(m.data);}catch(e){return;}
+    if(d.event==='phx_reply'&&d.topic===b.topic&&d.payload&&d.payload.status==='ok'&&!b.joined){b.joined=true;
+      if(!host){btSend('hi',{name:btName()});b.findT=setTimeout(()=>{if(bt===b&&!b.opp){b.err='방을 찾을 수 없어요';btLobby();}},5000);}btLobby();return;}
+    if(d.event==='broadcast'&&d.payload)btOnMsg(b,d.payload.event,d.payload.payload||{});};
+  ws.onclose=()=>{if(bt===b&&b.state!=='done'){b.err=b.err||'연결이 끊겼어요';if(b.state==='run'){if(!b.oppDead)btOppGone(b);}else btLobby();}};
+  ws.onerror=()=>{};
+  btLobby();}
+function btOnMsg(b,ev,p){if(!p||p.id===b.id)return;
+  if(b.opp&&p.id!==b.opp.id&&ev!=='hi')return; /* a third phone: ignored */
+  if(ev==='hi'){
+    if(b.host){if(b.opp&&b.opp.id!==p.id){btSend('full',{to:p.id});return;}b.opp={id:p.id,name:String(p.name||'친구').slice(0,8),f:0,x:W/2,last:now()};btSend('hi',{name:btName(),d:diffIdx,to:p.id});sfx.select();}
+    else{if(p.to!==b.id)return;clearTimeout(b.findT);b.opp={id:p.id,name:String(p.name||'친구').slice(0,8),f:0,x:W/2,last:now()};if(p.d!=null)b.hostD=p.d;sfx.select();}
+    if(b.state==='lobby')btLobby();return;}
+  if(ev==='full'&&p.to===b.id){b.err='방이 꽉 찼어요 (2명까지)';btLobby();return;}
+  if(!b.opp)return;b.opp.last=now();
+  if(ev==='start'){btBegin(p.seed,p.d);return;}
+  if(ev==='st'){b.opp.f=p.f|0;b.opp.x=+p.x||W/2;if(b.state==='done'){const el=document.getElementById('btopp');if(el)el.textContent=b.opp.name+' '+b.opp.f+'F 올라가는 중…';}return;}
+  if(ev==='dead'){b.opp.f=p.f|0;btOppDead(b,false);return;}
+  if(ev==='bye'){if(b.state==='run'||b.state==='done')btOppDead(b,true);else{b.opp=null;b.err='상대가 나갔어요';btLobby();}}}
+function btOppGone(b){btOppDead(b,true);}
+function btOppDead(b,left){if(b.oppDead)return;b.oppDead=true;b.oppLeft=left;
+  if(!b.meDead){b.res='win';if(mode==='play'||mode==='super'||mode==='count'){pop(W/2,pl.feet-70,'YOU WIN!','#ffd400',2);pop(W/2,pl.feet-54,left?'상대가 나갔어요':b.opp.name+' '+b.opp.f+'F에서 탈락','#ffffff',1);flashO=.5;flashCol='#ffd400';vibe([40,30,40,30,120]);
+    if(AC){const a=AC.currentTime;[523,659,784,1047,1319].forEach((f,i)=>tone(a+i*.08,.2,f,f,'square',.07));}}}
+  const el=document.getElementById('btopp');if(el)el.textContent=left?'상대가 나갔어요':b.opp.name+' '+b.opp.f+'F에서 탈락';
+  const rs=document.getElementById('btres');if(rs&&b.res)rs.innerHTML=btResHTML(b);}
+/* the same tower on both phones: every floor is built from (room seed, floor number) */
+function btRng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const makeSlabPlain=makeSlab;
+makeSlab=function(n){if(!bt||bt.state!=='run')return makeSlabPlain(n);const save=Math.random;Math.random=btRng(bt.seed^Math.imul(n+1,2654435761));try{return makeSlabPlain(n);}finally{Math.random=save;}};
+function btBegin(seed,d){const b=bt;if(!b)return;b.seed=seed|0;b.state='run';b.res=null;b.meDead=false;b.oppDead=false;b.oppLeft=false;b.err=null;
+  if(b.opp){b.opp.f=0;b.opp.last=now();}
+  if(d!=null&&DIFFS[d]){diffIdx=d;D=DIFFS[d];}
+  clearInterval(b.tick);b.tick=setInterval(()=>{if(bt!==b)return;if(b.state==='run'&&!b.meDead)btSend('st',{f:pl.level,x:Math.round(pl.x)});
+    if((b.state==='run'||b.state==='done')&&!b.oppDead&&b.opp&&now()-b.opp.last>BT_LOST)btOppGone(b);},200);
+  lockPortrait();ov.hidden=true;beginCountdown();}
+function btOnDie(){const b=bt;if(!b||b.state!=='run')return;b.meDead=true;btSend('dead',{f:pl.level});if(!b.oppDead)b.res='lose';}
+function btResHTML(b){const w=b.res==='win';return `<div style="font-family:var(--f-display);font-size:28px;color:${w?'var(--gold)':'#ff5a6a'};text-shadow:3px 3px 0 #000;margin:2px 0">${w?'🏆 승리!':'패배…'}</div>`;}
+/* the lobby: make a room / join one / wait */
+function btLobby(){if(mode==='play'||mode==='super'||mode==='count'||mode==='pause'||mode==='dead')return;menuMusic();const b=bt;
+  const box=(inner,acts)=>showOverlay(`<div class="ezr setp"><div class="ezhead">BATTLE</div>${inner}</div>${CREDIT}`,acts);
+  if(!b){box(`<p class="ddesc" style="--d:1">친구와 같은 탑을 동시에 올라요. 먼저 떨어지는 쪽이 져요.</p>
+      <div class="ezbtns one" style="--d:1"><button class="ezb go" type="button" id="go" data-act="make">방 만들기</button></div>
+      <span class="lbl" style="--d:2">친구 방에 들어가기</span>
+      <label class="namebox" for="btcode" style="--d:2"><span>CODE</span><input id="btcode" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4자리 숫자" enterkeyhint="go"></label>
+      <div class="ezbtns one" style="--d:2"><button class="ezb" type="button" data-act="join">입장</button></div>
+      <div class="ezbtns one" style="--d:3"><button class="ezb" type="button" data-act="back">돌아가기</button></div>`,
+      {make:()=>btOpen(String(1000+Math.floor(Math.random()*9000)),true),
+       join:()=>{const v=(ov.querySelector('#btcode').value||'').replace(/\D/g,'');if(v.length!==4){sfx.same();return;}btOpen(v,false);},
+       back:showTitle});
+    const inp=ov.querySelector('#btcode');if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ov.querySelector('[data-act="join"]').click();}});return;}
+  const err=b.err?`<p class="ddesc" style="--d:1;color:#ff7a8a">${esc(b.err)}</p>`:'';
+  const dk=DIFFS[b.host?diffIdx:(b.hostD!=null?b.hostD:diffIdx)];
+  const oppLine=b.opp?`<p class="ddesc" style="--d:1;color:#7af0ff;font-size:15px">상대: <b>${esc(b.opp.name)}</b></p>`:`<p class="ddesc" style="--d:1">${b.joined?(b.host?'친구가 들어오길 기다리는 중…':'방을 찾는 중…'):'연결하는 중…'}</p>`;
+  const codeBig=`<div style="--d:1;font-family:var(--f-display);font-size:44px;letter-spacing:.12em;color:var(--gold);text-shadow:3px 3px 0 #a33f00;text-align:center;margin:4px 0">${b.code}</div>`;
+  if(b.host)box(`<span class="lbl" style="--d:1">방 코드 (친구에게 알려 주세요)</span>${codeBig}${oppLine}${err}
+      <div class="dsel" role="group" aria-label="난이도" style="--d:2"><button class="darr" type="button" data-act="dprev">◀</button><b id="dname" class="t-${dk.key}">${dk.ko}</b><button class="darr" type="button" data-act="dnext">▶</button></div>
+      <div class="ezbtns one" style="--d:2"><button class="ezb go" type="button" id="go" data-act="start"${b.opp?'':' disabled'}>${b.opp?'대결 시작':'친구 기다리는 중'}</button></div>
+      <div class="ezbtns one" style="--d:3"><button class="ezb" type="button" data-act="leave">방 나가기</button></div>`,
+      {start:()=>{if(!b.opp){sfx.same();return;}const seed=(Math.random()*2147483647)|0;btSend('start',{seed,d:diffIdx});btBegin(seed,diffIdx);},
+       dprev:()=>{stepDiff(-1);btSend('hi',{name:btName(),d:diffIdx,to:b.opp&&b.opp.id});btLobby();},dnext:()=>{stepDiff(1);btSend('hi',{name:btName(),d:diffIdx,to:b.opp&&b.opp.id});btLobby();},
+       leave:()=>{btClose();btLobby();}});
+  else box(`<span class="lbl" style="--d:1">방 코드</span>${codeBig}${oppLine}${err}
+      ${b.opp?`<p class="ddesc" style="--d:2">난이도 <b class="t-${dk.key}">${dk.ko}</b> · 방장이 시작하면 바로 카운트다운!</p>`:''}
+      <div class="ezbtns one" style="--d:3"><button class="ezb" type="button" data-act="leave">방 나가기</button></div>`,
+      {leave:()=>{btClose();btLobby();}});}
+/* in the game: the other boxer as a see-through ghost on his floor (or an arrow at the edge), and a VS line under the gem slots */
+/* names can be Korean: the 3x5 pixel font has only A-Z/0-9, so anything else is drawn with the Korean web font */
+function btLabel(s,x,y,col){s=String(s);if(/^[A-Za-z0-9 !'+:.\-\/%]*$/.test(s)){text(s.toUpperCase(),x,y,1,col,'c','#0d0a08');return;}
+  ctx.font='8px PunchTowerKR,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle='#0d0a08';ctx.fillText(s,x+1,y);ctx.fillText(s,x,y+1);ctx.fillStyle=col;ctx.fillText(s,x,y);ctx.textAlign='left';}
+function drawBattle(){const b=bt;if(!b||b.state!=='run'||!b.opp||!(mode==='play'||mode==='super'||mode==='count'||mode==='dead'))return;const o=b.opp,K='#0d0a08';
+  const gy=Math.round(-o.f*FH-camY),gx=Math.round(clamp(o.x,WALL+6,W-WALL-6)),dead=b.oppDead;
+  if(gy>8&&gy<H+4){ctx.globalAlpha=dead?.25:.55;const c=dead?'#888888':'#7af0ff';
+    R(gx-3,gy-14,6,5,c);R(gx-4,gy-9,8,6,c);R(gx-5,gy-8,2,4,c);R(gx+3,gy-8,2,4,c);R(gx-3,gy-3,2,3,c);R(gx+1,gy-3,2,3,c);R(gx-2,gy-12,1,1,K);R(gx+1,gy-12,1,1,K);
+    ctx.globalAlpha=1;btLabel(o.name,gx,gy-24,c);}
+  else{const up=gy<=8,y=up?40:H-62;R(gx-2,up?y-4:y+12,5,1,'#7af0ff');R(gx-1,up?y-5:y+13,3,1,'#7af0ff');R(gx,up?y-6:y+14,1,1,'#7af0ff');btLabel(o.name,gx,y-1,'#7af0ff');text(o.f+'F',gx,y+7,1,'#7af0ff','c',K);}
+  const d=pl.level-o.f,col=dead?'#a597b8':d>0?'#7aff8a':d<0?'#ff7a8a':'#ffffff';
+  text('VS '+o.f+'F'+(dead?' OUT':''),Math.round(W/2-4),30,1,col,'c',K);}
 function resultScreen(cleared){
   setTimeout(()=>{if(!ov.hidden&&mode!=='play')menuMusic();},900); // after the death sting
   const floor=pl.level,time=Math.round((cleared?clearTime:tNow)*10)/10;
@@ -5130,9 +5222,10 @@ function resultScreen(cleared){
     if(floor>=1){if(askName&&!sub){playerName='GUEST'+String(100+Math.floor(Math.random()*900));isGuest=true;}post();}startGame();};
   const next=()=>{if(performance.now()-t1<500)return; /* ignore the leftover mashing */
     removeEventListener('keydown',nextKey);scorePage(cleared,floor,en,askName&&!sub?post:post());}; /* still nameless: page 2 asks, then posts */
-  showOverlay(`${head}${ezResult(floor,scoreOf(en),time)}${runExtra(en)}
-    <div class="ezbtns"><button class="ezb" type="button" data-act="retry">다시 하기</button><button class="ezb go" type="button" id="go" data-act="next">랭킹 보기 ▶</button></div>${CREDIT}`,
-    {retry,next});
+  const inBt=!!(bt&&bt.state==='run');if(inBt)bt.state='done';
+  showOverlay(`${inBt?`<div id="btres">${bt.res?btResHTML(bt):''}</div><p class="ddesc" id="btopp" style="color:#7af0ff;margin:0">${esc(bt.opp?bt.opp.name:'상대')} ${bt.oppDead?(bt.oppLeft?'나감':bt.opp.f+'F에서 탈락'):(bt.opp?bt.opp.f:0)+'F 올라가는 중…'}</p>`:''}${head}${ezResult(floor,scoreOf(en),time)}${runExtra(en)}
+    <div class="ezbtns">${inBt?'<button class="ezb" type="button" data-act="btlobby">배틀 방으로</button>':'<button class="ezb" type="button" data-act="retry">다시 하기</button>'}<button class="ezb go" type="button" id="go" data-act="next">랭킹 보기 ▶</button></div>${CREDIT}`,
+    {retry,next,btlobby:()=>{if(performance.now()-t1<500)return;removeEventListener('keydown',nextKey);if(floor>=1&&!sub){if(askName){playerName='GUEST'+String(100+Math.floor(Math.random()*900));isGuest=true;}post();}if(bt){bt.state='lobby';bt.err=null;}mode='title';btLobby();}});
   const g1=ovGen,t1=performance.now();ezCount(g1);
   {const p=ov.querySelector('.ezr');if(p&&p.offsetHeight)stage.style.setProperty('--resH',p.offsetHeight+'px');} /* the ranking page that follows is made exactly this tall */
   const nextKey=e=>{if(ovGen!==g1){removeEventListener('keydown',nextKey);return;}if(e.key==='Enter'&&performance.now()-t1>=500){e.preventDefault();next();}};
