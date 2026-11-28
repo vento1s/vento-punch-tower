@@ -3430,7 +3430,17 @@ function render(){
 
 let last=performance.now();
 let diagFps=0,diagWorst=0,diagN=0,diagT0=0; /* v130: frame rate on the test address's DIAG panel */
-function loop(ts){const dt=Math.min(.05,(ts-last)/1000);{const ms=ts-last;if(ms>diagWorst&&ms<2000)diagWorst=Math.round(ms);diagN++;if(ts-diagT0>=1000){diagFps=diagN;diagN=0;diagT0=ts;}}last=ts;try{update(dt);render();}catch(e){console.error(e);}requestAnimationFrame(loop);} /* v99: a bug in one frame must never stop the game */
+function loop(ts){const dt=Math.min(.05,(ts-last)/1000);{const ms=ts-last;if(ms>diagWorst&&ms<2000)diagWorst=Math.round(ms);diagN++;if(ts-diagT0>=1000){diagFps=diagN;diagN=0;diagT0=ts;}}last=ts;try{update(dt);}catch(e){noteErr('U',e);}try{render();if(errShow)drawErr();}catch(e){noteErr('R',e);}requestAnimationFrame(loop);} /* v99: a bug in one frame must never stop the game; v142-gem: update and drawing caught apart, so a broken update can't freeze the picture */
+/* v142-gem: a frame error is kept (this phone) and printed in small red at the bottom of the screen - a screenshot of it says exactly where it broke */
+let errShow=null,errCount=0;try{errShow=JSON.parse(localStorage.getItem('punchtower.lasterr')||'null');if(errShow)errShow.old=1;}catch(e){}
+function noteErr(w,e){errCount++;console.error(e);if(errShow&&!errShow.old&&errCount>1){errShow.n=errCount;return;}
+  const st=String(e&&e.stack||e).split('\n').slice(0,3).map(s=>s.trim().replace(/https?:\/\/[^ )]+\//g,'')).join(' < ');
+  errShow={w,m:String(e&&e.message||e).slice(0,80),st:st.slice(0,220),lv:pl&&pl.level,mode,kT:+(kingT||0).toFixed(2),gems:Object.keys(gems||{}).join(','),n:1,at:new Date().toISOString().slice(5,16)};
+  try{localStorage.setItem('punchtower.lasterr',JSON.stringify(errShow));}catch(e2){}}
+function drawErr(){if(!errShow||errShow.old)return; /* an old one stays in storage only */
+  const lines=[(errShow.old?'LAST ':'')+'ERR '+errShow.w+' x'+errShow.n+' '+errShow.lv+'F '+errShow.mode+' kT'+errShow.kT+' '+errShow.gems,errShow.m,...(errShow.st.match(/.{1,46}/g)||[]).slice(0,3)];
+  ctx.globalAlpha=.85;R(0,H-8-lines.length*7,W,lines.length*7+4,'#000000');ctx.globalAlpha=1;
+  ctx.font='6px monospace';ctx.fillStyle='#ff5a5a';ctx.textBaseline='top';lines.forEach((l,i)=>ctx.fillText(l,2,H-6-lines.length*7+i*7));}
 requestAnimationFrame(loop);
 
 /* ===================== v104 TUTORIAL: the first run teaches by doing, with no lava and nothing to lose =====================
