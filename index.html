@@ -3759,6 +3759,22 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k!=='escape'&&k!==
   if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
   if(mode==='pause'){e.preventDefault();resumeGame();}else if(ov.hidden){e.preventDefault();pauseGame();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&ov.hidden&&(mode==='play'||mode==='super'))pauseGame();}); // leaving the app pauses
+/* v141-gem: the phone's BACK button (or edge swipe) no longer closes the game.
+   A spare history entry is laid down on each touch (Chrome only honours ones made after a tap); BACK uses it up:
+   playing -> pause menu, pause menu -> back to the game, any other screen -> title, title -> "한 번 더 누르면 종료" then the next BACK really leaves. */
+let backArmed=false,backExitAt=-99;
+function armBack(){if(backArmed)return;try{history.pushState({ptBack:1},'');backArmed=true;}catch(e){}}
+addEventListener('pointerdown',armBack,true);addEventListener('keydown',armBack,true);
+function backToast(msg){let el=document.getElementById('backtoast');
+  if(!el){el=document.createElement('div');el.id='backtoast';el.style.cssText='position:fixed;left:50%;bottom:18%;transform:translateX(-50%);z-index:99;background:rgba(13,10,8,.92);color:#fff;border:2px solid #ffd400;padding:8px 14px;font:14px/1.3 PunchTowerKR,sans-serif;border-radius:6px;pointer-events:none;transition:opacity .3s';document.body.appendChild(el);}
+  el.textContent=msg;el.style.opacity='1';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.opacity='0';},1800);}
+addEventListener('popstate',()=>{if(!backArmed)return;backArmed=false;
+  if(mode==='play'||mode==='super'||mode==='count'){if(ov.hidden)pauseGame();return;}
+  if(mode==='pause'){resumeGame();return;}
+  const onTitle=!ov.hidden&&!!ov.querySelector('.logo');
+  if(!onTitle){try{mode='title';showTitle();}catch(e){}return;}
+  if(now()-backExitAt<2){history.back();return;} /* now() is in seconds */
+  backExitAt=now();backToast('뒤로 가기를 한 번 더 누르면 종료돼요');});
 // every run opens with 3-2-1-GO; the clock and the lava start on GO
 // quick arcade call: "LET'S" (0.55s) -> "START!" and you're playing
 let countT=0,countShown=0;
